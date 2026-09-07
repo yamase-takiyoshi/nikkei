@@ -49,6 +49,7 @@ h1{font-size:clamp(24px,4vw,38px);margin:0 0 8px;letter-spacing:.02em}
 .status-sample{color:var(--warn);font-weight:700}
 .status-official{color:var(--down);font-weight:700}
 .status-missing{color:var(--muted);font-style:italic}
+.status-master{color:var(--accent);font-weight:700}
 .section{margin-top:18px}
 .section-title{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:0 0 9px}
 .section-title h2{font-size:20px;margin:0}
@@ -338,7 +339,7 @@ footer{color:var(--muted);font-size:11px;padding:24px 4px 12px}
     <div class="company-search-wrap" id="companySearchWrap">
       <input id="companySearch" type="search" placeholder="証券コード・会社名・略称で検索" autocomplete="off" spellcheck="false" aria-autocomplete="list" aria-controls="companySuggestions" aria-expanded="false">
       <div class="company-suggestions" id="companySuggestions" role="listbox" aria-label="企業検索候補"></div>
-      <div class="company-search-hint">例：8267 / イオン / イオンHD / AEON / 薬王堂HD　｜　PCは↑↓＋Enter、iPad・スマホは候補をタップ</div>
+      <div class="company-search-hint">例：9948 / アークス / ARCS / ジョイス / 8267 / イオン / 薬王堂HD　｜　PCは↑↓＋Enter、iPad・スマホは候補をタップ</div>
     </div>
     <select id="industryFilter"><option value="">全業種</option></select>
   </div>
@@ -356,7 +357,7 @@ footer{color:var(--muted);font-size:11px;padding:24px 4px 12px}
     <div class="chart-card"><h3>業績推移</h3><div class="chart-box"><canvas id="companyPerformanceChart"></canvas><div class="chart-empty" id="companyChartEmpty"></div></div></div>
     <div class="panel"><div class="panel-head"><h3>役員</h3></div><div class="table-wrap"><table id="officerTable"></table></div></div>
   </div>
-  <div class="note">会社情報はEDINET、有価証券報告書、決算短信、適時開示、各社IR等の公開情報を入力するための欄です。役員は「役職・氏名・就任年・担当」を保持できます。確認できない項目は未取得のままにしてください。</div>
+  <div class="note">会社情報はEDINET、有価証券報告書、決算短信、適時開示、各社IR等の公開情報を整理する欄です。アークスを含む主要上場会社の検索マスターを内蔵し、詳細未取得の企業も候補表示します。役員は「役職・氏名・就任年・担当」を保持できます。確認できない項目は未取得のままにしてください。</div>
 </section>
 
 <section class="section">
@@ -541,6 +542,35 @@ const companyData = [
     ]
   },
   {
+    code:"9948", name:"株式会社アークス", englishName:"ARCS COMPANY, LIMITED", kana:"アークス",
+    aliases:["アークス","ARCS","ARCS GROUP","アークスグループ","ラルズ","RALSE","ユニバース","UNIVERSE","ジョイス","JOYCE","ベルプラス","BELPLUS","東光ストア","道北アークス","福原","フクハラ","オータニ","伊藤チェーン"],
+    industry:"小売業", market:"東証プライム・札証", fiscalYearEnd:"2月",
+    status:"verified", source:"株式会社アークス公式（第65期報告書・2026年2月期決算説明会資料・2027年2月期業績予想）", updated:"2026-09-08",
+    profile:"北海道・東北を中心に食品スーパーマーケット各社を傘下に持つ純粋持株会社。ラルズ、ユニバース、ジョイス、ベルプラス、東光ストア、道北アークスなどを含むアークスグループを統括。証券コード9948。",
+    metrics:{sharePrice:null,marketCapBillion:null,per:null,pbr:null,roe:null,dividendYield:null,eps:null,bps:null},
+    forecasts:{sales:648000,operatingProfit:18000,ordinaryProfit:19600,netIncome:12400},
+    performance:[
+      {period:"2024/2",sales:591557,operatingProfit:16831,ordinaryProfit:18439,netIncome:11766},
+      {period:"2025/2",sales:608284,operatingProfit:15936,ordinaryProfit:17540,netIncome:11063},
+      {period:"2026/2",sales:626900,operatingProfit:17600,ordinaryProfit:19100,netIncome:12400},
+      {period:"2027/2予",sales:648000,operatingProfit:18000,ordinaryProfit:19600,netIncome:12400}
+    ],
+    officers:[
+      {role:"代表取締役会長・CEO",name:"横山 清",since:"2026年5月26日時点",responsibility:"代表取締役会長・CEO"},
+      {role:"取締役副会長・CFO",name:"古川 公一",since:"2026年5月26日時点",responsibility:"取締役副会長・CFO"},
+      {role:"代表取締役社長・COO",name:"猫宮 一久",since:"2026年5月26日時点",responsibility:"代表取締役社長・COO"},
+      {role:"取締役執行役員",name:"三浦 建彦",since:"2026年5月26日時点",responsibility:"取締役執行役員"},
+      {role:"取締役執行役員",name:"福原 郁治",since:"2026年5月26日時点",responsibility:"取締役執行役員"},
+      {role:"社外取締役",name:"佐々木 亮子",since:"2026年5月26日時点",responsibility:"社外取締役"},
+      {role:"社外取締役",name:"富樫 豊子",since:"2026年5月26日時点",responsibility:"社外取締役"},
+      {role:"社外取締役",name:"小池 明夫",since:"2026年5月26日時点",responsibility:"社外取締役"},
+      {role:"常勤監査役",name:"田守 隆行",since:"2026年5月26日時点",responsibility:"常勤監査役"},
+      {role:"監査役",name:"大畑 忠生",since:"2026年5月26日時点",responsibility:"監査役"},
+      {role:"社外監査役",name:"髙嶋 智",since:"2026年5月26日時点",responsibility:"社外監査役"},
+      {role:"社外監査役",name:"伊東 和範",since:"2026年5月26日時点",responsibility:"社外監査役"}
+    ]
+  },
+  {
     code:"7679", name:"薬王堂ホールディングス", englishName:"YAKUODO HOLDINGS CO., LTD.", kana:"ヤクオウドウホールディングス", aliases:["薬王堂HD","薬王堂ＨＤ","薬王堂ホールディングス","YAKUODO","YAKUODO HD"],
     industry:"小売業", market:"東証プライム", fiscalYearEnd:"2月",
     status:"verified", source:"薬王堂ホールディングス公式（会社概要・役員一覧・財務ハイライト・2027年2月期1Q決算短信）", updated:"2026-09-07",
@@ -586,6 +616,26 @@ const companyData = [
     ]
   }
 ];
+
+
+/* 検索用企業マスター：詳細未取得の会社は基本情報だけ候補表示 */
+const companyMasterSeed = [["3382","セブン＆アイ・ホールディングス","小売業",["セブンアンドアイ","7&i","SEVEN & I","セブンイレブン"]],["7532","パン・パシフィック・インターナショナルホールディングス","小売業",["PPIH","ドンキ","ドン・キホーテ","DON QUIJOTE"]],["7453","良品計画","小売業",["無印良品","MUJI"]],["9843","ニトリホールディングス","小売業",["ニトリ","NITORI","ニトリHD"]],["8194","ライフコーポレーション","小売業",["ライフ","LIFE"]],["8279","ヤオコー","小売業",["YAOKO"]],["9974","ベルク","小売業",["BELC"]],["8278","フジ","小売業",["FUJI","フジグラン"]],["8276","平和堂","小売業",["HEIWADO"]],["8167","リテールパートナーズ","小売業",["丸久","マルキョウ","RETAL PARTNERS"]],["3222","ユナイテッド・スーパーマーケット・ホールディングス","小売業",["USMH","マルエツ","カスミ"]],["2791","大黒天物産","小売業",["ラ・ムー","ディオ","DAIKOKUTEN"]],["3038","神戸物産","卸売業",["業務スーパー","KOBE BUSSAN"]],["8255","アクシアル リテイリング","小売業",["アクシアル","原信","ナルス","AXIAL"]],["3539","ＪＭホールディングス","小売業",["JMHD","ジャパンミート","肉のハナマサ"]],["8198","マックスバリュ東海","小売業",["MV東海","MAXVALU TOKAI"]],["2653","イオン九州","小売業",["AEON KYUSHU"]],["7512","イオン北海道","小売業",["AEON HOKKAIDO"]],["2742","ハローズ","小売業",["HALOWS"]],["9956","バローホールディングス","小売業",["バロー","VALOR","バローHD"]],["9993","ヤマザワ","小売業",["YAMAZAWA"]],["9946","ミニストップ","小売業",["MINISTOP"]],["8282","ケーズホールディングス","小売業",["ケーズデンキ","KS HOLDINGS","ケーズHD"]],["9831","ヤマダホールディングス","小売業",["ヤマダデンキ","YAMADA","ヤマダHD"]],["2730","エディオン","小売業",["EDION"]],["3048","ビックカメラ","小売業",["BIC CAMERA"]],["3050","ＤＣＭホールディングス","小売業",["DCM","DCM HD"]],["2664","カワチ薬品","小売業",["CAWACHI"]],["3391","ツルハホールディングス","小売業",["ツルハ","TSURUHA","ツルハHD"]],["3349","コスモス薬品","小売業",["ドラッグストアコスモス","COSMOS"]],["3549","クスリのアオキホールディングス","小売業",["クスリのアオキ","AOKI HD","クスリのアオキHD"]],["3088","マツキヨココカラ＆カンパニー","小売業",["マツモトキヨシ","ココカラファイン","マツキヨココカラ"]],["9989","サンドラッグ","小売業",["SUNDRUG"]],["7649","スギホールディングス","小売業",["スギ薬局","SUGI","スギHD"]],["9267","Ｇｅｎｋｙ ＤｒｕｇＳｔｏｒｅｓ","小売業",["ゲンキー","GENKY"]],["3099","三越伊勢丹ホールディングス","小売業",["三越伊勢丹","ISETAN MITSUKOSHI"]],["8233","高島屋","小売業",["髙島屋","TAKASHIMAYA"]],["8242","エイチ・ツー・オー リテイリング","小売業",["H2O","阪急阪神百貨店"]],["3086","Ｊ．フロント リテイリング","小売業",["JFR","大丸松坂屋"]],["8237","松屋","小売業",["MATSUYA","銀座松屋"]],["8227","しまむら","小売業",["SHIMAMURA"]],["2670","エービーシー・マート","小売業",["ABC-MART","ABCマート"]],["2685","アダストリア","小売業",["ADASTRIA","グローバルワーク"]],["7606","ユナイテッドアローズ","小売業",["UNITED ARROWS"]],["2726","パルグループホールディングス","小売業",["PAL GROUP","3COINS","パルグループHD"]],["2780","コメ兵ホールディングス","小売業",["KOMEHYO","コメ兵HD"]],["3092","ＺＯＺＯ","小売業",["ZOZO","ZOZOTOWN"]],["8345","岩手銀行","銀行業",["いわぎん","BANK OF IWATE"]],["8551","北日本銀行","銀行業",["きたぎん","KITA-NIPPON BANK"]],["8349","東北銀行","銀行業",["とうぎん","THE TOHOKU BANK"]],["8306","三菱ＵＦＪフィナンシャル・グループ","銀行業",["MUFG","三菱UFJ","三菱UFJFG"]],["8316","三井住友フィナンシャルグループ","銀行業",["SMFG","三井住友FG"]],["8411","みずほフィナンシャルグループ","銀行業",["みずほFG","MIZUHO"]],["8591","オリックス","その他金融業",["ORIX"]],["8604","野村ホールディングス","証券・商品先物取引業",["野村證券","NOMURA","野村HD"]],["8766","東京海上ホールディングス","保険業",["東京海上","TOKIO MARINE","東京海上HD"]],["8750","第一生命ホールディングス","保険業",["第一生命","DAI-ICHI LIFE","第一生命HD"]],["8725","ＭＳ＆ＡＤインシュアランスグループホールディングス","保険業",["MS&AD","三井住友海上"]],["8630","ＳＯＭＰＯホールディングス","保険業",["SOMPO","損保ジャパン"]],["7203","トヨタ自動車","輸送用機器",["TOYOTA","トヨタ"]],["7267","本田技研工業","輸送用機器",["HONDA","ホンダ"]],["7270","ＳＵＢＡＲＵ","輸送用機器",["SUBARU","スバル"]],["6758","ソニーグループ","電気機器",["SONY","ソニー","ソニーG"]],["7974","任天堂","その他製品",["NINTENDO"]],["6861","キーエンス","電気機器",["KEYENCE"]],["6501","日立製作所","電気機器",["HITACHI","日立"]],["6503","三菱電機","電気機器",["MITSUBISHI ELECTRIC"]],["6702","富士通","電気機器",["FUJITSU"]],["6701","日本電気","電気機器",["NEC","日本電気NEC"]],["6981","村田製作所","電気機器",["MURATA"]],["6954","ファナック","電気機器",["FANUC"]],["8035","東京エレクトロン","電気機器",["TEL","TOKYO ELECTRON"]],["6857","アドバンテスト","電気機器",["ADVANTEST"]],["7735","ＳＣＲＥＥＮホールディングス","電気機器",["SCREEN","SCREEN HD"]],["6920","レーザーテック","電気機器",["LASERTEC"]],["6146","ディスコ","機械",["DISCO"]],["9432","ＮＴＴ","情報・通信業",["日本電信電話","NTT"]],["9433","ＫＤＤＩ","情報・通信業",["KDDI","AU"]],["9434","ソフトバンク","情報・通信業",["SOFTBANK","SBKK"]],["9984","ソフトバンクグループ","情報・通信業",["SBG","SOFTBANK GROUP","ソフトバンクG"]],["4755","楽天グループ","サービス業",["楽天","RAKUTEN","楽天G"]],["4689","ＬＹ Ｃｏｒｐｏｒａｔｉｏｎ","情報・通信業",["LY","LINEヤフー","LINE Yahoo","ヤフー"]],["6098","リクルートホールディングス","サービス業",["RECRUIT","リクルート","リクルートHD"]],["4661","オリエンタルランド","サービス業",["OLC","東京ディズニーリゾート","ディズニーランド"]],["7832","バンダイナムコホールディングス","その他製品",["BANDAI NAMCO","バンナム","バンダイナムコHD"]],["9697","カプコン","情報・通信業",["CAPCOM"]],["9766","コナミグループ","情報・通信業",["KONAMI","コナミ"]],["2914","日本たばこ産業","食料品",["JT","JAPAN TOBACCO"]],["2502","アサヒグループホールディングス","食料品",["アサヒ","ASAHI","アサヒGHD"]],["2503","キリンホールディングス","食料品",["キリン","KIRIN","キリンHD"]],["2802","味の素","食料品",["AJINOMOTO"]],["2269","明治ホールディングス","食料品",["MEIJI","明治HD"]],["2282","日本ハム","食料品",["NIPPON HAM","ニッポンハム"]],["1332","ニッスイ","水産・農林業",["NISSUI","日本水産"]],["9101","日本郵船","海運業",["NYK","NIPPON YUSEN"]],["9104","商船三井","海運業",["MOL","MITSUI OSK LINES"]],["9107","川崎汽船","海運業",["K LINE","KLINE"]],["9020","東日本旅客鉄道","陸運業",["JR東日本","JR EAST"]],["9021","西日本旅客鉄道","陸運業",["JR西日本","JR WEST"]],["9022","東海旅客鉄道","陸運業",["JR東海","JR CENTRAL"]],["9142","九州旅客鉄道","陸運業",["JR九州","JR KYUSHU"]],["9501","東京電力ホールディングス","電気・ガス業",["東京電力","TEPCO","東電"]],["9506","東北電力","電気・ガス業",["TOHOKU ELECTRIC"]],["9531","東京ガス","電気・ガス業",["TOKYO GAS"]],["9532","大阪ガス","電気・ガス業",["OSAKA GAS","DAIGAS"]],["1801","大成建設","建設業",["TAISEI"]],["1802","大林組","建設業",["OBAYASHI"]],["1803","清水建設","建設業",["SHIMIZU"]],["1812","鹿島建設","建設業",["KAJIMA","鹿島"]],["1925","大和ハウス工業","建設業",["DAIWA HOUSE","大和ハウス"]],["1928","積水ハウス","建設業",["SEKISUI HOUSE"]],["8801","三井不動産","不動産業",["MITSUI FUDOSAN"]],["8802","三菱地所","不動産業",["MITSUBISHI ESTATE"]],["8804","東京建物","不動産業",["TOKYO TATEMONO"]],["8830","住友不動産","不動産業",["SUMITOMO REALTY"]],["1605","ＩＮＰＥＸ","鉱業",["INPEX"]],["5020","ＥＮＥＯＳホールディングス","石油・石炭製品",["ENEOS","エネオス","ENEOS HD"]],["5401","日本製鉄","鉄鋼",["NIPPON STEEL"]],["5411","ＪＦＥホールディングス","鉄鋼",["JFE","JFE HD"]],["5713","住友金属鉱山","非鉄金属",["SUMITOMO METAL MINING"]],["5802","住友電気工業","非鉄金属",["SUMITOMO ELECTRIC","住友電工"]],["4063","信越化学工業","化学",["SHIN-ETSU","信越化学"]],["4452","花王","化学",["KAO"]],["4502","武田薬品工業","医薬品",["TAKEDA","武田薬品"]],["4503","アステラス製薬","医薬品",["ASTELLAS"]],["4519","中外製薬","医薬品",["CHUGAI"]],["4568","第一三共","医薬品",["DAIICHI SANKYO"]],["4523","エーザイ","医薬品",["EISAI"]],["4911","資生堂","化学",["SHISEIDO"]],["4901","富士フイルムホールディングス","化学",["FUJIFILM","富士フイルムHD"]],["6178","日本郵政","サービス業",["JAPAN POST HOLDINGS","日本郵政G"]],["7182","ゆうちょ銀行","銀行業",["JAPAN POST BANK","ゆうちょ"]],["7181","かんぽ生命保険","保険業",["JAPAN POST INSURANCE","かんぽ"]]];
+
+function mergeCompanyMasterSeed(){
+  const known=new Set(companyData.map(c=>String(c.code)));
+  companyMasterSeed.forEach(([code,name,industry,aliases])=>{
+    if(known.has(String(code)))return;
+    companyData.push({
+      code:String(code),name,aliases:Array.isArray(aliases)?aliases:[],industry:industry||"業種未取得",
+      market:"東証（市場区分未取得）",fiscalYearEnd:"未取得",status:"master",
+      source:"内蔵企業検索マスター（基本情報のみ。詳細値は未取得）",updated:"2026-09-08",
+      profile:"企業検索マスターに登録された上場会社です。会社概要・株価指標・業績予想・役員情報は未取得のため、確認できた公開情報をJSONから追加してください。",
+      metrics:{sharePrice:null,marketCapBillion:null,per:null,pbr:null,roe:null,dividendYield:null,eps:null,bps:null},
+      forecasts:{sales:null,operatingProfit:null,ordinaryProfit:null,netIncome:null},performance:[],officers:[]
+    });
+  });
+}
+mergeCompanyMasterSeed();
 
 
 /* ローソク足データ：確認できたOHLCのみ */
@@ -710,8 +760,8 @@ const fmtPct = (v,d=3) => isNum(v) ? `${v.toFixed(d)}%` : "データ未取得";
 const sign = v => !isNum(v)||v===0 ? "―" : v>0 ? "▲" : "▼";
 const cls = v => !isNum(v)||v===0 ? "flat" : v>0 ? "up" : "down";
 const direction = v => !isNum(v)||v===0 ? "横ばい" : v>0 ? "上昇" : "低下";
-const statusLabel = s => s==="verified" ? "確認済み" : s==="sample" ? "サンプル" : "未取得";
-const statusClass = s => s==="verified" ? "status-official" : s==="sample" ? "status-sample" : "status-missing";
+const statusLabel = s => s==="verified" ? "確認済み" : s==="sample" ? "サンプル" : s==="master" ? "企業マスター" : "未取得";
+const statusClass = s => s==="verified" ? "status-official" : s==="sample" ? "status-sample" : s==="master" ? "status-master" : "status-missing";
 const calcPct = (value,prev) => isNum(value)&&isNum(prev)&&prev!==0 ? (value-prev)/prev*100 : null;
 const bp = delta => isNum(delta) ? delta*100 : null;
 const getJpYield = tenor => dashboardState.bondYields.japan.yields.find(x=>x.tenor===tenor);
@@ -933,7 +983,11 @@ function renderCompanyFilters(){
 }
 
 function normalizeCompanyText(v){
-  return String(v||"").normalize("NFKC").toLowerCase().replace(/[\s・･.,，．()（）株式会社]/g,"");
+  let s=String(v||"").normalize("NFKC").toLowerCase();
+  s=s.replace(/株式会社|有限会社|合同会社|company|corporation|corp\.?|co\.?\s*,?\s*ltd\.?/g,"");
+  s=s.replace(/ホールディングス/g,"hd").replace(/holdings?/g,"hd");
+  s=s.replace(/[ぁ-ゖ]/g,ch=>String.fromCharCode(ch.charCodeAt(0)+0x60));
+  return s.replace(/[^\p{L}\p{N}]+/gu,"");
 }
 
 function companySearchValues(c){
@@ -975,7 +1029,7 @@ function getCompanySuggestions(){
   return (dashboardState.companyData||[])
     .filter(c=>(!ind||c.industry===ind) && companySearchScore(c,q)<999)
     .sort((a,b)=>companySearchScore(a,q)-companySearchScore(b,q) || String(a.code).localeCompare(String(b.code)))
-    .slice(0,8);
+    .slice(0,12);
 }
 
 function closeCompanySuggestions(){
@@ -1004,7 +1058,7 @@ function renderCompanySuggestions(){
   companyAutocompleteResults=getCompanySuggestions();
   companyAutocompleteIndex=-1;
   if(!companyAutocompleteResults.length){
-    box.innerHTML='<div class="company-no-suggestion">候補がありません。別名・証券コードでも検索できます。</div>';
+    box.innerHTML='<div class="company-no-suggestion">候補がありません。会社名・略称・グループ名・証券コードでも検索できます。</div>';
     box.classList.add("open");input.setAttribute("aria-expanded","true");return;
   }
   box.innerHTML=companyAutocompleteResults.map((c,i)=>{
@@ -1483,7 +1537,7 @@ function setupEvents(){
   $("companySearch").addEventListener("keydown",e=>{
     if(e.key==="ArrowDown"){e.preventDefault();if(!$("companySuggestions").classList.contains("open"))renderCompanySuggestions();moveCompanyAutocomplete(1);}
     else if(e.key==="ArrowUp"){e.preventDefault();if(!$("companySuggestions").classList.contains("open"))renderCompanySuggestions();moveCompanyAutocomplete(-1);}
-    else if(e.key==="Enter" && companyAutocompleteIndex>=0){e.preventDefault();chooseCompanySuggestion(companyAutocompleteResults[companyAutocompleteIndex]);}
+    else if(e.key==="Enter" && companyAutocompleteResults.length){e.preventDefault();chooseCompanySuggestion(companyAutocompleteResults[companyAutocompleteIndex>=0?companyAutocompleteIndex:0]);}
     else if(e.key==="Escape"){closeCompanySuggestions();}
   });
   $("industryFilter").addEventListener("change",()=>{renderCompanies();renderCompanySuggestions();});
