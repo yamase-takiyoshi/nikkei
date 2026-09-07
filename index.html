@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>市況・金融・経済ダッシュボード</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#f4f6f8;--panel:#ffffff;--panel2:#f8fafc;--text:#17202a;--muted:#687386;
+  --line:#d9e0e7;--accent:#164b7a;--accent2:#0d3557;--up:#b42318;--down:#067647;
+  --flat:#667085;--warn:#b54708;--shadow:0 5px 18px rgba(15,23,42,.06);
+  --mono:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+}
+html[data-theme="dark"]{
+  --bg:#0f141a;--panel:#171d24;--panel2:#1d252e;--text:#eef2f6;--muted:#a8b3c1;
+  --line:#33404d;--accent:#78b8f0;--accent2:#a8d4fb;--up:#ff8b83;--down:#79d7a5;
+  --flat:#b5bfca;--warn:#ffbd73;--shadow:0 6px 22px rgba(0,0,0,.2);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans","Yu Gothic UI","Yu Gothic",Meiryo,sans-serif;line-height:1.5}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+a{color:var(--accent)}
+.app{max-width:1680px;margin:auto;padding:14px}
+header{background:linear-gradient(135deg,var(--accent2),var(--accent));color:#fff;border-radius:16px;padding:20px;box-shadow:var(--shadow)}
+.header-top{display:flex;gap:16px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+h1{font-size:clamp(24px,4vw,38px);margin:0 0 8px;letter-spacing:.02em}
+.subtitle{opacity:.9;font-size:14px}
+.meta{display:grid;grid-template-columns:repeat(4,minmax(145px,1fr));gap:8px;margin-top:16px}
+.meta-card{background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);border-radius:10px;padding:10px 12px}
+.meta-label{font-size:11px;opacity:.78}
+.meta-value{font-family:var(--mono);font-weight:700;font-size:13px;margin-top:3px}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+.btn,.file-label{
+  border:1px solid var(--line);background:var(--panel);color:var(--text);
+  border-radius:9px;padding:9px 12px;box-shadow:var(--shadow);font-weight:650
+}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.small{padding:6px 9px;font-size:12px}
+.date-box{display:flex;align-items:center;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:5px 9px}
+.date-box input{border:0;background:transparent;color:var(--text)}
+.note{
+  background:var(--panel);border-left:4px solid var(--accent);border-radius:10px;
+  padding:11px 13px;margin:12px 0;color:var(--muted);box-shadow:var(--shadow);font-size:13px
+}
+.status-sample{color:var(--warn);font-weight:700}
+.status-official{color:var(--down);font-weight:700}
+.status-missing{color:var(--muted);font-style:italic}
+.section{margin-top:18px}
+.section-title{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:0 0 9px}
+.section-title h2{font-size:20px;margin:0}
+.section-title .sub{color:var(--muted);font-size:12px}
+.summary-grid{display:grid;grid-template-columns:repeat(5,minmax(170px,1fr));gap:10px}
+.metric{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:13px;box-shadow:var(--shadow);min-height:122px}
+.metric .name{color:var(--muted);font-size:12px}
+.metric .value{font-family:var(--mono);font-size:22px;font-weight:800;margin:5px 0 7px;white-space:nowrap}
+.metric .delta{font-family:var(--mono);font-size:13px;font-weight:700}
+.metric .foot{margin-top:8px;color:var(--muted);font-size:11px}
+.up{color:var(--up)} .down{color:var(--down)} .flat{color:var(--flat)}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow);overflow:hidden}
+.panel-head{padding:12px 14px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px}
+.panel-head h3{margin:0;font-size:15px}
+.panel-body{padding:12px 14px}
+.table-wrap{overflow:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;min-width:760px}
+th,td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:right;font-size:12px;vertical-align:middle}
+th{position:sticky;top:0;background:var(--panel2);z-index:1;color:var(--muted);font-weight:750;white-space:nowrap;cursor:pointer}
+td:first-child,th:first-child{text-align:left}
+td.mono{font-family:var(--mono)}
+tr:hover td{background:var(--panel2)}
+.badge{display:inline-block;padding:2px 7px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);font-size:10px;white-space:nowrap}
+.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.chart-card{background:var(--panel);border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow);padding:12px}
+.chart-card h3{font-size:14px;margin:0 0 8px}
+.chart-box{height:280px;position:relative}
+.chart-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;pointer-events:none}
+.policy-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.policy-card{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:14px;box-shadow:var(--shadow)}
+.policy-card h3{margin:0 0 10px}
+.kv{display:grid;grid-template-columns:1fr auto;gap:7px 14px;font-size:13px}
+.kv div:nth-child(odd){color:var(--muted)}
+.kv div:nth-child(even){font-family:var(--mono);font-weight:700;text-align:right}
+.comment-list{margin:0;padding-left:20px}
+.comment-list li{margin:6px 0}
+.source-list{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.source-item{border:1px solid var(--line);background:var(--panel2);border-radius:9px;padding:10px;font-size:12px}
+.editor{width:100%;min-height:360px;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:12px;font-family:var(--mono);font-size:11px;line-height:1.45}
+details summary{cursor:pointer;font-weight:700}
+footer{color:var(--muted);font-size:11px;padding:24px 4px 12px}
+.hidden{display:none!important}
+@media(max-width:1100px){
+  .summary-grid{grid-template-columns:repeat(3,1fr)}
+  .chart-grid,.grid-3{grid-template-columns:1fr}
+  .meta{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:760px){
+  .app{padding:8px}
+  header{padding:16px;border-radius:12px}
+  .summary-grid,.grid-2,.policy-grid,.chart-grid{grid-template-columns:1fr}
+  .summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .metric{min-height:112px;padding:11px}
+  .metric .value{font-size:19px}
+  .meta{grid-template-columns:1fr 1fr}
+  .source-list{grid-template-columns:1fr}
+  .chart-box{height:250px}
+}
+@media(max-width:420px){
+  .summary-grid{grid-template-columns:1fr}
+  .meta{grid-template-columns:1fr}
+}
+
+.company-controls{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.company-controls input,.company-controls select{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-width:180px}
+.company-layout{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(340px,.85fr);gap:12px}
+.company-detail{display:grid;gap:12px}
+.company-hero{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap}
+.company-code{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.company-name{font-size:22px;font-weight:800;margin-top:2px}
+.company-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
+.company-desc{color:var(--muted);font-size:13px;margin-top:10px}
+.company-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.company-metric{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:9px}
+.company-metric .k{font-size:10px;color:var(--muted)}
+.company-metric .v{font-family:var(--mono);font-weight:800;margin-top:3px}
+.officer-role{font-weight:700}
+.company-row-select{white-space:nowrap}
+@media(max-width:1000px){.company-layout{grid-template-columns:1fr}.company-metrics{grid-template-columns:repeat(2,1fr)}}
+@media print{
+  body{background:#fff;color:#000}
+  .toolbar,.editor-panel{display:none!important}
+  .panel,.metric,.chart-card,.policy-card{box-shadow:none;break-inside:avoid}
+  header{background:#fff!important;color:#000;border:1px solid #bbb}
+  .meta-card{border:1px solid #ccc;background:#fff}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="header-top">
+    <div>
+      <h1>市況・金融・経済ダッシュボード</h1>
+      <div class="subtitle">日本・米国の市場、物価、金利、銀行預金を一画面で確認</div>
+    </div>
+    <div class="badge" id="dataModeBadge">サンプル＋公式確認値</div>
+  </div>
+  <div class="meta">
+    <div class="meta-card"><div class="meta-label">データ基準日</div><div class="meta-value" id="baseDateLabel">2026-09-04</div></div>
+    <div class="meta-card"><div class="meta-label">東京市場</div><div class="meta-value" id="tokyoDateLabel">2026-09-04</div></div>
+    <div class="meta-card"><div class="meta-label">NY市場</div><div class="meta-value" id="nyDateLabel">2026-09-04</div></div>
+    <div class="meta-card"><div class="meta-label">最終更新（JST）</div><div class="meta-value" id="updatedLabel">2026-09-07 21:30</div></div>
+  </div>
+</header>
+
+<div class="toolbar">
+  <button class="btn primary" id="refreshBtn">再計算・更新</button>
+  <label class="date-box">基準日 <input type="date" id="baseDateInput" value="2026-09-04"></label>
+  <button class="btn" data-range="30">30日</button>
+  <button class="btn" data-range="90">3か月</button>
+  <button class="btn" data-range="365">1年</button>
+  <button class="btn" id="printBtn">印刷</button>
+  <button class="btn" id="csvBtn">CSV出力</button>
+  <button class="btn" id="jsonSaveBtn">JSON保存</button>
+  <label class="file-label">JSON読込<input class="hidden" type="file" id="jsonFileInput" accept=".json,application/json"></label>
+  <button class="btn" id="themeBtn">ダークモード</button>
+</div>
+
+<div class="note">
+  市場値はご指定の2026年9月4日サンプルと確認済み公表値を併用しています。
+  <span class="status-sample">「サンプル」</span>は入力値、
+  <span class="status-official">「確認済み」</span>は公表値、
+  <span class="status-missing">「データ未取得」</span>は推測せず空欄扱いです。
+  「再計算・更新」はこのHTML内のデータを再描画するボタンで、外部サイトを自動取得するものではありません。
+</div>
+
+<section class="section">
+  <div class="section-title"><h2>本日の総合サマリー</h2><div class="sub">上昇▲ / 低下▼ / 横ばい―。金利方向は価値判断を含みません。</div></div>
+  <div class="summary-grid" id="summaryGrid"></div>
+</section>
+
+<section class="section">
+  <div class="section-title"><h2>為替・金利</h2><div class="sub">東京市場・日米債券</div></div>
+  <div class="grid-2">
+    <div class="panel">
+      <div class="panel-head"><h3>為替</h3><span class="badge">東京17時重視</span></div>
+      <div class="table-wrap"><table id="fxTable"></table></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h3>日本の金利</h3><span class="badge">bp併記</span></div>
+      <div class="table-wrap"><table id="jpRateTable"></table></div>
+    </div>
+  </div>
+  <div class="panel" style="margin-top:12px">
+    <div class="panel-head"><h3>米国金利</h3><span class="badge">米財務省公表値を優先</span></div>
+    <div class="table-wrap"><table id="usRateTable"></table></div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-title"><h2>株価・商品</h2><div class="sub">終値・清算値</div></div>
+  <div class="grid-3">
+    <div class="panel"><div class="panel-head"><h3>日本株</h3></div><div class="table-wrap"><table id="jpStockTable"></table></div></div>
+    <div class="panel"><div class="panel-head"><h3>米国株</h3></div><div class="table-wrap"><table id="usStockTable"></table></div></div>
+    <div class="panel"><div class="panel-head"><h3>商品市況</h3></div><div class="table-wrap"><table id="commodityTable"></table></div></div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-title"><h2>物価・インフレ・実質金利</h2><div class="sub">全国CPI / フィッシャー近似</div></div>
+  <div class="grid-2">
+    <div class="panel"><div class="panel-head"><h3>消費者物価指数</h3><span class="badge">2025年基準</span></div><div class="table-wrap"><table id="cpiTable"></table></div></div>
+    <div class="panel"><div class="panel-head"><h3>名目金利・実質金利</h3><span class="badge">概算</span></div><div class="table-wrap"><table id="realRateTable"></table></div></div>
+  </div>
+  <div class="note">実質金利は簡易近似「名目金利 − 総合CPI前年同月比」で計算します。「実質インフレ率」という独自統計は作成しません。</div>
+</section>
+
+<section class="section">
+  <div class="section-title"><h2>銀行金利</h2><div class="sub">都市銀行＋岩手県内銀行</div></div>
+  <div class="grid-2">
+    <div class="panel"><div class="panel-head"><h3>都市銀行</h3></div><div class="table-wrap"><table id="cityBankTable"></table></div></div>
+    <div class="panel"><div class="panel-head"><h3>岩手県の銀行</h3></div><div class="table-wrap"><table id="iwateBankTable"></table></div></div>
+  </div>
+  <div class="panel" style="margin-top:12px">
+    <div class="panel-head"><h3>普通預金金利ランキング</h3><span class="badge">100万円・税引前</span></div>
+    <div class="table-wrap"><table id="bankRankingTable"></table></div>
+  </div>
+</section>
+
+<section class="section" id="companySection">
+  <div class="section-title"><h2>企業情報・四季報風ビュー</h2><div class="sub">公開情報整理用 / 四季報本文の転載ではありません</div></div>
+  <div class="company-controls">
+    <input id="companySearch" type="search" placeholder="証券コード・会社名で検索">
+    <select id="industryFilter"><option value="">全業種</option></select>
+  </div>
+  <div class="company-layout">
+    <div class="panel">
+      <div class="panel-head"><h3>企業一覧・スクリーナー</h3><span class="badge" id="companyCountBadge">0社</span></div>
+      <div class="table-wrap"><table id="companyTable"></table></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h3>企業詳細</h3><span class="badge">役員情報を含む</span></div>
+      <div class="panel-body company-detail" id="companyDetail"></div>
+    </div>
+  </div>
+  <div class="grid-2" style="margin-top:12px">
+    <div class="chart-card"><h3>業績推移</h3><div class="chart-box"><canvas id="companyPerformanceChart"></canvas><div class="chart-empty" id="companyChartEmpty"></div></div></div>
+    <div class="panel"><div class="panel-head"><h3>役員</h3></div><div class="table-wrap"><table id="officerTable"></table></div></div>
+  </div>
+  <div class="note">会社情報はEDINET、有価証券報告書、決算短信、適時開示、各社IR等の公開情報を入力するための欄です。役員は「役職・氏名・就任年・担当」を保持できます。確認できない項目は未取得のままにしてください。</div>
+</section>
+
+<section class="section">
+  <div class="section-title"><h2>日米金融政策比較</h2><div class="sub">政策金利・長期金利・物価</div></div>
+  <div class="policy-grid" id="policyGrid"></div>
+</section>
+
+<section class="section">
+  <div class="section-title"><h2>グラフ</h2><div class="sub">履歴JSONを追加すれば30日・3か月・1年表示に拡張</div></div>
+  <div class="chart-grid">
+    <div class="chart-card"><h3>1. ドル円推移</h3><div class="chart-box"><canvas id="fxChart"></canvas><div class="chart-empty" id="fxEmpty"></div></div></div>
+    <div class="chart-card"><h3>2. 日経平均推移</h3><div class="chart-box"><canvas id="nikkeiChart"></canvas><div class="chart-empty" id="nikkeiEmpty"></div></div></div>
+    <div class="chart-card"><h3>3. 日本10年国債利回り</h3><div class="chart-box"><canvas id="jp10Chart"></canvas><div class="chart-empty" id="jp10Empty"></div></div></div>
+    <div class="chart-card"><h3>4. 米10年国債利回り</h3><div class="chart-box"><canvas id="us10Chart"></canvas><div class="chart-empty" id="us10Empty"></div></div></div>
+    <div class="chart-card"><h3>5. 日米10年金利差</h3><div class="chart-box"><canvas id="spreadChart"></canvas><div class="chart-empty" id="spreadEmpty"></div></div></div>
+    <div class="chart-card"><h3>6. 日本国債イールドカーブ</h3><div class="chart-box"><canvas id="yieldChart"></canvas></div></div>
+    <div class="chart-card"><h3>7. CPI・コア・コアコア</h3><div class="chart-box"><canvas id="cpiChart"></canvas><div class="chart-empty" id="cpiEmpty"></div></div></div>
+    <div class="chart-card"><h3>8. 政策金利とインフレ率</h3><div class="chart-box"><canvas id="policyChart"></canvas></div></div>
+    <div class="chart-card"><h3>9. 銀行普通預金金利比較</h3><div class="chart-box"><canvas id="depositChart"></canvas></div></div>
+    <div class="chart-card"><h3>10. 名目金利と実質金利</h3><div class="chart-box"><canvas id="realChart"></canvas></div></div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="grid-2">
+    <div class="panel">
+      <div class="panel-head"><h3>市況コメント</h3></div>
+      <div class="panel-body"><ul class="comment-list" id="commentList"></ul></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h3>主要スプレッド</h3></div>
+      <div class="panel-body"><div class="kv" id="spreadBox"></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="panel editor-panel">
+    <div class="panel-head"><h3>データ編集（JSON）</h3><button class="btn small" id="applyEditorBtn">JSONを適用</button></div>
+    <div class="panel-body">
+      <details>
+        <summary>開く / 閉じる</summary>
+        <p class="note">この欄のJSONを書き換えて「JSONを適用」を押すと、全表・ランキング・実質金利・グラフが再計算されます。</p>
+        <textarea class="editor" id="jsonEditor" spellcheck="false"></textarea>
+      </details>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-title"><h2>出典・データ状態</h2><div class="sub">取得日と対象日を分離</div></div>
+  <div class="source-list" id="sourceList"></div>
+</section>
+
+<footer>
+  本画面は情報整理用です。企業欄は「会社四季報」本文の転載ではなく、公開情報を整理する独自ビューです。投資判断、融資判断、会計・税務・自治体財政判断では各一次資料を再確認してください。
+  市場休場日は直近営業日値を使用し、取得できない項目は推測しません。
+</footer>
+</div>
+
+<script>
+"use strict";
+
+/* ============================================================
+   データ層
+   - sample: ユーザー指定の2026-09-04初期値
+   - verified: 公表資料で確認した値
+   - missing: 未取得。推測しない
+   ============================================================ */
+
+const marketData = {
+  meta:{
+    baseDate:"2026-09-04",
+    tokyoMarketDate:"2026-09-04",
+    nyMarketDate:"2026-09-04",
+    updatedJST:"2026-09-07 21:30",
+    noteUS:"日本時間9月5日朝＝米国9月4日終値"
+  },
+  fx:[
+    {name:"ドル円〈東京17時〉",value:156.295,display:"156.29～156.30円",prev:157.045,change:-0.75,unit:"円",time:"17:00 JST",source:"日本銀行（ユーザー指定サンプル）",status:"sample"},
+    {name:"ユーロ円〈東京17時〉",value:181.67,display:"181.65～181.69円",prev:182.24,change:-0.57,unit:"円",time:"17:00 JST",source:"日本銀行（ユーザー指定サンプル）",status:"sample"},
+    {name:"ユーロドル",value:null,display:null,prev:null,change:null,unit:"ドル",time:"データ未取得",source:"データ未取得",status:"missing"},
+    {name:"英ポンド円",value:null,display:null,prev:null,change:null,unit:"円",time:"データ未取得",source:"データ未取得",status:"missing"},
+    {name:"豪ドル円",value:null,display:null,prev:null,change:null,unit:"円",time:"データ未取得",source:"データ未取得",status:"missing"}
+  ]
+};
+
+const bondYields = {
+  japan:{
+    policy:{name:"日本銀行 政策金利",value:1.00,prev:1.00,time:"政策決定会合",source:"日本銀行（ユーザー指定サンプル）",status:"sample"},
+    overnight:{name:"無担保コール翌日物",value:null,prev:null,time:"データ未取得",source:"データ未取得",status:"missing"},
+    yields:[
+      {tenor:"2年",years:2,value:1.830,prev:1.835,source:"日本相互証券 JGB Rates",status:"verified"},
+      {tenor:"5年",years:5,value:2.230,prev:2.285,source:"日本相互証券 JGB Rates",status:"verified"},
+      {tenor:"10年",years:10,value:2.900,prev:2.965,source:"日本相互証券 JGB Rates",status:"verified"},
+      {tenor:"20年",years:20,value:3.715,prev:3.810,source:"日本相互証券 JGB Rates",status:"verified"},
+      {tenor:"30年",years:30,value:3.970,prev:4.055,source:"日本相互証券 JGB Rates",status:"verified"},
+      {tenor:"40年",years:40,value:4.030,prev:null,source:"日本相互証券 JGB Rates",status:"verified"}
+    ],
+    time:"2026-09-04"
+  },
+  us:{
+    policy:{name:"FRB政策金利",lower:3.50,upper:3.75,prevLower:3.50,prevUpper:3.75,source:"FRB（ユーザー指定サンプル）",status:"sample"},
+    yields:[
+      {tenor:"2年",years:2,value:4.37,prev:4.34,source:"U.S. Department of the Treasury",status:"verified"},
+      {tenor:"5年",years:5,value:4.54,prev:4.52,source:"U.S. Department of the Treasury",status:"verified"},
+      {tenor:"10年",years:10,value:4.78,prev:4.77,source:"U.S. Department of the Treasury",status:"verified"},
+      {tenor:"30年",years:30,value:5.24,prev:5.25,source:"U.S. Department of the Treasury",status:"verified"}
+    ],
+    time:"2026-09-04"
+  }
+};
+
+const stockData = {
+  japan:[
+    {name:"日経平均株価",value:65020.94,prev:64214.48,change:806.46,ytd:null,source:"岩井コスモ証券（ユーザー指定サンプル）",status:"sample"},
+    {name:"TOPIX",value:4103.23,prev:4102.04,change:1.19,ytd:null,source:"岩井コスモ証券（ユーザー指定サンプル）",status:"sample"},
+    {name:"東証グロース市場250指数",value:null,prev:null,change:null,ytd:null,source:"データ未取得",status:"missing"}
+  ],
+  us:[
+    {name:"NYダウ",value:53414.25,changePct:-0.51,source:"東海東京証券（ユーザー指定サンプル）",status:"sample"},
+    {name:"S&P500",value:7718.60,changePct:-0.38,source:"東海東京証券（ユーザー指定サンプル）",status:"sample"},
+    {name:"NASDAQ総合",value:26506.99,changePct:-0.29,source:"東海東京証券（ユーザー指定サンプル）",status:"sample"}
+  ]
+};
+
+const commodityData = [
+  {name:"WTI原油",value:91.48,unit:"ドル/バレル",change:0.18,contract:"10月限",time:"2026-09-04 清算値",source:"市場資料（ユーザー指定サンプル）",status:"sample"},
+  {name:"Brent原油",value:null,unit:"ドル/バレル",change:null,contract:"データ未取得",time:"データ未取得",source:"データ未取得",status:"missing"},
+  {name:"NY金",value:4476.60,unit:"ドル/トロイオンス",change:-63.30,contract:"12月限",time:"2026-09-04 清算値",source:"市場資料（ユーザー指定サンプル）",status:"sample"},
+  {name:"銀",value:null,unit:"ドル/トロイオンス",change:null,contract:"データ未取得",time:"データ未取得",source:"データ未取得",status:"missing"},
+  {name:"銅",value:null,unit:"ドル/ポンド",change:null,contract:"データ未取得",time:"データ未取得",source:"データ未取得",status:"missing"}
+];
+
+const inflationData = {
+  baseYear:"2025=100",
+  period:"2026-07",
+  releaseDate:"2026-08-21",
+  nextRelease:"2026-09-18",
+  source:"総務省統計局 消費者物価指数",
+  status:"verified",
+  items:[
+    {name:"総合CPI",index:102.0,yoy:1.9,mom:null},
+    {name:"コアCPI（生鮮食品を除く）",index:102.1,yoy:1.8,mom:null},
+    {name:"コアコアCPI（生鮮食品及びエネルギーを除く）",index:102.1,yoy:1.9,mom:null}
+  ]
+};
+
+const bankRates = [
+  {group:"都市銀行",bank:"三菱UFJ銀行",ordinary:0.400,term1:null,term3:null,term5:null,shortPrime:null,effective:"2026-08-03",checked:"2026-09-07",source:"三菱UFJ銀行公式",status:"verified"},
+  {group:"都市銀行",bank:"三井住友銀行",ordinary:0.400,term1:0.500,term3:0.800,term5:1.000,shortPrime:2.375,effective:"2026-08-03",checked:"2026-09-06",source:"三井住友銀行公式",status:"verified"},
+  {group:"都市銀行",bank:"みずほ銀行",ordinary:null,term1:null,term3:null,term5:null,shortPrime:2.375,effective:"2026-08-03",checked:"2026-09-07",source:"みずほ銀行公式",status:"verified"},
+  {group:"都市銀行",bank:"りそな銀行",ordinary:0.400,term1:0.500,term3:0.800,term5:1.000,shortPrime:null,effective:"2026-09-07",checked:"2026-09-07",source:"りそな銀行公式",status:"verified"},
+  {group:"岩手県",bank:"岩手銀行",ordinary:0.400,term1:0.500,term3:0.625,term5:0.725,shortPrime:null,effective:"2026-09-07",checked:"2026-09-07",source:"岩手銀行公式",status:"verified"},
+  {group:"岩手県",bank:"北日本銀行",ordinary:0.400,term1:0.500,term3:0.625,term5:0.725,shortPrime:null,effective:"2026-09-03",checked:"2026-09-07",source:"北日本銀行公式",status:"verified"},
+  {group:"岩手県",bank:"東北銀行",ordinary:null,term1:null,term3:null,term5:null,shortPrime:null,effective:"データ未取得",checked:"2026-09-07",source:"データ未取得",status:"missing"}
+];
+
+/* 企業情報：初期値は架空データ。公開情報に置き換えて利用する */
+const companyData = [
+  {
+    code:"9999", name:"サンプル産業株式会社", industry:"機械", market:"東証プライム（架空）", fiscalYearEnd:"3月",
+    status:"sample", source:"架空データ（UI動作確認用）", updated:"2026-09-07",
+    profile:"産業機械と保守サービスを手掛ける架空企業。会社情報欄の動作確認用サンプルです。",
+    metrics:{sharePrice:2450,marketCapBillion:367.5,per:14.8,pbr:1.42,roe:10.1,dividendYield:2.65,eps:165.5,bps:1725.4},
+    forecasts:{sales:128000,operatingProfit:13500,ordinaryProfit:13900,netIncome:9300},
+    performance:[
+      {period:"2024/3",sales:109500,operatingProfit:9600,ordinaryProfit:9900,netIncome:6500},
+      {period:"2025/3",sales:118200,operatingProfit:11100,ordinaryProfit:11500,netIncome:7600},
+      {period:"2026/3",sales:124600,operatingProfit:12600,ordinaryProfit:13000,netIncome:8500},
+      {period:"2027/3予",sales:128000,operatingProfit:13500,ordinaryProfit:13900,netIncome:9300}
+    ],
+    officers:[
+      {role:"代表取締役社長",name:"山田 太郎",since:"2024",responsibility:"CEO・全社統括"},
+      {role:"代表取締役副社長",name:"佐藤 花子",since:"2025",responsibility:"事業・営業統括"},
+      {role:"取締役専務執行役員",name:"鈴木 一郎",since:"2023",responsibility:"財務・経営企画"},
+      {role:"社外取締役",name:"高橋 美咲",since:"2024",responsibility:"独立役員"},
+      {role:"常勤監査役",name:"伊藤 健",since:"2022",responsibility:"監査"}
+    ]
+  }
+];
+
+/* 履歴は「確認済みデータのみ」。将来、JSONで日次行を追加する */
+const historyData = {
+  fxUSDJPY:[{date:"2026-09-04",value:156.295}],
+  nikkei:[{date:"2026-09-04",value:65020.94}],
+  jp10:[{date:"2026-09-03",value:2.965},{date:"2026-09-04",value:2.900}],
+  us10:[{date:"2026-09-03",value:4.77},{date:"2026-09-04",value:4.78}],
+  spread10:[{date:"2026-09-03",value:4.77-2.965},{date:"2026-09-04",value:4.78-2.900}],
+  cpi:[{date:"2026-07",headline:1.9,core:1.8,corecore:1.9}]
+};
+
+const policyInfo = {
+  japan:{name:"日本銀行",decisionDate:"データ未入力",lastChange:"データ未入力",change:"データ未入力",nextMeeting:"データ未入力"},
+  us:{name:"FRB",decisionDate:"データ未入力",lastChange:"データ未入力",change:"データ未入力",nextMeeting:"データ未入力"}
+};
+
+let dashboardState = {marketData,bondYields,stockData,commodityData,inflationData,bankRates,companyData,historyData,policyInfo};
+let charts = {};
+let currentRange = 30;
+
+const $ = id => document.getElementById(id);
+const isNum = v => typeof v === "number" && Number.isFinite(v);
+const esc = s => String(s ?? "").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
+const fmt = (v,d=2) => isNum(v) ? v.toLocaleString("ja-JP",{minimumFractionDigits:d,maximumFractionDigits:d}) : "データ未取得";
+const fmtPct = (v,d=3) => isNum(v) ? `${v.toFixed(d)}%` : "データ未取得";
+const sign = v => !isNum(v)||v===0 ? "―" : v>0 ? "▲" : "▼";
+const cls = v => !isNum(v)||v===0 ? "flat" : v>0 ? "up" : "down";
+const direction = v => !isNum(v)||v===0 ? "横ばい" : v>0 ? "上昇" : "低下";
+const statusLabel = s => s==="verified" ? "確認済み" : s==="sample" ? "サンプル" : "未取得";
+const statusClass = s => s==="verified" ? "status-official" : s==="sample" ? "status-sample" : "status-missing";
+const calcPct = (value,prev) => isNum(value)&&isNum(prev)&&prev!==0 ? (value-prev)/prev*100 : null;
+const bp = delta => isNum(delta) ? delta*100 : null;
+const getJpYield = tenor => dashboardState.bondYields.japan.yields.find(x=>x.tenor===tenor);
+const getUsYield = tenor => dashboardState.bondYields.us.yields.find(x=>x.tenor===tenor);
+const getHeadlineCPI = () => dashboardState.inflationData.items.find(x=>x.name==="総合CPI")?.yoy ?? null;
+const getBestOrdinary = () => dashboardState.bankRates.filter(x=>isNum(x.ordinary)).sort((a,b)=>b.ordinary-a.ordinary)[0] || null;
+
+function renderMeta(){
+  const m=dashboardState.marketData.meta;
+  $("baseDateLabel").textContent=m.baseDate;
+  $("tokyoDateLabel").textContent=m.tokyoMarketDate;
+  $("nyDateLabel").textContent=m.nyMarketDate;
+  $("updatedLabel").textContent=m.updatedJST;
+  $("baseDateInput").value=m.baseDate;
+}
+
+function summaryItems(){
+  const fx=dashboardState.marketData.fx[0], jp10=getJpYield("10年"), us10=getUsYield("10年");
+  const nikkei=dashboardState.stockData.japan[0], topix=dashboardState.stockData.japan[1];
+  const jpPol=dashboardState.bondYields.japan.policy, usPol=dashboardState.bondYields.us.policy;
+  const cpi=getHeadlineCPI();
+  const wti=dashboardState.commodityData.find(x=>x.name==="WTI原油");
+  const gold=dashboardState.commodityData.find(x=>x.name==="NY金");
+  return [
+    {name:"ドル円",value:fx.display||`${fmt(fx.value,3)}円`,delta:fx.change,deltaText:isNum(fx.change)?`${sign(fx.change)} ${fmt(Math.abs(fx.change),2)}円`:"データ未取得",foot:"東京17時 / サンプル"},
+    {name:"日経平均",value:isNum(nikkei.value)?`${fmt(nikkei.value,2)}円`:"データ未取得",delta:nikkei.change,deltaText:isNum(nikkei.change)?`${sign(nikkei.change)} ${fmt(Math.abs(nikkei.change),2)}円 (${fmt(calcPct(nikkei.value,nikkei.prev),2)}%)`:"データ未取得",foot:"終値 / サンプル"},
+    {name:"TOPIX",value:fmt(topix.value,2),delta:topix.change,deltaText:isNum(topix.change)?`${sign(topix.change)} ${fmt(Math.abs(topix.change),2)} (${fmt(calcPct(topix.value,topix.prev),2)}%)`:"データ未取得",foot:"終値 / サンプル"},
+    {name:"日本10年国債",value:fmtPct(jp10?.value,3),delta:isNum(jp10?.value)&&isNum(jp10?.prev)?jp10.value-jp10.prev:null,deltaText:isNum(jp10?.value)&&isNum(jp10?.prev)?`${sign(jp10.value-jp10.prev)} ${fmt(Math.abs(jp10.value-jp10.prev),3)}pt / ${fmt(Math.abs(bp(jp10.value-jp10.prev)),1)}bp`:"データ未取得",foot:"方向表示は価値判断なし"},
+    {name:"米10年国債",value:fmtPct(us10?.value,2),delta:isNum(us10?.value)&&isNum(us10?.prev)?us10.value-us10.prev:null,deltaText:isNum(us10?.value)&&isNum(us10?.prev)?`${sign(us10.value-us10.prev)} ${fmt(Math.abs(us10.value-us10.prev),2)}pt`:"データ未取得",foot:"U.S. Treasury"},
+    {name:"日本政策金利",value:isNum(jpPol.value)?`${jpPol.value.toFixed(2)}%程度`:"データ未取得",delta:isNum(jpPol.value)&&isNum(jpPol.prev)?jpPol.value-jpPol.prev:null,deltaText:"― 変更なし",foot:"ユーザー指定サンプル"},
+    {name:"米政策金利",value:isNum(usPol.lower)&&isNum(usPol.upper)?`${usPol.lower.toFixed(2)}～${usPol.upper.toFixed(2)}%`:"データ未取得",delta:0,deltaText:"― 変更なし",foot:"ユーザー指定サンプル"},
+    {name:"日本CPI",value:isNum(cpi)?`${cpi.toFixed(1)}%`:"データ未取得",delta:null,deltaText:"前年同月比",foot:`${dashboardState.inflationData.period} / 確認済み`},
+    {name:"WTI原油",value:isNum(wti?.value)?`$${fmt(wti.value,2)}`:"データ未取得",delta:wti?.change,deltaText:isNum(wti?.change)?`${sign(wti.change)} $${fmt(Math.abs(wti.change),2)}`:"データ未取得",foot:wti?.contract||""},
+    {name:"NY金",value:isNum(gold?.value)?`$${fmt(gold.value,2)}`:"データ未取得",delta:gold?.change,deltaText:isNum(gold?.change)?`${sign(gold.change)} $${fmt(Math.abs(gold.change),2)}`:"データ未取得",foot:gold?.contract||""}
+  ];
+}
+
+function renderSummary(){
+  $("summaryGrid").innerHTML=summaryItems().map(x=>`
+    <div class="metric">
+      <div class="name">${esc(x.name)}</div>
+      <div class="value">${esc(x.value)}</div>
+      <div class="delta ${cls(x.delta)}">${esc(x.deltaText)}</div>
+      <div class="foot">${esc(x.foot)}</div>
+    </div>`).join("");
+}
+
+function makeTable(id,headers,rows){
+  const t=$(id);
+  t.innerHTML=`<thead><tr>${headers.map((h,i)=>`<th data-col="${i}">${esc(h)}</th>`).join("")}</tr></thead>
+  <tbody>${rows.map(r=>`<tr>${r.map((c,i)=>`<td class="${i>0?"mono":""}">${c}</td>`).join("")}</tr>`).join("")}</tbody>`;
+  t.querySelectorAll("th").forEach(th=>th.addEventListener("click",()=>sortTable(t,Number(th.dataset.col))));
+}
+
+function sortTable(table,col){
+  const body=table.tBodies[0]; if(!body)return;
+  const rows=[...body.rows];
+  const asc=table.dataset.sortCol!=col || table.dataset.sortDir!=="asc";
+  rows.sort((a,b)=>{
+    const A=a.cells[col]?.innerText.replace(/[,％%$円]/g,"").trim()??"";
+    const B=b.cells[col]?.innerText.replace(/[,％%$円]/g,"").trim()??"";
+    const na=parseFloat(A), nb=parseFloat(B);
+    const cmp=Number.isNaN(na)||Number.isNaN(nb)?A.localeCompare(B,"ja"):na-nb;
+    return asc?cmp:-cmp;
+  });
+  rows.forEach(r=>body.appendChild(r));
+  table.dataset.sortCol=col; table.dataset.sortDir=asc?"asc":"desc";
+}
+
+function renderFX(){
+  const rows=dashboardState.marketData.fx.map(x=>{
+    const pct=calcPct(x.value,x.prev);
+    return [
+      `${esc(x.name)}<br><span class="${statusClass(x.status)}">${statusLabel(x.status)}</span>`,
+      esc(x.display ?? (isNum(x.value)?fmt(x.value,4):"データ未取得")),
+      isNum(x.prev)?fmt(x.prev,4):"データ未取得",
+      isNum(x.change)?`<span class="${cls(x.change)}">${sign(x.change)} ${fmt(Math.abs(x.change),4)}</span>`:"データ未取得",
+      isNum(pct)?`${fmt(pct,3)}%`:"データ未取得",
+      esc(x.time),
+      esc(x.source)
+    ];
+  });
+  makeTable("fxTable",["通貨","現在値","前営業日","変化","変化率","基準時刻","出典"],rows);
+}
+
+function renderJPRates(){
+  const jp=dashboardState.bondYields.japan;
+  const rows=[
+    [jp.policy.name,fmtPct(jp.policy.value,2),fmtPct(jp.policy.prev,2),isNum(jp.policy.value)&&isNum(jp.policy.prev)?`${fmt(jp.policy.value-jp.policy.prev,3)}pt / ${fmt(bp(jp.policy.value-jp.policy.prev),1)}bp`:"データ未取得",jp.policy.time,jp.policy.source],
+    [jp.overnight.name,fmtPct(jp.overnight.value,3),fmtPct(jp.overnight.prev,3),"データ未取得",jp.overnight.time,jp.overnight.source],
+    ...jp.yields.map(y=>{
+      const d=isNum(y.value)&&isNum(y.prev)?y.value-y.prev:null;
+      return [`新発${y.tenor}国債利回り`,fmtPct(y.value,3),fmtPct(y.prev,3),isNum(d)?`<span class="${cls(d)}">${sign(d)} ${fmt(Math.abs(d),3)}pt / ${fmt(Math.abs(bp(d)),1)}bp</span>`:"データ未取得",jp.time,y.source];
+    })
+  ];
+  makeTable("jpRateTable",["指標","現在値","前営業日","前日比","基準時刻","出典"],rows);
+}
+
+function renderUSRates(){
+  const us=dashboardState.bondYields.us;
+  const p=us.policy;
+  const rows=[
+    [p.name,isNum(p.lower)&&isNum(p.upper)?`${p.lower.toFixed(2)}～${p.upper.toFixed(2)}%`:"データ未取得","—","変更なし",dashboardState.marketData.meta.nyMarketDate,p.source],
+    ...us.yields.map(y=>{
+      const d=isNum(y.value)&&isNum(y.prev)?y.value-y.prev:null;
+      return [`米${y.tenor}国債`,fmtPct(y.value,2),fmtPct(y.prev,2),isNum(d)?`<span class="${cls(d)}">${sign(d)} ${fmt(Math.abs(d),2)}pt / ${fmt(Math.abs(bp(d)),1)}bp</span>`:"データ未取得",us.time,y.source];
+    })
+  ];
+  makeTable("usRateTable",["指標","現在値","前営業日","前日比","基準日","出典"],rows);
+}
+
+function renderStocks(){
+  makeTable("jpStockTable",["指数","終値","前日終値","前日比","騰落率","年初来","出典"],
+    dashboardState.stockData.japan.map(x=>[
+      `${esc(x.name)}<br><span class="${statusClass(x.status)}">${statusLabel(x.status)}</span>`,
+      isNum(x.value)?fmt(x.value,2):"データ未取得",
+      isNum(x.prev)?fmt(x.prev,2):"データ未取得",
+      isNum(x.change)?`<span class="${cls(x.change)}">${sign(x.change)} ${fmt(Math.abs(x.change),2)}</span>`:"データ未取得",
+      isNum(x.value)&&isNum(x.prev)?`${fmt(calcPct(x.value,x.prev),2)}%`:"データ未取得",
+      isNum(x.ytd)?`${fmt(x.ytd,2)}%`:"データ未取得",
+      esc(x.source)
+    ])
+  );
+  makeTable("usStockTable",["指数","終値","前日比","騰落率","基準日","出典"],
+    dashboardState.stockData.us.map(x=>[
+      `${esc(x.name)}<br><span class="${statusClass(x.status)}">${statusLabel(x.status)}</span>`,
+      isNum(x.value)?fmt(x.value,2):"データ未取得",
+      isNum(x.changePct)?`<span class="${cls(x.changePct)}">${sign(x.changePct)}</span>`:"データ未取得",
+      isNum(x.changePct)?`<span class="${cls(x.changePct)}">${fmt(x.changePct,2)}%</span>`:"データ未取得",
+      dashboardState.marketData.meta.nyMarketDate,
+      esc(x.source)
+    ])
+  );
+}
+
+function renderCommodities(){
+  makeTable("commodityTable",["商品","価格","単位","前日比","騰落率","限月","基準日時","出典"],
+    dashboardState.commodityData.map(x=>{
+      const prev=isNum(x.value)&&isNum(x.change)?x.value-x.change:null;
+      const pct=isNum(prev)&&prev!==0?x.change/prev*100:null;
+      return [
+        `${esc(x.name)}<br><span class="${statusClass(x.status)}">${statusLabel(x.status)}</span>`,
+        isNum(x.value)?fmt(x.value,2):"データ未取得",
+        esc(x.unit),
+        isNum(x.change)?`<span class="${cls(x.change)}">${sign(x.change)} ${fmt(Math.abs(x.change),2)}</span>`:"データ未取得",
+        isNum(pct)?`${fmt(pct,2)}%`:"データ未取得",
+        esc(x.contract),esc(x.time),esc(x.source)
+      ];
+    })
+  );
+}
+
+function renderCPI(){
+  const d=dashboardState.inflationData;
+  makeTable("cpiTable",["指標","指数","前年同月比","前月比","対象年月","公表日","次回予定","出典"],
+    d.items.map(x=>[
+      esc(x.name),fmt(x.index,1),isNum(x.yoy)?`${fmt(x.yoy,1)}%`:"データ未取得",
+      isNum(x.mom)?`${fmt(x.mom,1)}%`:"データ未取得",esc(d.period),esc(d.releaseDate),esc(d.nextRelease),
+      `${esc(d.source)}<br><span class="${statusClass(d.status)}">${statusLabel(d.status)}</span>`
+    ])
+  );
+}
+
+function realRateRows(){
+  const infl=getHeadlineCPI(), jp10=getJpYield("10年"), best=getBestOrdinary();
+  const rows=[
+    {name:"日本政策金利",nominal:dashboardState.bondYields.japan.policy.value,inflation:infl},
+    {name:"日本10年国債",nominal:jp10?.value,inflation:infl},
+    {name:`普通預金（${best?.bank??"未取得"}）`,nominal:best?.ordinary,inflation:infl}
+  ];
+  return rows.map(x=>({...x,real:isNum(x.nominal)&&isNum(x.inflation)?x.nominal-x.inflation:null}));
+}
+
+function renderRealRates(){
+  makeTable("realRateTable",["項目","名目金利","使用CPI","実質金利（概算）","判定"],
+    realRateRows().map(x=>[
+      esc(x.name),fmtPct(x.nominal,3),fmtPct(x.inflation,1),
+      isNum(x.real)?`<span class="${cls(x.real)}">${fmtPct(x.real,3)}</span>`:"データ未取得",
+      isNum(x.real)?(x.real<0?"購買力ベースでマイナス":"購買力ベースで非マイナス"):"データ未取得"
+    ])
+  );
+}
+
+function renderBanks(){
+  const bankRows = group => dashboardState.bankRates.filter(x=>x.group===group).map(x=>[
+    `${esc(x.bank)}<br><span class="${statusClass(x.status)}">${statusLabel(x.status)}</span>`,
+    fmtPct(x.ordinary,3),fmtPct(x.term1,3),fmtPct(x.term3,3),fmtPct(x.term5,3),fmtPct(x.shortPrime,3),
+    esc(x.effective),esc(x.checked),esc(x.source)
+  ]);
+  const heads=["銀行名","普通預金","1年定期","3年定期","5年定期","短プラ","適用開始日","確認日","出典"];
+  makeTable("cityBankTable",heads,bankRows("都市銀行"));
+  makeTable("iwateBankTable",heads,bankRows("岩手県"));
+  const ranked=dashboardState.bankRates.filter(x=>isNum(x.ordinary)).sort((a,b)=>b.ordinary-a.ordinary||a.bank.localeCompare(b.bank,"ja"));
+  makeTable("bankRankingTable",["順位","銀行","普通預金金利","100万円の税引前利息","総合CPI","実質預金金利"],
+    ranked.map((x,i)=>{
+      const cpi=getHeadlineCPI(), real=isNum(cpi)?x.ordinary-cpi:null;
+      return [
+        String(i+1),esc(x.bank),fmtPct(x.ordinary,3),`${Math.round(1000000*x.ordinary/100).toLocaleString("ja-JP")}円`,
+        fmtPct(cpi,1),isNum(real)?`<span class="${cls(real)}">${fmtPct(real,3)}</span>`:"データ未取得"
+      ];
+    })
+  );
+}
+
+
+let selectedCompanyCode = null;
+
+function companyFmtMoney(v){ return isNum(v) ? `${fmt(v,0)}百万円` : "データ未取得"; }
+function companyFmtMetric(v,suffix=""){ return isNum(v) ? `${fmt(v,2)}${suffix}` : "データ未取得"; }
+
+function renderCompanyFilters(){
+  const select=$("industryFilter");
+  const current=select.value;
+  const industries=[...new Set((dashboardState.companyData||[]).map(x=>x.industry).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"ja"));
+  select.innerHTML='<option value="">全業種</option>'+industries.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join("");
+  if(industries.includes(current))select.value=current;
+}
+
+function filteredCompanies(){
+  const q=($("companySearch")?.value||"").trim().toLowerCase();
+  const ind=$("industryFilter")?.value||"";
+  return (dashboardState.companyData||[]).filter(c=>{
+    const hit=!q || String(c.code||"").toLowerCase().includes(q) || String(c.name||"").toLowerCase().includes(q);
+    return hit && (!ind || c.industry===ind);
+  });
+}
+
+function renderCompanies(){
+  renderCompanyFilters();
+  const list=filteredCompanies();
+  $("companyCountBadge").textContent=`${list.length}社`;
+  makeTable("companyTable",["コード","会社名","業種","株価","PER","PBR","ROE","配当利回り","売上予想","営業益予想","詳細"],
+    list.map(c=>[
+      esc(c.code),`${esc(c.name)}<br><span class="${statusClass(c.status)}">${statusLabel(c.status)}</span>`,esc(c.industry||"未取得"),
+      isNum(c.metrics?.sharePrice)?`${fmt(c.metrics.sharePrice,0)}円`:"データ未取得",
+      isNum(c.metrics?.per)?`${fmt(c.metrics.per,2)}倍`:"データ未取得",
+      isNum(c.metrics?.pbr)?`${fmt(c.metrics.pbr,2)}倍`:"データ未取得",
+      isNum(c.metrics?.roe)?`${fmt(c.metrics.roe,2)}%`:"データ未取得",
+      isNum(c.metrics?.dividendYield)?`${fmt(c.metrics.dividendYield,2)}%`:"データ未取得",
+      companyFmtMoney(c.forecasts?.sales),companyFmtMoney(c.forecasts?.operatingProfit),
+      `<button class="btn small company-row-select" data-company-code="${esc(c.code)}">表示</button>`
+    ])
+  );
+  document.querySelectorAll("[data-company-code]").forEach(b=>b.addEventListener("click",()=>{
+    selectedCompanyCode=b.dataset.companyCode;renderCompanyDetail();
+  }));
+  if(!selectedCompanyCode || !(dashboardState.companyData||[]).some(c=>c.code===selectedCompanyCode)) selectedCompanyCode=list[0]?.code || dashboardState.companyData?.[0]?.code || null;
+  renderCompanyDetail();
+}
+
+function renderCompanyDetail(){
+  const c=(dashboardState.companyData||[]).find(x=>x.code===selectedCompanyCode) || (dashboardState.companyData||[])[0];
+  if(!c){
+    $("companyDetail").innerHTML='<div class="status-missing">企業データ未登録</div>';
+    makeTable("officerTable",["役職","氏名","就任年","担当"],[]);
+    if(charts.companyPerformanceChart){charts.companyPerformanceChart.destroy();delete charts.companyPerformanceChart;}
+    $("companyChartEmpty").textContent="企業データ未登録";
+    return;
+  }
+  const m=c.metrics||{}, f=c.forecasts||{};
+  $("companyDetail").innerHTML=`
+    <div class="company-hero">
+      <div><div class="company-code">${esc(c.code)} / ${esc(c.market||"市場未取得")}</div><div class="company-name">${esc(c.name)}</div>
+      <div class="company-tags"><span class="badge">${esc(c.industry||"業種未取得")}</span><span class="badge">決算 ${esc(c.fiscalYearEnd||"未取得")}</span><span class="${statusClass(c.status)}">${statusLabel(c.status)}</span></div></div>
+      <div class="company-code">更新 ${esc(c.updated||"未取得")}</div>
+    </div>
+    <div class="company-desc">${esc(c.profile||"会社概要未取得")}</div>
+    <div class="company-metrics">
+      <div class="company-metric"><div class="k">株価</div><div class="v">${isNum(m.sharePrice)?fmt(m.sharePrice,0)+"円":"未取得"}</div></div>
+      <div class="company-metric"><div class="k">時価総額</div><div class="v">${isNum(m.marketCapBillion)?fmt(m.marketCapBillion,1)+"億円":"未取得"}</div></div>
+      <div class="company-metric"><div class="k">PER</div><div class="v">${isNum(m.per)?fmt(m.per,2)+"倍":"未取得"}</div></div>
+      <div class="company-metric"><div class="k">PBR</div><div class="v">${isNum(m.pbr)?fmt(m.pbr,2)+"倍":"未取得"}</div></div>
+      <div class="company-metric"><div class="k">ROE</div><div class="v">${isNum(m.roe)?fmt(m.roe,2)+"%":"未取得"}</div></div>
+      <div class="company-metric"><div class="k">配当利回り</div><div class="v">${isNum(m.dividendYield)?fmt(m.dividendYield,2)+"%":"未取得"}</div></div>
+      <div class="company-metric"><div class="k">EPS</div><div class="v">${isNum(m.eps)?fmt(m.eps,2)+"円":"未取得"}</div></div>
+      <div class="company-metric"><div class="k">BPS</div><div class="v">${isNum(m.bps)?fmt(m.bps,2)+"円":"未取得"}</div></div>
+    </div>
+    <div class="kv">
+      <div>売上高予想</div><div>${companyFmtMoney(f.sales)}</div>
+      <div>営業利益予想</div><div>${companyFmtMoney(f.operatingProfit)}</div>
+      <div>経常利益予想</div><div>${companyFmtMoney(f.ordinaryProfit)}</div>
+      <div>純利益予想</div><div>${companyFmtMoney(f.netIncome)}</div>
+      <div>出典</div><div>${esc(c.source||"未取得")}</div>
+    </div>`;
+
+  makeTable("officerTable",["役職","氏名","就任年","担当"],(c.officers||[]).map(o=>[
+    `<span class="officer-role">${esc(o.role||"未取得")}</span>`,esc(o.name||"未取得"),esc(o.since||"未取得"),esc(o.responsibility||"未取得")
+  ]));
+
+  if(charts.companyPerformanceChart) charts.companyPerformanceChart.destroy();
+  const perf=Array.isArray(c.performance)?c.performance:[];
+  $("companyChartEmpty").textContent=perf.length<2?"業績履歴を2期以上入力してください。":"";
+  charts.companyPerformanceChart=new Chart($("companyPerformanceChart"),{
+    type:"line",
+    data:{labels:perf.map(x=>x.period),datasets:[
+      {label:"売上高",data:perf.map(x=>x.sales),borderWidth:2,tension:.2,yAxisID:"y"},
+      {label:"営業利益",data:perf.map(x=>x.operatingProfit),borderWidth:2,tension:.2,yAxisID:"y1"},
+      {label:"純利益",data:perf.map(x=>x.netIncome),borderWidth:2,tension:.2,yAxisID:"y1"}
+    ]},
+    options:{...chartDefaults(),scales:{
+      x:chartDefaults().scales.x,
+      y:{...chartDefaults().scales.y,position:"left",title:{display:true,text:"売上高（百万円）"}},
+      y1:{...chartDefaults().scales.y,position:"right",grid:{drawOnChartArea:false},title:{display:true,text:"利益（百万円）"}}
+    }}
+  });
+}
+
+function renderPolicy(){
+  const jp10=getJpYield("10年"), us10=getUsYield("10年"), cpi=getHeadlineCPI();
+  const jp=dashboardState.bondYields.japan.policy, us=dashboardState.bondYields.us.policy;
+  const usMid=isNum(us.lower)&&isNum(us.upper)?(us.lower+us.upper)/2:null;
+  const cards=[
+    {title:"日本銀行",rate:isNum(jp.value)?`${jp.value.toFixed(2)}%程度`:"データ未取得",decision:dashboardState.policyInfo.japan.decisionDate,last:dashboardState.policyInfo.japan.lastChange,change:dashboardState.policyInfo.japan.change,next:dashboardState.policyInfo.japan.nextMeeting,bond:fmtPct(jp10?.value,3),cpi:fmtPct(cpi,1),real:isNum(jp.value)&&isNum(cpi)?fmtPct(jp.value-cpi,2):"データ未取得"},
+    {title:"FRB",rate:isNum(us.lower)&&isNum(us.upper)?`${us.lower.toFixed(2)}～${us.upper.toFixed(2)}%`:"データ未取得",decision:dashboardState.policyInfo.us.decisionDate,last:dashboardState.policyInfo.us.lastChange,change:dashboardState.policyInfo.us.change,next:dashboardState.policyInfo.us.nextMeeting,bond:fmtPct(us10?.value,2),cpi:"米CPIデータ未入力",real:isNum(usMid)?"米CPI入力後に計算":"データ未取得"}
+  ];
+  $("policyGrid").innerHTML=cards.map(c=>`
+    <div class="policy-card"><h3>${esc(c.title)}</h3>
+      <div class="kv">
+        <div>政策金利</div><div>${esc(c.rate)}</div>
+        <div>直近の政策決定日</div><div>${esc(c.decision)}</div>
+        <div>前回変更日</div><div>${esc(c.last)}</div>
+        <div>変更幅</div><div>${esc(c.change)}</div>
+        <div>次回会合予定</div><div>${esc(c.next)}</div>
+        <div>10年国債利回り</div><div>${esc(c.bond)}</div>
+        <div>CPI</div><div>${esc(c.cpi)}</div>
+        <div>実質政策金利</div><div>${esc(c.real)}</div>
+      </div>
+    </div>`).join("");
+}
+
+function renderSpreads(){
+  const jp2=getJpYield("2年"), jp5=getJpYield("5年"), jp10=getJpYield("10年"), jp30=getJpYield("30年");
+  const us2=getUsYield("2年"), us10=getUsYield("10年");
+  const vals=[
+    ["日本 10年－2年",isNum(jp10?.value)&&isNum(jp2?.value)?jp10.value-jp2.value:null],
+    ["日本 10年－5年",isNum(jp10?.value)&&isNum(jp5?.value)?jp10.value-jp5.value:null],
+    ["日本 30年－10年",isNum(jp30?.value)&&isNum(jp10?.value)?jp30.value-jp10.value:null],
+    ["米国 10年－2年",isNum(us10?.value)&&isNum(us2?.value)?us10.value-us2.value:null],
+    ["日米10年金利差（米－日）",isNum(us10?.value)&&isNum(jp10?.value)?us10.value-jp10.value:null]
+  ];
+  $("spreadBox").innerHTML=vals.map(([k,v])=>`<div>${esc(k)}</div><div>${isNum(v)?`${v.toFixed(3)}pt / ${(v*100).toFixed(1)}bp`:"データ未取得"}</div>`).join("");
+}
+
+function renderComments(){
+  const fx=dashboardState.marketData.fx[0], jp10=getJpYield("10年"), us10=getUsYield("10年");
+  const nikkei=dashboardState.stockData.japan[0], best=getBestOrdinary(), cpi=getHeadlineCPI();
+  const comments=[];
+  if(isNum(fx.change)) comments.push(`ドル円は前営業日比${Math.abs(fx.change).toFixed(2)}円の${fx.change<0?"円高":"円安"}方向。`);
+  if(isNum(jp10?.value)&&isNum(jp10?.prev)){
+    const d=jp10.value-jp10.prev;
+    comments.push(`日本10年国債利回りは前営業日比${Math.abs(bp(d)).toFixed(1)}bp${d<0?"低下":"上昇"}し、${jp10.value.toFixed(3)}%。`);
+  }
+  if(isNum(nikkei.change)) comments.push(`日経平均は前営業日比${Math.abs(nikkei.change).toLocaleString("ja-JP",{minimumFractionDigits:2})}円${nikkei.change>=0?"上昇":"下落"}。`);
+  if(isNum(jp10?.value)&&isNum(us10?.value)) comments.push(`日米10年国債利回り差（米国－日本）は${(us10.value-jp10.value).toFixed(3)}ポイント。`);
+  if(best&&isNum(cpi)){
+    const real=best.ordinary-cpi;
+    comments.push(`${best.bank}の普通預金金利${best.ordinary.toFixed(3)}%に対し、総合CPI${cpi.toFixed(1)}%を差し引いた実質預金金利の概算は${real.toFixed(3)}%。`);
+  }
+  $("commentList").innerHTML=comments.map(x=>`<li>${esc(x)}</li>`).join("");
+}
+
+function renderSources(){
+  const sources=[
+    {name:"総務省統計局",detail:`全国CPI ${dashboardState.inflationData.period} / 公表 ${dashboardState.inflationData.releaseDate}`,status:"verified"},
+    {name:"日本相互証券",detail:`JGB Rates ${dashboardState.bondYields.japan.time}`,status:"verified"},
+    {name:"U.S. Department of the Treasury",detail:`Daily Treasury Par Yield Curve Rates ${dashboardState.bondYields.us.time}`,status:"verified"},
+    {name:"岩手銀行",detail:"円預金金利 / 2026-09-07適用",status:"verified"},
+    {name:"北日本銀行",detail:"円預金金利 / 2026-09-03更新",status:"verified"},
+    {name:"三井住友銀行",detail:"円預金金利 / 短期プライムレート",status:"verified"},
+    {name:"りそな銀行",detail:"円預金金利 / 2026-09-07現在",status:"verified"},
+    {name:"三菱UFJ銀行",detail:"普通預金 0.400% / 2026-08-03改定",status:"verified"},
+    {name:"みずほ銀行",detail:"短期プライムレート 2.375% / 2026-08-03適用",status:"verified"},
+    {name:"ユーザー指定初期値",detail:"為替・株価・政策金利・WTI・NY金",status:"sample"},
+    {name:"企業情報",detail:"EDINET・決算短信・適時開示・各社IR等の公開情報入力用。初期企業は架空サンプル",status:"sample"},
+    {name:"東北銀行ほか未確認項目",detail:"推測せず「データ未取得」と表示",status:"missing"}
+  ];
+  $("sourceList").innerHTML=sources.map(s=>`
+    <div class="source-item"><strong>${esc(s.name)}</strong><br>${esc(s.detail)}<br>
+    <span class="${statusClass(s.status)}">${statusLabel(s.status)}</span></div>`).join("");
+}
+
+function chartDefaults(){
+  return {
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{labels:{color:getComputedStyle(document.documentElement).getPropertyValue("--text").trim(),boxWidth:12}}},
+    scales:{
+      x:{ticks:{color:getComputedStyle(document.documentElement).getPropertyValue("--muted").trim()},grid:{color:getComputedStyle(document.documentElement).getPropertyValue("--line").trim()}},
+      y:{ticks:{color:getComputedStyle(document.documentElement).getPropertyValue("--muted").trim()},grid:{color:getComputedStyle(document.documentElement).getPropertyValue("--line").trim()}}
+    }
+  };
+}
+
+function destroyCharts(){Object.values(charts).forEach(c=>c?.destroy());charts={};}
+
+function filterHistory(arr){
+  if(!Array.isArray(arr))return[];
+  const base=new Date(`${dashboardState.marketData.meta.baseDate}T00:00:00`);
+  const min=new Date(base); min.setDate(min.getDate()-currentRange);
+  return arr.filter(x=>{
+    const d=new Date(`${x.date.length===7?x.date+"-01":x.date}T00:00:00`);
+    return Number.isNaN(d.getTime()) || d>=min;
+  });
+}
+
+function lineChart(canvasId,emptyId,label,arr,valueKey="value"){
+  const data=filterHistory(arr);
+  if(emptyId) $(emptyId).textContent=data.length<2?"履歴が少ないため、JSONへ日次データを追加してください。":"";
+  charts[canvasId]=new Chart($(canvasId),{
+    type:"line",
+    data:{labels:data.map(x=>x.date),datasets:[{label,data:data.map(x=>x[valueKey]),borderWidth:2,tension:.2,pointRadius:3}]},
+    options:chartDefaults()
+  });
+}
+
+function renderCharts(){
+  destroyCharts();
+  const h=dashboardState.historyData;
+  lineChart("fxChart","fxEmpty","ドル円",h.fxUSDJPY);
+  lineChart("nikkeiChart","nikkeiEmpty","日経平均",h.nikkei);
+  lineChart("jp10Chart","jp10Empty","日本10年",h.jp10);
+  lineChart("us10Chart","us10Empty","米10年",h.us10);
+  lineChart("spreadChart","spreadEmpty","日米10年金利差",h.spread10);
+
+  const jp=dashboardState.bondYields.japan.yields;
+  charts.yieldChart=new Chart($("yieldChart"),{
+    type:"line",
+    data:{
+      labels:jp.map(x=>x.tenor),
+      datasets:[
+        {label:"当日",data:jp.map(x=>x.value),borderWidth:2,tension:.25,pointRadius:4},
+        {label:"前営業日",data:jp.map(x=>x.prev),borderWidth:2,borderDash:[6,4],tension:.25,pointRadius:3}
+      ]
+    },options:chartDefaults()
+  });
+
+  const c=filterHistory(h.cpi);
+  $("cpiEmpty").textContent=c.length<2?"CPI履歴は現在1か月分。JSONで月次履歴を追加できます。":"";
+  charts.cpiChart=new Chart($("cpiChart"),{
+    type:"line",
+    data:{labels:c.map(x=>x.date),datasets:[
+      {label:"総合",data:c.map(x=>x.headline),borderWidth:2},
+      {label:"コア",data:c.map(x=>x.core),borderWidth:2},
+      {label:"コアコア",data:c.map(x=>x.corecore),borderWidth:2}
+    ]},options:chartDefaults()
+  });
+
+  const cpi=getHeadlineCPI(), jpPol=dashboardState.bondYields.japan.policy.value;
+  charts.policyChart=new Chart($("policyChart"),{
+    type:"bar",
+    data:{labels:["日本政策金利","総合CPI"],datasets:[{label:"%",data:[jpPol,cpi]}]},
+    options:chartDefaults()
+  });
+
+  const banks=dashboardState.bankRates.filter(x=>isNum(x.ordinary));
+  charts.depositChart=new Chart($("depositChart"),{
+    type:"bar",
+    data:{labels:banks.map(x=>x.bank),datasets:[{label:"普通預金 %",data:banks.map(x=>x.ordinary)}]},
+    options:chartDefaults()
+  });
+
+  const rr=realRateRows();
+  charts.realChart=new Chart($("realChart"),{
+    type:"bar",
+    data:{labels:rr.map(x=>x.name),datasets:[
+      {label:"名目金利",data:rr.map(x=>x.nominal)},
+      {label:"実質金利",data:rr.map(x=>x.real)}
+    ]},options:chartDefaults()
+  });
+}
+
+function renderEditor(){
+  $("jsonEditor").value=JSON.stringify(dashboardState,null,2);
+}
+
+function renderAll(updateEditor=true){
+  renderMeta();renderSummary();renderFX();renderJPRates();renderUSRates();renderStocks();
+  renderCommodities();renderCPI();renderRealRates();renderBanks();renderPolicy();
+  renderSpreads();renderComments();renderSources();renderCharts();renderCompanies();
+  if(updateEditor)renderEditor();
+}
+
+function exportCSV(){
+  const tables=[...document.querySelectorAll("table")];
+  const lines=[];
+  tables.forEach(t=>{
+    const title=t.closest(".panel")?.querySelector("h3")?.innerText||t.id;
+    lines.push(`"${title.replaceAll('"','""')}"`);
+    [...t.rows].forEach(r=>lines.push([...r.cells].map(c=>`"${c.innerText.replaceAll('"','""').replace(/\n/g," ")}"`).join(",")));
+    lines.push("");
+  });
+  downloadBlob(lines.join("\n"),"market_dashboard.csv","text/csv;charset=utf-8");
+}
+
+function downloadBlob(content,name,type){
+  const blob=new Blob(["\ufeff",content],{type});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+
+function saveJSON(){
+  downloadBlob(JSON.stringify(dashboardState,null,2),"market_dashboard_data.json","application/json;charset=utf-8");
+}
+
+function loadJSONFile(file){
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{dashboardState=JSON.parse(reader.result);renderAll();alert("JSONを読み込みました。");}
+    catch(e){alert("JSONの形式が正しくありません: "+e.message);}
+  };
+  reader.readAsText(file,"utf-8");
+}
+
+function applyEditor(){
+  try{dashboardState=JSON.parse($("jsonEditor").value);renderAll(false);alert("JSONを適用しました。");}
+  catch(e){alert("JSONの形式が正しくありません: "+e.message);}
+}
+
+function updateTimestamp(){
+  const d=new Date();
+  const parts=new Intl.DateTimeFormat("ja-JP",{timeZone:"Asia/Tokyo",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hour12:false}).formatToParts(d);
+  const g=t=>parts.find(x=>x.type===t)?.value;
+  dashboardState.marketData.meta.updatedJST=`${g("year")}-${g("month")}-${g("day")} ${g("hour")}:${g("minute")}`;
+}
+
+function setupEvents(){
+  $("refreshBtn").addEventListener("click",()=>{updateTimestamp();renderAll();});
+  $("baseDateInput").addEventListener("change",e=>{dashboardState.marketData.meta.baseDate=e.target.value;renderAll();});
+  document.querySelectorAll("[data-range]").forEach(b=>b.addEventListener("click",()=>{currentRange=Number(b.dataset.range);renderCharts();}));
+  $("printBtn").addEventListener("click",()=>window.print());
+  $("csvBtn").addEventListener("click",exportCSV);
+  $("jsonSaveBtn").addEventListener("click",saveJSON);
+  $("jsonFileInput").addEventListener("change",e=>{if(e.target.files?.[0])loadJSONFile(e.target.files[0]);});
+  $("applyEditorBtn").addEventListener("click",applyEditor);
+  $("companySearch").addEventListener("input",renderCompanies);
+  $("industryFilter").addEventListener("change",renderCompanies);
+  $("themeBtn").addEventListener("click",()=>{
+    const root=document.documentElement;
+    const dark=root.dataset.theme==="dark";
+    root.dataset.theme=dark?"light":"dark";
+    $("themeBtn").textContent=dark?"ダークモード":"ライトモード";
+    renderCharts();
+    renderCompanyDetail();
+  });
+}
+
+setupEvents();
+renderAll();
+</script>
+</body>
+</html>
