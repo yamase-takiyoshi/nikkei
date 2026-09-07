@@ -93,9 +93,49 @@ tr:hover td{background:var(--panel2)}
 details summary{cursor:pointer;font-weight:700}
 footer{color:var(--muted);font-size:11px;padding:24px 4px 12px}
 .hidden{display:none!important}
+
+
+/* 経済ニュース */
+.news-controls,.candle-controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+.news-controls select,.candle-controls select{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:9px;padding:8px 10px}
+.news-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.news-card{background:var(--panel);border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow);overflow:hidden}
+.news-card-head{padding:13px 14px 9px;border-bottom:1px solid var(--line)}
+.news-card-head h3{font-size:16px;line-height:1.45;margin:7px 0 4px}
+.news-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;color:var(--muted);font-size:11px}
+.news-importance{font-family:var(--mono);font-weight:800}
+.news-importance.a{color:var(--up)} .news-importance.b{color:var(--warn)} .news-importance.c{color:var(--flat)}
+.news-body{padding:12px 14px;display:grid;gap:10px}
+.news-block{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:10px 11px}
+.news-block .label{font-size:11px;color:var(--muted);font-weight:800;margin-bottom:4px}
+.news-block .text{font-size:13px;line-height:1.65}
+.news-related{display:flex;flex-wrap:wrap;gap:5px}
+.news-source{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:11px;color:var(--muted)}
+.news-source a{font-weight:700;text-decoration:none}
+.news-summary-box{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
+.news-summary-item{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px;box-shadow:var(--shadow)}
+.news-summary-item .k{font-size:10px;color:var(--muted)}
+.news-summary-item .v{font-size:13px;font-weight:750;margin-top:4px}
+
+/* ローソク足 */
+.candle-layout{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(300px,.45fr);gap:12px}
+.candle-card{background:var(--panel);border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow);padding:12px;overflow:hidden}
+.candle-wrap{height:430px;position:relative;width:100%}
+#candlestickCanvas{display:block;width:100%;height:100%;touch-action:none}
+.candle-tooltip{position:absolute;z-index:4;pointer-events:none;display:none;min-width:190px;background:rgba(15,20,26,.94);color:#fff;border-radius:8px;padding:8px 9px;font:11px/1.5 var(--mono);box-shadow:0 6px 20px rgba(0,0,0,.25)}
+.candle-legend{display:flex;flex-wrap:wrap;gap:10px;font-size:11px;color:var(--muted);margin:7px 0 0}
+.candle-dot{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+.candle-guide{display:grid;gap:9px}
+.guide-item{border:1px solid var(--line);background:var(--panel2);border-radius:9px;padding:10px}
+.guide-item strong{display:block;font-size:12px;margin-bottom:3px}
+.guide-item span{font-size:12px;color:var(--muted);line-height:1.55}
+.candle-source{font-size:11px;color:var(--muted);margin-top:8px}
+
 @media(max-width:1100px){
   .summary-grid{grid-template-columns:repeat(3,1fr)}
-  .chart-grid,.grid-3{grid-template-columns:1fr}
+  .chart-grid,.grid-3,.news-grid{grid-template-columns:1fr}
+  .candle-layout{grid-template-columns:1fr}
+  .news-summary-box{grid-template-columns:repeat(2,1fr)}
   .meta{grid-template-columns:repeat(2,1fr)}
 }
 @media(max-width:760px){
@@ -107,6 +147,8 @@ footer{color:var(--muted);font-size:11px;padding:24px 4px 12px}
   .metric .value{font-size:19px}
   .meta{grid-template-columns:1fr 1fr}
   .source-list{grid-template-columns:1fr}
+  .news-summary-box{grid-template-columns:1fr}
+  .candle-wrap{height:360px}
   .chart-box{height:250px}
 }
 @media(max-width:420px){
@@ -183,6 +225,19 @@ footer{color:var(--muted);font-size:11px;padding:24px 4px 12px}
   <div class="summary-grid" id="summaryGrid"></div>
 </section>
 
+
+<section class="section" id="economicNewsSection">
+  <div class="section-title"><h2>経済ニュース・かみ砕き解説</h2><div class="sub">何が起きた → なぜ重要 → 市場・生活への影響 → 次に見る数字</div></div>
+  <div class="news-summary-box" id="newsSummaryBox"></div>
+  <div class="news-controls">
+    <select id="newsCategoryFilter"><option value="">全カテゴリー</option></select>
+    <span class="badge">重要度 A＝市場への影響が大きい</span>
+    <span class="badge" id="newsUpdatedBadge">ニュース基準日 2026-09-07</span>
+  </div>
+  <div class="news-grid" id="economicNewsGrid"></div>
+  <div class="note">ニュースは2026年9月7日時点の公開情報を、短い見出しだけでなく「意味」と「次に確認すべき指標」まで読めるように整理した初期データです。自動転載ではなく要約です。最新化する場合はJSON内の <code>economicNews</code> を差し替えてください。</div>
+</section>
+
 <section class="section">
   <div class="section-title"><h2>為替・金利</h2><div class="sub">東京市場・日米債券</div></div>
   <div class="grid-2">
@@ -228,6 +283,39 @@ footer{color:var(--muted);font-size:11px;padding:24px 4px 12px}
   <div class="panel" style="margin-top:12px">
     <div class="panel-head"><h3>普通預金金利ランキング</h3><span class="badge">100万円・税引前</span></div>
     <div class="table-wrap"><table id="bankRankingTable"></table></div>
+  </div>
+</section>
+
+
+<section class="section" id="candlestickSection">
+  <div class="section-title"><h2>ローソク足・価格推移</h2><div class="sub">始値・高値・安値・終値（OHLC）＋出来高＋5日移動平均</div></div>
+  <div class="candle-controls">
+    <select id="candlestickSymbol"></select>
+    <button class="btn small" data-candle-range="5">直近5本</button>
+    <button class="btn small" data-candle-range="10">直近10本</button>
+    <button class="btn small" data-candle-range="20">直近20本</button>
+    <span class="badge" id="candleStatusBadge">確認済みデータ</span>
+  </div>
+  <div class="candle-layout">
+    <div class="candle-card">
+      <div class="candle-wrap" id="candlestickWrap">
+        <canvas id="candlestickCanvas"></canvas>
+        <div class="candle-tooltip" id="candlestickTooltip"></div>
+      </div>
+      <div class="candle-legend"><span><i class="candle-dot" style="background:var(--up)"></i>陽線（終値＞始値）</span><span><i class="candle-dot" style="background:var(--down)"></i>陰線（終値＜始値）</span><span>— 5日移動平均</span></div>
+      <div class="candle-source" id="candleSource"></div>
+      <div class="table-wrap" style="margin-top:8px"><table id="latestOHLCtable"></table></div>
+    </div>
+    <div class="candle-card">
+      <h3 style="margin:0 0 9px">ローソク足の読み方</h3>
+      <div class="candle-guide">
+        <div class="guide-item"><strong>胴体（四角）の長さ</strong><span>始値と終値の差です。長いほど、その日の買い・売りの勢いが強かったことを示します。</span></div>
+        <div class="guide-item"><strong>上ヒゲ・下ヒゲ</strong><span>上ヒゲ先端が高値、下ヒゲ先端が安値です。長いヒゲは「そこまで動いたが押し戻された」ことを表します。</span></div>
+        <div class="guide-item"><strong>陽線と陰線</strong><span>この画面では上昇日を赤、下落日を緑で表示します。色だけで良し悪しを判断せず、出来高と前後の流れも見ます。</span></div>
+        <div class="guide-item"><strong>出来高</strong><span>下段の棒です。価格変動と出来高が同時に大きい日は、市場参加者の関心が強かった可能性があります。</span></div>
+        <div class="guide-item"><strong>5日移動平均</strong><span>終値の短期的な平均です。ローソク足が平均線より上か下かで、短期の方向感を大づかみにできます。</span></div>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -459,6 +547,99 @@ const companyData = [
   }
 ];
 
+
+/* ローソク足データ：確認できたOHLCのみ */
+const candlestickData = {
+  nikkei:{
+    label:"日経平均株価", code:"NIKKEI225", unit:"円", status:"verified",
+    source:"Nikkei Indexes Historical Data（9/1～9/7）",
+    bars:[
+      {date:"2026-09-01",open:65885.47,high:66525.70,low:65576.61,close:66215.34,volume:null},
+      {date:"2026-09-02",open:65195.43,high:65195.43,low:64215.47,close:64325.64,volume:null},
+      {date:"2026-09-03",open:64724.81,high:64724.81,low:63772.80,close:64214.48,volume:null},
+      {date:"2026-09-04",open:64498.94,high:65182.45,low:64228.47,close:65020.94,volume:null},
+      {date:"2026-09-07",open:65600.42,high:66668.71,low:65600.42,close:66399.84,volume:null}
+    ]
+  },
+  companies:{
+    "7679":{
+      label:"薬王堂ホールディングス", code:"7679", unit:"円", status:"verified",
+      source:"Yahoo!ファイナンス 株価時系列（2026-09-04集計）",
+      bars:[
+        {date:"2026-08-07",open:1730,high:1745,low:1717,close:1725,volume:42400},
+        {date:"2026-08-10",open:1739,high:1747,low:1718,close:1718,volume:28700},
+        {date:"2026-08-12",open:1714,high:1721,low:1693,close:1714,volume:36600},
+        {date:"2026-08-13",open:1703,high:1742,low:1703,close:1740,volume:44200},
+        {date:"2026-08-14",open:1721,high:1754,low:1721,close:1751,volume:51800},
+        {date:"2026-08-17",open:1743,high:1770,low:1734,close:1758,volume:44800},
+        {date:"2026-08-18",open:1749,high:1782,low:1742,close:1777,volume:47000},
+        {date:"2026-08-19",open:1757,high:1788,low:1737,close:1743,volume:47200},
+        {date:"2026-08-20",open:1752,high:1772,low:1740,close:1754,volume:68000},
+        {date:"2026-08-21",open:1747,high:1756,low:1733,close:1742,volume:55600},
+        {date:"2026-08-24",open:1743,high:1754,low:1704,close:1708,volume:58900},
+        {date:"2026-08-25",open:1713,high:1732,low:1691,close:1696,volume:58600},
+        {date:"2026-08-26",open:1690,high:1696,low:1673,close:1684,volume:82300},
+        {date:"2026-08-27",open:1673,high:1686,low:1662,close:1675,volume:51300},
+        {date:"2026-08-28",open:1660,high:1682,low:1658,close:1670,volume:46600},
+        {date:"2026-08-31",open:1675,high:1675,low:1652,close:1662,volume:54500},
+        {date:"2026-09-01",open:1650,high:1685,low:1646,close:1646,volume:62200},
+        {date:"2026-09-02",open:1640,high:1641,low:1613,close:1614,volume:130300},
+        {date:"2026-09-03",open:1623,high:1645,low:1616,close:1626,volume:41000},
+        {date:"2026-09-04",open:1625,high:1652,low:1613,close:1642,volume:55800}
+      ]
+    }
+  }
+};
+
+/* 経済ニュース：2026-09-07 公開情報の要約 */
+const economicNews = [
+  {
+    id:"yen-154",category:"為替・金融政策",importance:"A",published:"2026-09-07",
+    title:"円が一時1ドル154円台へ上昇――日銀の利上げ観測と円キャリー巻き戻しが焦点",
+    what:"円は対ドルで一時154.05円付近まで上昇し、約7か月ぶりの高値圏となりました。背景には、日銀が近く追加利上げに動くとの観測、海外から国内へ資金を戻す動き、円で低利に借りて外貨資産へ投資する『円キャリートレード』の巻き戻しがあります。",
+    why:"為替は輸入物価と企業収益の両方に直結します。円高は原油・食料などの輸入価格を抑える方向に働く一方、海外売上が大きい輸出企業では円換算利益を押し下げる要因になり得ます。",
+    impact:"円高が続けば、日本の物価上昇圧力が弱まりやすくなります。ただし日銀利上げ観測で国内金利が上がると、住宅ローンや企業借入の負担は重くなるため、為替だけを見て『全面的に良い』とは判断できません。",
+    watch:"ドル円155円前後の攻防、日銀9月会合、米CPI、日米10年金利差、政府・当局の為替発言。",
+    related:["ドル円","日銀政策金利","日米10年金利差"],source:"Reuters",url:"https://www.reuters.com/world/asia-pacific/dollar-gets-little-lift-boost-fed-hike-expectations-2026-09-07/"
+  },
+  {
+    id:"policy-week",category:"金利・中央銀行",importance:"A",published:"2026-09-07",
+    title:"来週はFOMCと日銀会合が集中――日米金利差がドル円と株価を大きく動かす可能性",
+    what:"米FOMCは9月15～16日、日銀の金融政策決定会合は9月17～18日に予定されています。両国の政策判断が短い期間に続くため、政策金利そのものだけでなく、声明や会見で示される『次の一手』への見方が相場を動かしやすい週になります。",
+    why:"ドル円は日米の金利差と強く結びつきやすく、米金利が上がる・日本金利が下がるならドル高円安方向、逆なら円高方向の圧力になりやすいからです。株式では、金利上昇は将来利益の現在価値を下げるため、特にPERの高い成長株の重荷になりやすい傾向があります。",
+    impact:"企業では借入金利・為替前提・資金調達コスト、家計では住宅ローン・預金金利、自治体では地方債の将来利払いに影響します。政策金利の0.25ポイント差でも、借入残高が大きい主体ほど影響額は大きくなります。",
+    watch:"FOMC声明、FRB議長会見、日銀声明、総裁会見、2年・10年国債利回り、短期プライムレート。",
+    related:["FRB","日銀","米10年国債","日本10年国債"],source:"Reuters（為替フォーラム）",url:"https://jp.reuters.com/opinion/forex-forum/4CMJ35AFHNMGXPN35K4ZOBTN64-2026-09-07/"
+  },
+  {
+    id:"oil-inflation",category:"商品・物価",importance:"A",published:"2026-09-07",
+    title:"原油高と地政学リスクがインフレ懸念を再点火――金利・株価・家計へ波及",
+    what:"中東情勢の緊張と供給不安を背景に原油価格が高止まりし、ReutersはBrent原油が1バレル97ドル付近まで上昇したと報じています。エネルギー価格上昇は、燃料だけでなく物流・電力・化学製品など広いコストに波及します。",
+    why:"原油高が長引くと、中央銀行が『物価が下がり切らない』と判断し、利下げを遅らせたり利上げを検討したりする材料になります。その結果、国債利回りや企業の資金調達コストが上がり、株価評価にも影響します。",
+    impact:"家計ではガソリン・電気・食品の値上がり、企業では輸送費・原材料費の増加、自治体では公共施設の光熱費や委託費上昇として表れやすいテーマです。一方で資源・エネルギー関連企業には追い風になる場合があります。",
+    watch:"WTI・Brent、ディーゼル価格、海上運賃、CPIエネルギー項目、期待インフレ率、10年国債利回り。",
+    related:["WTI","Brent","CPI","長期金利"],source:"Reuters",url:"https://www.reuters.com/world/china/global-markets-global-markets-2026-09-07/"
+  },
+  {
+    id:"us-jobs-rates",category:"米国株・景気",importance:"B",published:"2026-09-07",
+    title:"強い米雇用を受け金利上昇――S&P500は9月4日に0.38％下落",
+    what:"9月4日のS&P500は7,718.60で引け、前日比0.38％下落しました。米雇用統計が労働市場の底堅さを示し、FRBが金利を高く保つ、あるいは追加利上げに動くとの見方が強まり、米長期金利が上昇したことが株価の重荷になりました。",
+    why:"株価は企業利益だけでなく『割引率』で評価されます。金利が上がると将来利益の現在価値が低く計算されやすいため、高PERの成長株ほど金利上昇に敏感になりやすい構造です。",
+    impact:"米金利上昇はドル高要因になりやすく、日本株にも為替と米株を通じて波及します。一方、銀行など利ざや改善が期待される業種は、金利上昇局面で相対的に強くなることがあります。",
+    watch:"9月10日の米PPI、9月11日の米CPI、米2年・10年債、NASDAQ、半導体指数。",
+    related:["S&P500","米10年国債","米CPI","NASDAQ"],source:"OANDA / ANN系報道",url:"https://www.oanda.jp/lab-education/market_news/2026_09_07_us500/"
+  },
+  {
+    id:"chips-asia",category:"日本株・企業",importance:"B",published:"2026-09-07",
+    title:"東京市場ではAI・半導体株が相場を下支え――金利上昇との綱引き",
+    what:"9月7日のアジア市場では半導体関連株が強く、東京・ソウルの株価指数を押し上げました。AI向けメモリーや先端半導体への需要期待が、金利上昇や地政学リスクという逆風を一部打ち消しています。",
+    why:"指数全体が上がっていても、すべての企業が同じ理由で上昇しているわけではありません。半導体のような成長テーマが指数を押し上げる一方、金利に弱い不動産や高負債企業などは別の値動きになることがあります。",
+    impact:"日経平均を見るときは指数だけでなく、上昇を作っている業種と銘柄数を確認すると相場の中身が分かります。大型半導体株への集中が強い日は、指数と実体経済の体感がずれることもあります。",
+    watch:"半導体株指数、NASDAQ、日経平均とTOPIXの差、売買代金、騰落銘柄数。",
+    related:["日経平均","TOPIX","半導体","NASDAQ"],source:"AP / 国内市場報道",url:"https://apnews.com/article/5fed4e21cb3f80eef06087217dbbd9f7"
+  }
+];
+
 /* 履歴は「確認済みデータのみ」。将来、JSONで日次行を追加する */
 const historyData = {
   fxUSDJPY:[{date:"2026-09-04",value:156.295}],
@@ -474,9 +655,12 @@ const policyInfo = {
   us:{name:"FRB",decisionDate:"データ未入力",lastChange:"データ未入力",change:"データ未入力",nextMeeting:"データ未入力"}
 };
 
-let dashboardState = {marketData,bondYields,stockData,commodityData,inflationData,bankRates,companyData,historyData,policyInfo};
+let dashboardState = {marketData,bondYields,stockData,commodityData,inflationData,bankRates,companyData,candlestickData,economicNews,historyData,policyInfo};
 let charts = {};
 let currentRange = 30;
+let candleRange = 20;
+let selectedCandlestickKey = "company:7679";
+let candlestickHitMap = [];
 
 const $ = id => document.getElementById(id);
 const isNum = v => typeof v === "number" && Number.isFinite(v);
@@ -737,7 +921,9 @@ function renderCompanies(){
     ])
   );
   document.querySelectorAll("[data-company-code]").forEach(b=>b.addEventListener("click",()=>{
-    selectedCompanyCode=b.dataset.companyCode;renderCompanyDetail();
+    selectedCompanyCode=b.dataset.companyCode;
+    if(dashboardState.candlestickData?.companies?.[selectedCompanyCode]){selectedCandlestickKey=`company:${selectedCompanyCode}`; if($("candlestickSymbol"))$("candlestickSymbol").value=selectedCandlestickKey; renderCandlestick();}
+    renderCompanyDetail();
   }));
   if(list.length===0){
     selectedCompanyCode=null;
@@ -803,6 +989,129 @@ function renderCompanyDetail(){
       y1:{...chartDefaults().scales.y,position:"right",grid:{drawOnChartArea:false},title:{display:true,text:"利益（百万円）"}}
     }}
   });
+}
+
+
+function renderNewsFilters(){
+  const sel=$("newsCategoryFilter"); if(!sel)return;
+  const current=sel.value;
+  const cats=[...new Set((dashboardState.economicNews||[]).map(n=>n.category).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"ja"));
+  sel.innerHTML='<option value="">全カテゴリー</option>'+cats.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("");
+  if(cats.includes(current))sel.value=current;
+}
+
+function renderEconomicNews(){
+  renderNewsFilters();
+  const filter=$("newsCategoryFilter")?.value||"";
+  const all=dashboardState.economicNews||[];
+  const list=all.filter(n=>!filter||n.category===filter);
+  const aCount=all.filter(n=>n.importance==="A").length;
+  const categories=new Set(all.map(n=>n.category)).size;
+  $("newsUpdatedBadge").textContent=`ニュース基準日 ${all[0]?.published||"未取得"}`;
+  $("newsSummaryBox").innerHTML=[
+    ["重要ニュース",`${aCount}件（重要度A）`],
+    ["テーマ数",`${categories}カテゴリー`],
+    ["今日の中心", "金利・円相場・原油"],
+    ["次の焦点", "米PPI/CPI → FOMC → 日銀"]
+  ].map(x=>`<div class="news-summary-item"><div class="k">${esc(x[0])}</div><div class="v">${esc(x[1])}</div></div>`).join("");
+  $("economicNewsGrid").innerHTML=list.map(n=>`
+    <article class="news-card">
+      <div class="news-card-head">
+        <div class="news-meta"><span class="badge">${esc(n.category)}</span><span class="news-importance ${String(n.importance||"").toLowerCase()}">重要度 ${esc(n.importance||"-")}</span><span>${esc(n.published||"")}</span></div>
+        <h3>${esc(n.title)}</h3>
+      </div>
+      <div class="news-body">
+        <div class="news-block"><div class="label">① 何が起きた？</div><div class="text">${esc(n.what)}</div></div>
+        <div class="news-block"><div class="label">② なぜ重要？</div><div class="text">${esc(n.why)}</div></div>
+        <div class="news-block"><div class="label">③ 市場・生活・経営への影響</div><div class="text">${esc(n.impact)}</div></div>
+        <div class="news-block"><div class="label">④ 次に見る数字</div><div class="text">${esc(n.watch)}</div></div>
+        <div class="news-related">${(n.related||[]).map(x=>`<span class="badge">${esc(x)}</span>`).join("")}</div>
+        <div class="news-source"><span>出典：${esc(n.source||"未取得")}</span>${n.url?`<a href="${esc(n.url)}" target="_blank" rel="noopener">元記事を確認 ↗</a>`:""}</div>
+      </div>
+    </article>`).join("") || '<div class="note">このカテゴリーのニュースは登録されていません。</div>';
+}
+
+function candleDatasetEntries(){
+  const d=dashboardState.candlestickData||{};
+  const entries=[];
+  if(d.nikkei)entries.push({key:"nikkei",label:d.nikkei.label||"日経平均",data:d.nikkei});
+  Object.entries(d.companies||{}).forEach(([code,v])=>entries.push({key:`company:${code}`,label:`${code} ${v.label||code}`,data:v}));
+  return entries;
+}
+
+function renderCandlestickOptions(){
+  const sel=$("candlestickSymbol"); if(!sel)return;
+  const entries=candleDatasetEntries();
+  sel.innerHTML=entries.map(e=>`<option value="${esc(e.key)}">${esc(e.label)}</option>`).join("");
+  if(!entries.some(e=>e.key===selectedCandlestickKey))selectedCandlestickKey=entries[0]?.key||"";
+  sel.value=selectedCandlestickKey;
+}
+
+function getSelectedCandleData(){
+  return candleDatasetEntries().find(e=>e.key===selectedCandlestickKey)?.data||null;
+}
+
+function colorVar(name){return getComputedStyle(document.documentElement).getPropertyValue(name).trim();}
+
+function renderLatestOHLC(data,bars){
+  if(!data||!bars.length){makeTable("latestOHLCtable",["日付","始値","高値","安値","終値","日中騰落","出来高"],[]);return;}
+  const b=bars[bars.length-1], diff=b.close-b.open, pct=b.open?diff/b.open*100:null;
+  makeTable("latestOHLCtable",["日付","始値","高値","安値","終値","日中騰落","出来高"],[
+    [esc(b.date),fmt(b.open,2),fmt(b.high,2),fmt(b.low,2),fmt(b.close,2),`<span class="${cls(diff)}">${sign(diff)} ${fmt(Math.abs(diff),2)} (${fmt(pct,2)}%)</span>`,isNum(b.volume)?b.volume.toLocaleString("ja-JP"):"指数のためなし"]
+  ]);
+}
+
+function renderCandlestick(){
+  renderCandlestickOptions();
+  const data=getSelectedCandleData();
+  if(!data){$("candleSource").textContent="ローソク足データ未取得";return;}
+  let bars=(data.bars||[]).slice().sort((a,b)=>a.date.localeCompare(b.date));
+  bars=bars.slice(-Math.min(candleRange,bars.length));
+  $("candleStatusBadge").textContent=`${statusLabel(data.status)} / ${bars.length}本`;
+  $("candleStatusBadge").className=`badge ${statusClass(data.status)}`;
+  $("candleSource").textContent=`${data.label}｜出典：${data.source}｜最新OHLC ${bars.at(-1)?.date||"未取得"}`;
+  renderLatestOHLC(data,bars);
+  drawCandlestick(data,bars);
+}
+
+function drawCandlestick(data,bars){
+  const canvas=$("candlestickCanvas"), wrap=$("candlestickWrap"), tip=$("candlestickTooltip");
+  if(!canvas||!wrap)return;
+  const w=Math.max(320,wrap.clientWidth), h=Math.max(300,wrap.clientHeight), dpr=Math.min(window.devicePixelRatio||1,2);
+  canvas.width=Math.round(w*dpr); canvas.height=Math.round(h*dpr); canvas.style.width=w+"px"; canvas.style.height=h+"px";
+  const ctx=canvas.getContext("2d"); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,w,h);
+  if(!bars.length){ctx.fillStyle=colorVar("--muted");ctx.font="13px sans-serif";ctx.fillText("OHLCデータ未取得",20,30);return;}
+  const left=56,right=14,top=16,bottom=28,volH=72,gap=14,priceBottom=h-bottom-volH-gap;
+  const lows=bars.map(b=>b.low), highs=bars.map(b=>b.high); let min=Math.min(...lows),max=Math.max(...highs);
+  const pad=Math.max((max-min)*.08,1); min-=pad;max+=pad;
+  const y=v=>top+(max-v)/(max-min)*(priceBottom-top);
+  const plotW=w-left-right, step=plotW/bars.length, bodyW=Math.max(3,Math.min(16,step*.58));
+  const line=colorVar("--line"), muted=colorVar("--muted"), up=colorVar("--up"), down=colorVar("--down"), accent=colorVar("--accent");
+  ctx.font="10px "+colorVar("--mono"); ctx.textAlign="right"; ctx.textBaseline="middle";
+  for(let i=0;i<=5;i++){const val=max-(max-min)*i/5, yy=top+(priceBottom-top)*i/5;ctx.strokeStyle=line;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(left,yy);ctx.lineTo(w-right,yy);ctx.stroke();ctx.fillStyle=muted;ctx.fillText(val.toLocaleString("ja-JP",{maximumFractionDigits:2}),left-6,yy);}
+  const maxVol=Math.max(1,...bars.map(b=>b.volume||0));
+  candlestickHitMap=[];
+  bars.forEach((b,i)=>{
+    const x=left+step*(i+.5), rising=b.close>=b.open, col=rising?up:down;
+    ctx.strokeStyle=col;ctx.lineWidth=1.3;ctx.beginPath();ctx.moveTo(x,y(b.high));ctx.lineTo(x,y(b.low));ctx.stroke();
+    const yo=y(b.open), yc=y(b.close), bh=Math.max(2,Math.abs(yc-yo));ctx.fillStyle=col;ctx.fillRect(x-bodyW/2,Math.min(yo,yc),bodyW,bh);
+    if(isNum(b.volume)){const vh=(b.volume/maxVol)*volH;ctx.globalAlpha=.38;ctx.fillRect(x-bodyW/2,h-bottom-vh,bodyW,vh);ctx.globalAlpha=1;}
+    candlestickHitMap.push({x0:x-step/2,x1:x+step/2,bar:b,x});
+  });
+  // 5日移動平均
+  if(bars.length>=5){ctx.strokeStyle=accent;ctx.lineWidth=2;ctx.beginPath();let started=false;bars.forEach((b,i)=>{if(i<4)return;const avg=bars.slice(i-4,i+1).reduce((a,z)=>a+z.close,0)/5;const x=left+step*(i+.5),yy=y(avg);if(!started){ctx.moveTo(x,yy);started=true}else ctx.lineTo(x,yy);});ctx.stroke();}
+  // 日付
+  ctx.fillStyle=muted;ctx.textAlign="center";ctx.textBaseline="top";const every=Math.max(1,Math.ceil(bars.length/6));
+  bars.forEach((b,i)=>{if(i%every===0||i===bars.length-1){const x=left+step*(i+.5);ctx.fillText(b.date.slice(5).replace("-","/"),x,h-bottom+5);}});
+  ctx.textAlign="left";ctx.textBaseline="middle";ctx.fillText("出来高",4,h-bottom-volH/2);
+
+  canvas.onpointermove=e=>{
+    const r=canvas.getBoundingClientRect(), x=e.clientX-r.left, hit=candlestickHitMap.find(m=>x>=m.x0&&x<m.x1);
+    if(!hit){tip.style.display="none";return;} const b=hit.bar, diff=b.close-b.open;
+    tip.innerHTML=`<strong>${esc(b.date)}</strong><br>始 ${fmt(b.open,2)}　高 ${fmt(b.high,2)}<br>安 ${fmt(b.low,2)}　終 ${fmt(b.close,2)}<br>${diff>=0?"上昇":"下落"} ${fmt(Math.abs(diff),2)}${data.unit||""}<br>出来高 ${isNum(b.volume)?b.volume.toLocaleString("ja-JP"):"—"}`;
+    tip.style.display="block"; tip.style.left=Math.min(w-205,Math.max(6,x+10))+"px"; tip.style.top="12px";
+  };
+  canvas.onpointerleave=()=>tip.style.display="none";
 }
 
 function renderPolicy(){
@@ -975,7 +1284,7 @@ function renderEditor(){
 
 function renderAll(updateEditor=true){
   renderMeta();renderSummary();renderFX();renderJPRates();renderUSRates();renderStocks();
-  renderCommodities();renderCPI();renderRealRates();renderBanks();renderPolicy();
+  renderCommodities();renderCPI();renderRealRates();renderBanks();renderEconomicNews();renderCandlestick();renderPolicy();
   renderSpreads();renderComments();renderSources();renderCharts();renderCompanies();
   if(updateEditor)renderEditor();
 }
@@ -1034,6 +1343,9 @@ function setupEvents(){
   $("applyEditorBtn").addEventListener("click",applyEditor);
   $("companySearch").addEventListener("input",renderCompanies);
   $("industryFilter").addEventListener("change",renderCompanies);
+  $("newsCategoryFilter").addEventListener("change",renderEconomicNews);
+  $("candlestickSymbol").addEventListener("change",e=>{selectedCandlestickKey=e.target.value;renderCandlestick();});
+  document.querySelectorAll("[data-candle-range]").forEach(b=>b.addEventListener("click",()=>{candleRange=Number(b.dataset.candleRange);renderCandlestick();}));
   $("themeBtn").addEventListener("click",()=>{
     const root=document.documentElement;
     const dark=root.dataset.theme==="dark";
@@ -1041,8 +1353,12 @@ function setupEvents(){
     $("themeBtn").textContent=dark?"ダークモード":"ライトモード";
     renderCharts();
     renderCompanyDetail();
+    renderCandlestick();
   });
 }
+
+let candleResizeTimer;
+window.addEventListener("resize",()=>{clearTimeout(candleResizeTimer);candleResizeTimer=setTimeout(renderCandlestick,120);});
 
 setupEvents();
 renderAll();
