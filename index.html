@@ -193,6 +193,25 @@ footer{color:var(--muted);font-size:11px;padding:24px 4px 12px}
   header{background:#fff!important;color:#000;border:1px solid #bbb}
   .meta-card{border:1px solid #ccc;background:#fff}
 }
+
+/* ===== 企業詳細フルビュー ===== */
+.company-detail-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.company-detail-status{font-size:11px;color:var(--muted)}
+.company-detail-section{border-top:1px solid var(--line);padding-top:12px;margin-top:2px}
+.company-detail-section h4{margin:0 0 8px;font-size:13px}
+.company-detail-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.company-detail-card{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:9px;min-width:0}
+.company-detail-card .k{font-size:10px;color:var(--muted)}
+.company-detail-card .v{font-family:var(--mono);font-weight:800;margin-top:3px;overflow-wrap:anywhere}
+.company-detail-kv{display:grid;grid-template-columns:minmax(120px,.9fr) minmax(0,1.4fr) minmax(120px,.9fr) minmax(0,1.4fr);gap:7px 12px;font-size:12px}
+.company-detail-kv .k{color:var(--muted)}
+.company-detail-kv .v{font-family:var(--mono);font-weight:700;overflow-wrap:anywhere}
+.company-detail-summary{white-space:pre-wrap;line-height:1.65;color:var(--muted);font-size:12px}
+.company-detail-error{padding:9px;border:1px solid var(--line);border-radius:8px;color:var(--muted);font-size:11px}
+.company-detail-link{overflow-wrap:anywhere}
+@media(max-width:1100px){.company-detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.company-detail-kv{grid-template-columns:minmax(110px,.8fr) minmax(0,1.5fr)}}
+@media(max-width:600px){.company-detail-grid{grid-template-columns:1fr 1fr}.company-detail-kv{grid-template-columns:1fr}.company-detail-kv .v{margin-bottom:4px}}
+
 </style>
 </head>
 <body>
@@ -1047,6 +1066,7 @@ function chooseCompanySuggestion(c){
   $("companySearch").value=c.name;
   closeCompanySuggestions();
   renderCompanies();
+  requestCompanyFullDetail(c.code).catch(e=>console.warn("企業詳細取得",e));
   const detail=$("companyDetail");
   if(detail)detail.scrollIntoView({block:"nearest",behavior:"smooth"});
 }
@@ -1116,6 +1136,7 @@ function renderCompanies(){
     selectedCompanyCode=b.dataset.companyCode;
     if(dashboardState.candlestickData?.companies?.[selectedCompanyCode]){selectedCandlestickKey=`company:${selectedCompanyCode}`; if($("candlestickSymbol"))$("candlestickSymbol").value=selectedCandlestickKey; renderCandlestick();}
     renderCompanyDetail();
+    requestCompanyFullDetail(selectedCompanyCode).catch(e=>console.warn("企業詳細取得",e));
   }));
   if(list.length===0){
     selectedCompanyCode=null;
@@ -1126,59 +1147,190 @@ function renderCompanies(){
 }
 
 function renderCompanyDetail(){
-  const c=(dashboardState.companyData||[]).find(x=>x.code===selectedCompanyCode);
+  const c=(dashboardState.companyData||[]).find(x=>String(x.code)===String(selectedCompanyCode));
   if(!c){
-    const q=($("companySearch")?.value||"").trim();
-    $("companyDetail").innerHTML=`<div class="status-missing">${q?`「${esc(q)}」に一致する登録企業がありません。`:'企業データ未登録'}</div>`;
-    makeTable("officerTable",["役職","氏名","就任年","担当"],[]);
+    const q=($('companySearch')?.value||'').trim();
+    $('companyDetail').innerHTML=`<div class="status-missing">${q?`「${esc(q)}」に一致する登録企業がありません。`:'企業データ未登録'}</div>`;
+    makeTable('officerTable',['役職','氏名','年齢/就任','報酬','担当・備考'],[]);
     if(charts.companyPerformanceChart){charts.companyPerformanceChart.destroy();delete charts.companyPerformanceChart;}
-    $("companyChartEmpty").textContent="企業データ未登録";
+    $('companyChartEmpty').textContent='企業データ未登録';
     return;
   }
-  const m=c.metrics||{}, f=c.forecasts||{};
-  $("companyDetail").innerHTML=`
-    <div class="company-hero">
-      <div><div class="company-code">${esc(c.code)} / ${esc(c.market||"市場未取得")}</div><div class="company-name">${esc(c.name)}</div>
-      <div class="company-tags"><span class="badge">${esc(c.industry||"業種未取得")}</span><span class="badge">決算 ${esc(c.fiscalYearEnd||"未取得")}</span><span class="${statusClass(c.status)}">${statusLabel(c.status)}</span></div></div>
-      <div class="company-code">更新 ${esc(c.updated||"未取得")}</div>
-    </div>
-    <div class="company-desc">${esc(c.profile||"会社概要未取得")}</div>
-    <div class="company-metrics">
-      <div class="company-metric"><div class="k">株価</div><div class="v">${isNum(m.sharePrice)?fmt(m.sharePrice,0)+"円":"未取得"}</div></div>
-      <div class="company-metric"><div class="k">時価総額</div><div class="v">${isNum(m.marketCapBillion)?fmt(m.marketCapBillion,1)+"億円":"未取得"}</div></div>
-      <div class="company-metric"><div class="k">PER</div><div class="v">${isNum(m.per)?fmt(m.per,2)+"倍":"未取得"}</div></div>
-      <div class="company-metric"><div class="k">PBR</div><div class="v">${isNum(m.pbr)?fmt(m.pbr,2)+"倍":"未取得"}</div></div>
-      <div class="company-metric"><div class="k">ROE</div><div class="v">${isNum(m.roe)?fmt(m.roe,2)+"%":"未取得"}</div></div>
-      <div class="company-metric"><div class="k">配当利回り</div><div class="v">${isNum(m.dividendYield)?fmt(m.dividendYield,2)+"%":"未取得"}</div></div>
-      <div class="company-metric"><div class="k">EPS</div><div class="v">${isNum(m.eps)?fmt(m.eps,2)+"円":"未取得"}</div></div>
-      <div class="company-metric"><div class="k">BPS</div><div class="v">${isNum(m.bps)?fmt(m.bps,2)+"円":"未取得"}</div></div>
-    </div>
-    <div class="kv">
-      <div>売上高予想</div><div>${companyFmtMoney(f.sales)}</div>
-      <div>営業利益予想</div><div>${companyFmtMoney(f.operatingProfit)}</div>
-      <div>経常利益予想</div><div>${companyFmtMoney(f.ordinaryProfit)}</div>
-      <div>純利益予想</div><div>${companyFmtMoney(f.netIncome)}</div>
-      <div>出典</div><div>${esc(c.source||"未取得")}</div>
-    </div>`;
 
-  makeTable("officerTable",["役職","氏名","就任年","担当"],(c.officers||[]).map(o=>[
-    `<span class="officer-role">${esc(o.role||"未取得")}</span>`,esc(o.name||"未取得"),esc(o.since||"未取得"),esc(o.responsibility||"未取得")
-  ]));
+  const m=c.metrics||{}, f=c.forecasts||{}, d=c.fullDetail||{};
+  const price=d.price||{}, val=d.valuation||{}, prof=d.profitability||{}, growth=d.growth||{}, fin=d.financials||{}, corp=d.corporate||{}, analyst=d.analyst||{}, dividend=d.dividend||{};
+  const fmtN=(v,digits=2,suffix='')=>isNum(v)?`${fmt(v,digits)}${suffix}`:'未取得';
+  const fmtPctN=(v,digits=2)=>isNum(v)?`${fmt(v,digits)}%`:'未取得';
+  const fmtBig=(v)=>isNum(v)?`${Math.round(v).toLocaleString('ja-JP')}円`:'未取得';
+  const fmtOku=(v)=>isNum(v)?`${fmt(v/1e8,1)}億円`:'未取得';
+  const fmtMan=(v)=>isNum(v)?`${fmt(v/1e4,0)}万円`:'未取得';
+  const card=(k,v)=>`<div class="company-detail-card"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`;
+  const kvRows=(rows)=>`<div class="company-detail-kv">${rows.map(([k,v])=>`<div class="k">${esc(k)}</div><div class="v">${v}</div>`).join('')}</div>`;
+  const statusText=c.detailLoading?'企業詳細を取得中…':c.detailError?`詳細取得エラー: ${c.detailError}`:d.fetchedAt?`外部詳細取得 ${d.fetchedAt}`:'企業マスター情報';
+  const website=corp.website?`<a class="company-detail-link" href="${esc(corp.website)}" target="_blank" rel="noopener">${esc(corp.website)} ↗</a>`:'未取得';
+  const address=[corp.address1,corp.address2,corp.city,corp.state,corp.zip,corp.country].filter(Boolean).join(' ');
+
+  $('companyDetail').innerHTML=`
+    <div class="company-detail-toolbar">
+      <div class="company-hero" style="flex:1">
+        <div>
+          <div class="company-code">${esc(c.code)} / ${esc(c.market||price.exchange||'市場未取得')}</div>
+          <div class="company-name">${esc(c.name)}</div>
+          <div class="company-tags"><span class="badge">${esc(c.industry||corp.industry||'業種未取得')}</span><span class="badge">決算 ${esc(c.fiscalYearEnd||'未取得')}</span><span class="${statusClass(c.status)}">${statusLabel(c.status)}</span></div>
+        </div>
+        <div class="company-code">更新 ${esc(c.updated||'未取得')}</div>
+      </div>
+      <button type="button" class="btn small" id="companyDetailRefreshBtn" ${c.detailLoading?'disabled':''}>${c.detailLoading?'取得中…':'企業詳細を更新'}</button>
+    </div>
+    <div class="company-detail-status">${esc(statusText)}</div>
+    ${c.detailError?`<div class="company-detail-error">株価など取得できた項目は表示します。Yahoo Financeの詳細APIが制限された場合は未取得項目を残します。</div>`:''}
+
+    <div class="company-desc">${esc(corp.longBusinessSummary||c.profile||'会社概要未取得')}</div>
+
+    <div class="company-detail-section">
+      <h4>株価・市場データ</h4>
+      <div class="company-detail-grid">
+        ${card('株価',fmtN(m.sharePrice??price.current,0,'円'))}
+        ${card('前日終値',fmtN(price.previousClose,0,'円'))}
+        ${card('前日比',isNum(price.change)?`${price.change>=0?'+':''}${fmt(price.change,0)}円`:'未取得')}
+        ${card('騰落率',isNum(price.changePct)?`${price.changePct>=0?'+':''}${fmt(price.changePct,2)}%`:'未取得')}
+        ${card('始値',fmtN(price.open,0,'円'))}
+        ${card('高値',fmtN(price.dayHigh,0,'円'))}
+        ${card('安値',fmtN(price.dayLow,0,'円'))}
+        ${card('出来高',isNum(price.volume)?fmt(price.volume,0):'未取得')}
+        ${card('52週高値',fmtN(price.week52High,0,'円'))}
+        ${card('52週安値',fmtN(price.week52Low,0,'円'))}
+        ${card('50日平均',fmtN(price.ma50,0,'円'))}
+        ${card('200日平均',fmtN(price.ma200,0,'円'))}
+      </div>
+    </div>
+
+    <div class="company-detail-section">
+      <h4>バリュエーション・1株指標</h4>
+      <div class="company-detail-grid">
+        ${card('時価総額',isNum(val.marketCap)?fmtOku(val.marketCap):(isNum(m.marketCapBillion)?`${fmt(m.marketCapBillion,1)}億円`:'未取得'))}
+        ${card('企業価値 EV',fmtOku(val.enterpriseValue))}
+        ${card('PER（実績）',fmtN(m.per??val.trailingPE,2,'倍'))}
+        ${card('PER（予想）',fmtN(val.forwardPE,2,'倍'))}
+        ${card('PBR',fmtN(m.pbr??val.priceToBook,2,'倍'))}
+        ${card('PEG',fmtN(val.pegRatio,2,'倍'))}
+        ${card('EV/売上高',fmtN(val.enterpriseToRevenue,2,'倍'))}
+        ${card('EV/EBITDA',fmtN(val.enterpriseToEbitda,2,'倍'))}
+        ${card('EPS（実績）',fmtN(m.eps??val.trailingEps,2,'円'))}
+        ${card('EPS（予想）',fmtN(val.forwardEps,2,'円'))}
+        ${card('BPS',fmtN(m.bps??val.bookValue,2,'円'))}
+        ${card('β（ベータ）',fmtN(val.beta,2,''))}
+      </div>
+    </div>
+
+    <div class="company-detail-section">
+      <h4>収益性・成長性</h4>
+      <div class="company-detail-grid">
+        ${card('ROE',fmtPctN(m.roe??prof.roe,2))}
+        ${card('ROA',fmtPctN(prof.roa,2))}
+        ${card('売上高利益率',fmtPctN(prof.profitMargin,2))}
+        ${card('営業利益率',fmtPctN(prof.operatingMargin,2))}
+        ${card('粗利益率',fmtPctN(prof.grossMargin,2))}
+        ${card('EBITDA率',fmtPctN(prof.ebitdaMargin,2))}
+        ${card('売上成長率',fmtPctN(growth.revenueGrowth,2))}
+        ${card('利益成長率',fmtPctN(growth.earningsGrowth,2))}
+      </div>
+    </div>
+
+    <div class="company-detail-section">
+      <h4>配当・株式</h4>
+      <div class="company-detail-grid">
+        ${card('配当利回り',fmtPctN(m.dividendYield??dividend.yield,2))}
+        ${card('1株配当',fmtN(dividend.rate,2,'円'))}
+        ${card('配当性向',fmtPctN(dividend.payoutRatio,2))}
+        ${card('権利落ち日',dividend.exDate||'未取得')}
+        ${card('発行済株式数',isNum(val.sharesOutstanding)?fmt(val.sharesOutstanding,0):'未取得')}
+        ${card('浮動株数',isNum(val.floatShares)?fmt(val.floatShares,0):'未取得')}
+        ${card('内部者保有比率',fmtPctN(val.insiderPercent,2))}
+        ${card('機関保有比率',fmtPctN(val.institutionPercent,2))}
+      </div>
+    </div>
+
+    <div class="company-detail-section">
+      <h4>財務規模・安全性・キャッシュフロー</h4>
+      <div class="company-detail-grid">
+        ${card('売上高',fmtOku(fin.revenue))}
+        ${card('粗利益',fmtOku(fin.grossProfit))}
+        ${card('EBITDA',fmtOku(fin.ebitda))}
+        ${card('営業CF',fmtOku(fin.operatingCashflow))}
+        ${card('フリーCF',fmtOku(fin.freeCashflow))}
+        ${card('現金・現金同等物',fmtOku(fin.totalCash))}
+        ${card('有利子負債等',fmtOku(fin.totalDebt))}
+        ${card('1株当たり現金',fmtN(fin.cashPerShare,2,'円'))}
+        ${card('流動比率',fmtN(fin.currentRatio,2,'倍'))}
+        ${card('当座比率',fmtN(fin.quickRatio,2,'倍'))}
+        ${card('D/Eレシオ',fmtN(fin.debtToEquity,2,''))}
+        ${card('1株売上高',fmtN(fin.revenuePerShare,2,'円'))}
+      </div>
+    </div>
+
+    <div class="company-detail-section">
+      <h4>会社予想・アナリスト</h4>
+      ${kvRows([
+        ['売上高予想',esc(companyFmtMoney(f.sales))],
+        ['営業利益予想',esc(companyFmtMoney(f.operatingProfit))],
+        ['経常利益予想',esc(companyFmtMoney(f.ordinaryProfit))],
+        ['純利益予想',esc(companyFmtMoney(f.netIncome))],
+        ['目標株価（平均）',esc(fmtN(analyst.targetMean,0,'円'))],
+        ['目標株価（高値）',esc(fmtN(analyst.targetHigh,0,'円'))],
+        ['目標株価（安値）',esc(fmtN(analyst.targetLow,0,'円'))],
+        ['アナリスト人数',esc(isNum(analyst.count)?fmt(analyst.count,0):'未取得')],
+        ['推奨',esc(analyst.recommendation||'未取得')],
+        ['推奨スコア',esc(fmtN(analyst.recommendationMean,2,''))]
+      ])}
+    </div>
+
+    <div class="company-detail-section">
+      <h4>会社基本情報</h4>
+      ${kvRows([
+        ['英文社名',esc(c.englishName||price.longName||'未取得')],
+        ['業種',esc(c.industry||corp.industry||'未取得')],
+        ['セクター',esc(corp.sector||'未取得')],
+        ['市場',esc(c.market||price.exchange||'未取得')],
+        ['通貨',esc(price.currency||'JPY')],
+        ['決算期',esc(c.fiscalYearEnd||'未取得')],
+        ['従業員数',esc(isNum(corp.employees)?fmt(corp.employees,0):'未取得')],
+        ['電話',esc(corp.phone||'未取得')],
+        ['所在地',esc(address||'未取得')],
+        ['Webサイト',website],
+        ['出典',esc(d.source||c.source||'未取得')],
+        ['データ更新',esc(d.fetchedAt||c.updated||'未取得')]
+      ])}
+    </div>
+  `;
+
+  $('companyDetailRefreshBtn')?.addEventListener('click',()=>requestCompanyFullDetail(c.code,true));
+
+  const dynamicOfficers=Array.isArray(d.officers)?d.officers:[];
+  const staticOfficers=Array.isArray(c.officers)?c.officers:[];
+  const officerRows=(dynamicOfficers.length?dynamicOfficers:staticOfficers).map(o=>[
+    `<span class="officer-role">${esc(o.role||o.title||'未取得')}</span>`,
+    esc(o.name||'未取得'),
+    esc(isNum(o.age)?`${o.age}歳`:(o.since||o.yearBorn?String(o.since||`生年 ${o.yearBorn}`):'未取得')),
+    esc(isNum(o.totalPay)?fmtBig(o.totalPay):'未取得'),
+    esc(o.responsibility||o.note||'未取得')
+  ]);
+  makeTable('officerTable',['役職','氏名','年齢/就任','報酬','担当・備考'],officerRows);
 
   if(charts.companyPerformanceChart) charts.companyPerformanceChart.destroy();
   const perf=Array.isArray(c.performance)?c.performance:[];
-  $("companyChartEmpty").textContent=perf.length<2?"業績履歴を2期以上入力してください。":"";
-  charts.companyPerformanceChart=new Chart($("companyPerformanceChart"),{
-    type:"line",
+  $('companyChartEmpty').textContent=perf.length<2?'業績履歴を2期以上取得・入力すると推移を表示します。':'';
+  charts.companyPerformanceChart=new Chart($('companyPerformanceChart'),{
+    type:'line',
     data:{labels:perf.map(x=>x.period),datasets:[
-      {label:"売上高",data:perf.map(x=>x.sales),borderWidth:2,tension:.2,yAxisID:"y"},
-      {label:"営業利益",data:perf.map(x=>x.operatingProfit),borderWidth:2,tension:.2,yAxisID:"y1"},
-      {label:"純利益",data:perf.map(x=>x.netIncome),borderWidth:2,tension:.2,yAxisID:"y1"}
+      {label:'売上高',data:perf.map(x=>x.sales),borderWidth:2,tension:.2,yAxisID:'y'},
+      {label:'営業利益',data:perf.map(x=>x.operatingProfit),borderWidth:2,tension:.2,yAxisID:'y1'},
+      {label:'純利益',data:perf.map(x=>x.netIncome),borderWidth:2,tension:.2,yAxisID:'y1'}
     ]},
     options:{...chartDefaults(),scales:{
       x:chartDefaults().scales.x,
-      y:{...chartDefaults().scales.y,position:"left",title:{display:true,text:"売上高（百万円）"}},
-      y1:{...chartDefaults().scales.y,position:"right",grid:{drawOnChartArea:false},title:{display:true,text:"利益（百万円）"}}
+      y:{...chartDefaults().scales.y,position:'left',title:{display:true,text:'売上高（百万円）'}},
+      y1:{...chartDefaults().scales.y,position:'right',grid:{drawOnChartArea:false},title:{display:true,text:'利益（百万円）'}}
     }}
   });
 }
@@ -1603,6 +1755,240 @@ async function fetchExternalJSON(target,{direct=true}={}){
   }
 }
 
+
+/* ============================================================
+   企業詳細フル取得（選択企業のみ）
+   Yahoo FinanceをCloudflare Worker経由で参照。
+   API側の制限時はchart APIで取得できる株価項目のみ反映する。
+============================================================ */
+const companyDetailInflight=new Map();
+const COMPANY_DETAIL_TTL_MS=10*60*1000;
+
+function yahooRaw(v){
+  if(v && typeof v==='object' && Object.prototype.hasOwnProperty.call(v,'raw'))return v.raw;
+  return v??null;
+}
+function yahooText(v){
+  if(v && typeof v==='object')return v.longFmt??v.fmt??v.raw??null;
+  return v??null;
+}
+function ratioPct(v){
+  const n=Number(yahooRaw(v));
+  if(!Number.isFinite(n))return null;
+  return Math.abs(n)<=2 ? n*100 : n;
+}
+function unixToDate(v){
+  const n=Number(yahooRaw(v));
+  if(!Number.isFinite(n)||n<=0)return '';
+  return new Date(n*1000).toISOString().slice(0,10);
+}
+
+async function fetchYahooQuoteSummary(symbol){
+  const modules=[
+    'price','summaryDetail','defaultKeyStatistics','financialData','assetProfile',
+    'calendarEvents','earningsTrend','incomeStatementHistory','balanceSheetHistory','cashflowStatementHistory'
+  ].join(',');
+  const target=`https://query1.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(symbol)}?modules=${encodeURIComponent(modules)}&formatted=true&corsDomain=finance.yahoo.com`;
+  const {data,via}=await fetchExternalJSON(target,{direct:false});
+  const root=data?.quoteSummary?.result?.[0];
+  if(!root)throw new Error(data?.quoteSummary?.error?.description||'Yahoo quoteSummary データなし');
+  return {root,via};
+}
+
+async function fetchYahooQuote(symbol){
+  const target=`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbol)}`;
+  const {data,via}=await fetchExternalJSON(target,{direct:false});
+  const q=data?.quoteResponse?.result?.[0];
+  if(!q)throw new Error(data?.quoteResponse?.error?.description||'Yahoo quote データなし');
+  return {q,via};
+}
+
+function applyYahooCompanyDetail(company,detail){
+  company.fullDetail=detail;
+  company.metrics ||= {};
+  const m=company.metrics, p=detail.price||{}, v=detail.valuation||{}, pr=detail.profitability||{}, div=detail.dividend||{};
+  if(isNum(p.current))m.sharePrice=p.current;
+  if(isNum(v.marketCap))m.marketCapBillion=v.marketCap/1e8;
+  if(isNum(v.trailingPE))m.per=v.trailingPE;
+  if(isNum(v.priceToBook))m.pbr=v.priceToBook;
+  if(isNum(pr.roe))m.roe=pr.roe;
+  if(isNum(div.yield))m.dividendYield=div.yield;
+  if(isNum(v.trailingEps))m.eps=v.trailingEps;
+  if(isNum(v.bookValue))m.bps=v.bookValue;
+  company.updated=detail.fetchedAt?.slice(0,10)||company.updated;
+  if(detail.corporate?.industry && (!company.industry||company.industry==='未取得'))company.industry=detail.corporate.industry;
+  if(detail.corporate?.longBusinessSummary && (!company.profile||company.dataLevel==='master'))company.profile=detail.corporate.longBusinessSummary;
+
+  const annual=Array.isArray(detail.annualPerformance)?detail.annualPerformance.filter(x=>isNum(x.sales)||isNum(x.netIncome)):[];
+  if(annual.length){
+    const existingForecast=(company.performance||[]).filter(x=>String(x.period||'').includes('予'));
+    company.performance=[...annual,...existingForecast].slice(-6);
+  }
+  if(Array.isArray(detail.officers) && detail.officers.length){
+    // 公式手入力役員は維持し、外部役員はfullDetail側に保持する。
+  }
+}
+
+function buildCompanyDetailFromYahoo({company,symbol,chart,summary,quote,errors=[]}){
+  const root=summary?.root||{};
+  const price=root.price||{};
+  const sd=root.summaryDetail||{};
+  const ks=root.defaultKeyStatistics||{};
+  const fd=root.financialData||{};
+  const ap=root.assetProfile||{};
+  const ce=root.calendarEvents||{};
+  const q=quote?.q||{};
+  const meta=chart?.meta||{};
+  const bars=chart?.bars||[];
+  const last=bars.at(-1)||{};
+  const prev=bars.at(-2)||{};
+  const current=yahooRaw(price.regularMarketPrice)??yahooRaw(fd.currentPrice)??q.regularMarketPrice??meta.regularMarketPrice??last.close??company.metrics?.sharePrice??null;
+  const previousClose=yahooRaw(sd.previousClose)??q.regularMarketPreviousClose??meta.chartPreviousClose??prev.close??null;
+  const change=isNum(current)&&isNum(previousClose)?current-previousClose:(yahooRaw(price.regularMarketChange)??q.regularMarketChange??null);
+  const changePct=isNum(current)&&isNum(previousClose)&&previousClose!==0?(current-previousClose)/previousClose*100:(yahooRaw(price.regularMarketChangePercent)??q.regularMarketChangePercent??null);
+  const sourceParts=[];
+  if(summary)sourceParts.push('Yahoo Finance quoteSummary');
+  if(quote)sourceParts.push('Yahoo Finance quote');
+  if(chart)sourceParts.push('Yahoo Finance chart');
+
+  const annual=(root.incomeStatementHistory?.incomeStatementHistory||[]).map(row=>{
+    const end=unixToDate(row.endDate);
+    return {
+      period:end?end.slice(0,7):String(yahooText(row.endDate)||'実績'),
+      sales:yahooRaw(row.totalRevenue)/1e6,
+      operatingProfit:yahooRaw(row.operatingIncome)/1e6,
+      ordinaryProfit:yahooRaw(row.incomeBeforeTax)/1e6,
+      netIncome:yahooRaw(row.netIncome)/1e6
+    };
+  }).filter(x=>Object.values(x).some(v=>isNum(v))).sort((a,b)=>String(a.period).localeCompare(String(b.period)));
+
+  const officers=(ap.companyOfficers||[]).map(o=>({
+    name:o.name||'', role:o.title||'', age:yahooRaw(o.age), yearBorn:yahooRaw(o.yearBorn), totalPay:yahooRaw(o.totalPay),
+    note:[yahooRaw(o.fiscalYear)?`報酬年度 ${yahooRaw(o.fiscalYear)}`:'',o.exercisedValue?`権利行使 ${yahooText(o.exercisedValue)}`:''].filter(Boolean).join(' / ')
+  }));
+
+  return {
+    fetchedAt:new Date().toISOString(),
+    source:sourceParts.length?`${sourceParts.join(' + ')}（Cloudflare Worker経由）`:'企業マスター',
+    errors,
+    price:{
+      current, previousClose, change, changePct,
+      open:yahooRaw(sd.open)??q.regularMarketOpen??last.open??null,
+      dayHigh:yahooRaw(sd.dayHigh)??q.regularMarketDayHigh??last.high??null,
+      dayLow:yahooRaw(sd.dayLow)??q.regularMarketDayLow??last.low??null,
+      volume:yahooRaw(sd.volume)??q.regularMarketVolume??last.volume??null,
+      week52High:yahooRaw(sd.fiftyTwoWeekHigh)??q.fiftyTwoWeekHigh??meta.fiftyTwoWeekHigh??null,
+      week52Low:yahooRaw(sd.fiftyTwoWeekLow)??q.fiftyTwoWeekLow??meta.fiftyTwoWeekLow??null,
+      ma50:yahooRaw(sd.fiftyDayAverage)??q.fiftyDayAverage??null,
+      ma200:yahooRaw(sd.twoHundredDayAverage)??q.twoHundredDayAverage??null,
+      currency:yahooText(price.currency)??q.currency??meta.currency??'JPY',
+      exchange:yahooText(price.exchangeName)??q.fullExchangeName??meta.fullExchangeName??meta.exchangeName??'',
+      longName:yahooText(price.longName)??q.longName??meta.longName??''
+    },
+    valuation:{
+      marketCap:yahooRaw(price.marketCap)??yahooRaw(sd.marketCap)??q.marketCap??null,
+      enterpriseValue:yahooRaw(ks.enterpriseValue),
+      trailingPE:yahooRaw(sd.trailingPE)??q.trailingPE??null,
+      forwardPE:yahooRaw(sd.forwardPE)??yahooRaw(ks.forwardPE)??q.forwardPE??null,
+      priceToBook:yahooRaw(ks.priceToBook)??q.priceToBook??null,
+      pegRatio:yahooRaw(ks.pegRatio),
+      enterpriseToRevenue:yahooRaw(ks.enterpriseToRevenue),
+      enterpriseToEbitda:yahooRaw(ks.enterpriseToEbitda),
+      trailingEps:yahooRaw(ks.trailingEps)??q.epsTrailingTwelveMonths??null,
+      forwardEps:yahooRaw(ks.forwardEps)??q.epsForward??null,
+      bookValue:yahooRaw(ks.bookValue)??q.bookValue??null,
+      beta:yahooRaw(sd.beta)??yahooRaw(ks.beta)??null,
+      sharesOutstanding:yahooRaw(ks.sharesOutstanding)??q.sharesOutstanding??null,
+      floatShares:yahooRaw(ks.floatShares),
+      insiderPercent:ratioPct(ks.heldPercentInsiders),
+      institutionPercent:ratioPct(ks.heldPercentInstitutions)
+    },
+    profitability:{
+      roe:ratioPct(fd.returnOnEquity), roa:ratioPct(fd.returnOnAssets),
+      profitMargin:ratioPct(fd.profitMargins)??ratioPct(ks.profitMargins),
+      operatingMargin:ratioPct(fd.operatingMargins), grossMargin:ratioPct(fd.grossMargins), ebitdaMargin:ratioPct(fd.ebitdaMargins)
+    },
+    growth:{revenueGrowth:ratioPct(fd.revenueGrowth),earningsGrowth:ratioPct(fd.earningsGrowth)},
+    dividend:{
+      rate:yahooRaw(sd.dividendRate)??q.trailingAnnualDividendRate??null,
+      yield:ratioPct(sd.dividendYield)??(isNum(q.trailingAnnualDividendYield)?q.trailingAnnualDividendYield*100:null),
+      payoutRatio:ratioPct(sd.payoutRatio), exDate:unixToDate(sd.exDividendDate) || (q.exDividendDate?new Date(q.exDividendDate*1000).toISOString().slice(0,10):'')
+    },
+    financials:{
+      revenue:yahooRaw(fd.totalRevenue), grossProfit:yahooRaw(fd.grossProfits), ebitda:yahooRaw(fd.ebitda),
+      operatingCashflow:yahooRaw(fd.operatingCashflow), freeCashflow:yahooRaw(fd.freeCashflow), totalCash:yahooRaw(fd.totalCash),
+      totalDebt:yahooRaw(fd.totalDebt), cashPerShare:yahooRaw(fd.totalCashPerShare), currentRatio:yahooRaw(fd.currentRatio),
+      quickRatio:yahooRaw(fd.quickRatio), debtToEquity:yahooRaw(fd.debtToEquity), revenuePerShare:yahooRaw(fd.revenuePerShare)
+    },
+    analyst:{
+      targetHigh:yahooRaw(fd.targetHighPrice), targetLow:yahooRaw(fd.targetLowPrice), targetMean:yahooRaw(fd.targetMeanPrice),
+      recommendationMean:yahooRaw(fd.recommendationMean), recommendation:yahooText(fd.recommendationKey)||'', count:yahooRaw(fd.numberOfAnalystOpinions)
+    },
+    corporate:{
+      address1:ap.address1||'',address2:ap.address2||'',city:ap.city||'',state:ap.state||'',zip:ap.zip||'',country:ap.country||'',
+      phone:ap.phone||'',website:ap.website||'',industry:ap.industry||'',sector:ap.sector||'',longBusinessSummary:ap.longBusinessSummary||'',
+      employees:yahooRaw(ap.fullTimeEmployees)
+    },
+    officers,
+    annualPerformance:annual
+  };
+}
+
+async function fetchCompanyFullDetailExternal(code){
+  const company=(dashboardState.companyData||[]).find(c=>String(c.code)===String(code));
+  if(!company)throw new Error('企業マスターにありません');
+  if(!/^\d{4}$/.test(String(code)))throw new Error('4桁証券コードではありません');
+  const symbol=`${code}.T`;
+  let chart=null, summary=null, quote=null;
+  const errors=[];
+  try{ chart=await fetchYahooChart(symbol,'1y'); }catch(e){ errors.push(`chart: ${e.message}`); }
+  try{ summary=await fetchYahooQuoteSummary(symbol); }catch(e){ errors.push(`quoteSummary: ${e.message}`); }
+  try{ quote=await fetchYahooQuote(symbol); }catch(e){ errors.push(`quote: ${e.message}`); }
+  if(!chart&&!summary&&!quote)throw new Error(errors.join(' / ')||'企業詳細を取得できませんでした');
+  const detail=buildCompanyDetailFromYahoo({company,symbol,chart,summary,quote,errors});
+  applyYahooCompanyDetail(company,detail);
+  if(chart?.bars?.length){
+    dashboardState.candlestickData.companies ||= {};
+    dashboardState.candlestickData.companies[String(code)]={label:company.name,code:String(code),unit:'円',status:'verified',source:`Yahoo Finance chart API（${symbol} / Cloudflare Worker経由）`,bars:chart.bars.slice(-90)};
+  }
+  return detail;
+}
+
+async function requestCompanyFullDetail(code,force=false){
+  const key=String(code||'');
+  const company=(dashboardState.companyData||[]).find(c=>String(c.code)===key);
+  if(!company||!/^\d{4}$/.test(key))return;
+  const fetched=Date.parse(company.fullDetail?.fetchedAt||'');
+  if(!force && Number.isFinite(fetched) && Date.now()-fetched<COMPANY_DETAIL_TTL_MS)return;
+  if(companyDetailInflight.has(key))return companyDetailInflight.get(key);
+  company.detailLoading=true; company.detailError='';
+  if(String(selectedCompanyCode)===key)renderCompanyDetail();
+  const p=(async()=>{
+    try{
+      const detail=await fetchCompanyFullDetailExternal(key);
+      company.detailError=(detail.errors||[]).length?detail.errors.join(' / '):'';
+      return detail;
+    }catch(e){
+      company.detailError=e.message||String(e);
+      throw e;
+    }finally{
+      company.detailLoading=false;
+      companyDetailInflight.delete(key);
+      if(String(selectedCompanyCode)===key){renderCompanyDetail();renderCandlestickOptions();renderCandlestick();}
+      renderCompanies();
+    }
+  })();
+  companyDetailInflight.set(key,p);
+  return p;
+}
+
+async function updateSelectedCompanyFullDetailExternal(){
+  const code=String(selectedCompanyCode||'');
+  if(!/^\d{4}$/.test(code))throw new Error('企業を選択してください');
+  const detail=await requestCompanyFullDetail(code,true);
+  return `${code} ${detail?.fetchedAt?.slice(0,10)||'更新'}`;
+}
+
 function isoJSTNowDate(){
   const parts=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Tokyo",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());
   const g=t=>parts.find(x=>x.type===t)?.value||"";
@@ -1964,7 +2350,8 @@ async function autoUpdateExternal(){
     ["日銀",updateBOJExternal],
     ["FRB",updateFedExternal],
     ["株価・商品",updateMarketPricesExternal],
-    ["企業株価",updateCompanyCandlesExternal]
+    ["企業株価",updateCompanyCandlesExternal],
+    ["企業詳細",updateSelectedCompanyFullDetailExternal]
   ];
   const details=[]; let success=0;
   try{
