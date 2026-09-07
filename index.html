@@ -410,10 +410,35 @@ const bankRates = [
   {group:"岩手県",bank:"東北銀行",ordinary:null,term1:null,term3:null,term5:null,shortPrime:null,effective:"データ未取得",checked:"2026-09-07",source:"データ未取得",status:"missing"}
 ];
 
-/* 企業情報：初期値は架空データ。公開情報に置き換えて利用する */
+/* 企業情報：公開情報ベースの実在企業＋UI確認用サンプル */
 const companyData = [
   {
-    code:"9999", name:"サンプル産業株式会社", industry:"機械", market:"東証プライム（架空）", fiscalYearEnd:"3月",
+    code:"7679", name:"薬王堂ホールディングス", aliases:["薬王堂HD","薬王堂ＨＤ","薬王堂ホールディングス","YAKUODO","YAKUODO HD"],
+    industry:"小売業", market:"東証プライム", fiscalYearEnd:"2月",
+    status:"verified", source:"薬王堂ホールディングス公式（会社概要・役員一覧・財務ハイライト・2027年2月期1Q決算短信）", updated:"2026-09-07",
+    profile:"東北を基盤にドラッグストアチェーンと調剤薬局を展開。2026年2月期の連結売上高は163,808百万円。",
+    metrics:{sharePrice:null,marketCapBillion:null,per:null,pbr:null,roe:10.4,dividendYield:null,eps:206.51,bps:2068.15},
+    forecasts:{sales:185050,operatingProfit:5520,ordinaryProfit:5480,netIncome:4030},
+    performance:[
+      {period:"2024/2",sales:142241,operatingProfit:5209,ordinaryProfit:5625,netIncome:3825},
+      {period:"2025/2",sales:151957,operatingProfit:5481,ordinaryProfit:5778,netIncome:4275},
+      {period:"2026/2",sales:163808,operatingProfit:5285,ordinaryProfit:5471,netIncome:4028},
+      {period:"2027/2予",sales:185050,operatingProfit:5520,ordinaryProfit:5480,netIncome:4030}
+    ],
+    officers:[
+      {role:"代表取締役社長",name:"西郷 孝一",since:"未取得",responsibility:"代表取締役社長"},
+      {role:"取締役副社長",name:"西郷 泰広",since:"未取得",responsibility:"経営企画部長"},
+      {role:"常務取締役",name:"小笠原 康浩",since:"未取得",responsibility:"常務取締役"},
+      {role:"社外取締役",name:"小原 公一",since:"未取得",responsibility:"社外取締役"},
+      {role:"社外取締役",name:"齋藤 毅文",since:"未取得",responsibility:"社外取締役"},
+      {role:"取締役（常勤監査等委員）",name:"坂本 篤",since:"未取得",responsibility:"監査等委員"},
+      {role:"社外取締役（監査等委員）",name:"鎌田 英樹",since:"未取得",responsibility:"監査等委員"},
+      {role:"社外取締役（監査等委員）",name:"片野 圭二",since:"未取得",responsibility:"監査等委員"},
+      {role:"社外取締役（監査等委員）",name:"滝浦 のぞみ",since:"未取得",responsibility:"監査等委員"}
+    ]
+  },
+  {
+    code:"9999", name:"サンプル産業株式会社", aliases:["サンプル産業"], industry:"機械", market:"東証プライム（架空）", fiscalYearEnd:"3月",
     status:"sample", source:"架空データ（UI動作確認用）", updated:"2026-09-07",
     profile:"産業機械と保守サービスを手掛ける架空企業。会社情報欄の動作確認用サンプルです。",
     metrics:{sharePrice:2450,marketCapBillion:367.5,per:14.8,pbr:1.42,roe:10.1,dividendYield:2.65,eps:165.5,bps:1725.4},
@@ -681,11 +706,16 @@ function renderCompanyFilters(){
   if(industries.includes(current))select.value=current;
 }
 
+function normalizeCompanyText(v){
+  return String(v||"").normalize("NFKC").toLowerCase().replace(/\s+/g,"");
+}
+
 function filteredCompanies(){
-  const q=($("companySearch")?.value||"").trim().toLowerCase();
+  const q=normalizeCompanyText($("companySearch")?.value||"");
   const ind=$("industryFilter")?.value||"";
   return (dashboardState.companyData||[]).filter(c=>{
-    const hit=!q || String(c.code||"").toLowerCase().includes(q) || String(c.name||"").toLowerCase().includes(q);
+    const searchable=[c.code,c.name,...(Array.isArray(c.aliases)?c.aliases:[])].map(normalizeCompanyText);
+    const hit=!q || searchable.some(v=>v.includes(q));
     return hit && (!ind || c.industry===ind);
   });
 }
@@ -709,14 +739,19 @@ function renderCompanies(){
   document.querySelectorAll("[data-company-code]").forEach(b=>b.addEventListener("click",()=>{
     selectedCompanyCode=b.dataset.companyCode;renderCompanyDetail();
   }));
-  if(!selectedCompanyCode || !(dashboardState.companyData||[]).some(c=>c.code===selectedCompanyCode)) selectedCompanyCode=list[0]?.code || dashboardState.companyData?.[0]?.code || null;
+  if(list.length===0){
+    selectedCompanyCode=null;
+  }else if(!selectedCompanyCode || !list.some(c=>c.code===selectedCompanyCode)){
+    selectedCompanyCode=list[0].code;
+  }
   renderCompanyDetail();
 }
 
 function renderCompanyDetail(){
-  const c=(dashboardState.companyData||[]).find(x=>x.code===selectedCompanyCode) || (dashboardState.companyData||[])[0];
+  const c=(dashboardState.companyData||[]).find(x=>x.code===selectedCompanyCode);
   if(!c){
-    $("companyDetail").innerHTML='<div class="status-missing">企業データ未登録</div>';
+    const q=($("companySearch")?.value||"").trim();
+    $("companyDetail").innerHTML=`<div class="status-missing">${q?`「${esc(q)}」に一致する登録企業がありません。`:'企業データ未登録'}</div>`;
     makeTable("officerTable",["役職","氏名","就任年","担当"],[]);
     if(charts.companyPerformanceChart){charts.companyPerformanceChart.destroy();delete charts.companyPerformanceChart;}
     $("companyChartEmpty").textContent="企業データ未登録";
@@ -836,7 +871,8 @@ function renderSources(){
     {name:"三菱UFJ銀行",detail:"普通預金 0.400% / 2026-08-03改定",status:"verified"},
     {name:"みずほ銀行",detail:"短期プライムレート 2.375% / 2026-08-03適用",status:"verified"},
     {name:"ユーザー指定初期値",detail:"為替・株価・政策金利・WTI・NY金",status:"sample"},
-    {name:"企業情報",detail:"EDINET・決算短信・適時開示・各社IR等の公開情報入力用。初期企業は架空サンプル",status:"sample"},
+    {name:"薬王堂ホールディングス",detail:"公式会社概要・役員一覧・財務ハイライト・2027年2月期1Q決算短信（7679）",status:"verified"},
+    {name:"企業情報サンプル",detail:"サンプル産業はUI動作確認用の架空データ",status:"sample"},
     {name:"東北銀行ほか未確認項目",detail:"推測せず「データ未取得」と表示",status:"missing"}
   ];
   $("sourceList").innerHTML=sources.map(s=>`
