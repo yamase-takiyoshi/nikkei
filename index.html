@@ -156,8 +156,20 @@ footer{color:var(--muted);font-size:11px;padding:24px 4px 12px}
   .meta{grid-template-columns:1fr}
 }
 
-.company-controls{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.company-controls{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;align-items:flex-start}
 .company-controls input,.company-controls select{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-width:180px}
+.company-search-wrap{position:relative;flex:0 1 430px;min-width:260px;z-index:30}
+.company-search-wrap input{width:100%;min-width:0;padding-right:38px}
+.company-search-hint{font-size:10px;color:var(--muted);margin:4px 2px 0}
+.company-suggestions{position:absolute;left:0;right:0;top:calc(100% + 4px);display:none;max-height:390px;overflow:auto;-webkit-overflow-scrolling:touch;background:var(--panel);border:1px solid var(--line);border-radius:11px;box-shadow:0 14px 34px rgba(15,23,42,.18);z-index:50;padding:5px}
+.company-suggestions.open{display:block}
+.company-suggestion{display:grid;grid-template-columns:60px minmax(0,1fr);gap:8px;width:100%;border:0;background:transparent;color:var(--text);text-align:left;padding:9px 10px;border-radius:8px;cursor:pointer}
+.company-suggestion:hover,.company-suggestion.active{background:var(--panel2)}
+.company-suggestion-code{font:700 12px/1.45 var(--mono);color:var(--accent)}
+.company-suggestion-name{font-size:13px;font-weight:800;line-height:1.4}
+.company-suggestion-meta{font-size:10px;color:var(--muted);margin-top:2px;line-height:1.45}
+.company-suggestion-match{color:var(--accent);font-weight:700}
+.company-no-suggestion{padding:10px 11px;color:var(--muted);font-size:12px}
 .company-layout{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(340px,.85fr);gap:12px}
 .company-detail{display:grid;gap:12px}
 .company-hero{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap}
@@ -171,6 +183,7 @@ footer{color:var(--muted);font-size:11px;padding:24px 4px 12px}
 .company-metric .v{font-family:var(--mono);font-weight:800;margin-top:3px}
 .officer-role{font-weight:700}
 .company-row-select{white-space:nowrap}
+@media(max-width:760px){.company-search-wrap{flex:1 1 100%;min-width:100%}.company-suggestions{max-height:52vh}.company-controls select{width:100%}}
 @media(max-width:1000px){.company-layout{grid-template-columns:1fr}.company-metrics{grid-template-columns:repeat(2,1fr)}}
 @media print{
   body{background:#fff;color:#000}
@@ -322,7 +335,11 @@ footer{color:var(--muted);font-size:11px;padding:24px 4px 12px}
 <section class="section" id="companySection">
   <div class="section-title"><h2>企業情報・四季報風ビュー</h2><div class="sub">公開情報整理用 / 四季報本文の転載ではありません</div></div>
   <div class="company-controls">
-    <input id="companySearch" type="search" placeholder="証券コード・会社名で検索">
+    <div class="company-search-wrap" id="companySearchWrap">
+      <input id="companySearch" type="search" placeholder="証券コード・会社名・略称で検索" autocomplete="off" spellcheck="false" aria-autocomplete="list" aria-controls="companySuggestions" aria-expanded="false">
+      <div class="company-suggestions" id="companySuggestions" role="listbox" aria-label="企業検索候補"></div>
+      <div class="company-search-hint">例：8267 / イオン / イオンHD / AEON / 薬王堂HD　｜　PCは↑↓＋Enter、iPad・スマホは候補をタップ</div>
+    </div>
     <select id="industryFilter"><option value="">全業種</option></select>
   </div>
   <div class="company-layout">
@@ -501,7 +518,30 @@ const bankRates = [
 /* 企業情報：公開情報ベースの実在企業＋UI確認用サンプル */
 const companyData = [
   {
-    code:"7679", name:"薬王堂ホールディングス", aliases:["薬王堂HD","薬王堂ＨＤ","薬王堂ホールディングス","YAKUODO","YAKUODO HD"],
+    code:"8267", name:"イオン株式会社", englishName:"AEON CO., LTD.", kana:"イオン",
+    aliases:["イオン","AEON","イオンHD","イオンＨＤ","イオンホールディングス","AEON HD","ジャスコ","JUSCO"],
+    industry:"小売業", market:"東証プライム", fiscalYearEnd:"2月",
+    status:"verified", source:"イオン株式会社公式（企業概要・株式基本情報・取締役／執行役・2026年2月期業績・2027年2月期予想）", updated:"2026-09-07",
+    profile:"小売、ディベロッパー、金融、サービスなどのグループ企業を統括する純粋持株会社。2001年にジャスコ株式会社から現社名へ変更し、2008年に純粋持株会社体制へ移行。",
+    metrics:{sharePrice:null,marketCapBillion:null,per:null,pbr:null,roe:null,dividendYield:null,eps:null,bps:null},
+    forecasts:{sales:12000000,operatingProfit:340000,ordinaryProfit:290000,netIncome:73000},
+    performance:[
+      {period:"2026/2",sales:10715342,operatingProfit:270459,ordinaryProfit:243031,netIncome:72677},
+      {period:"2027/2予",sales:12000000,operatingProfit:340000,ordinaryProfit:290000,netIncome:73000}
+    ],
+    officers:[
+      {role:"取締役会議長",name:"岡田 元也",since:"2026年5月時点",responsibility:"取締役会議長・指名委員・報酬委員"},
+      {role:"取締役・代表執行役社長",name:"吉田 昭夫",since:"2026年5月時点",responsibility:"代表執行役社長"},
+      {role:"取締役・執行役副社長",name:"土谷 美津子",since:"2026年5月時点",responsibility:"商品・物流担当"},
+      {role:"社外取締役",name:"塚本 隆史",since:"2026年5月時点",responsibility:"指名委員会議長・報酬委員会議長・監査委員"},
+      {role:"社外取締役",name:"ピーター チャイルド",since:"2026年5月時点",responsibility:"指名委員・報酬委員"},
+      {role:"社外取締役",name:"キャリー ユー",since:"2026年5月時点",responsibility:"監査委員"},
+      {role:"社外取締役",name:"林 眞琴",since:"2026年5月時点",responsibility:"監査委員会議長"},
+      {role:"社外取締役",name:"リシャール コラス",since:"2026年5月時点",responsibility:"監査委員"}
+    ]
+  },
+  {
+    code:"7679", name:"薬王堂ホールディングス", englishName:"YAKUODO HOLDINGS CO., LTD.", kana:"ヤクオウドウホールディングス", aliases:["薬王堂HD","薬王堂ＨＤ","薬王堂ホールディングス","YAKUODO","YAKUODO HD"],
     industry:"小売業", market:"東証プライム", fiscalYearEnd:"2月",
     status:"verified", source:"薬王堂ホールディングス公式（会社概要・役員一覧・財務ハイライト・2027年2月期1Q決算短信）", updated:"2026-09-07",
     profile:"東北を基盤にドラッグストアチェーンと調剤薬局を展開。2026年2月期の連結売上高は163,808百万円。",
@@ -878,6 +918,8 @@ function renderBanks(){
 
 
 let selectedCompanyCode = null;
+let companyAutocompleteIndex = -1;
+let companyAutocompleteResults = [];
 
 function companyFmtMoney(v){ return isNum(v) ? `${fmt(v,0)}百万円` : "データ未取得"; }
 function companyFmtMetric(v,suffix=""){ return isNum(v) ? `${fmt(v,2)}${suffix}` : "データ未取得"; }
@@ -891,16 +933,111 @@ function renderCompanyFilters(){
 }
 
 function normalizeCompanyText(v){
-  return String(v||"").normalize("NFKC").toLowerCase().replace(/\s+/g,"");
+  return String(v||"").normalize("NFKC").toLowerCase().replace(/[\s・･.,，．()（）株式会社]/g,"");
+}
+
+function companySearchValues(c){
+  return [c.code,c.name,c.englishName,c.kana,...(Array.isArray(c.aliases)?c.aliases:[])].filter(Boolean);
+}
+
+function companySearchScore(c,qRaw){
+  const q=normalizeCompanyText(qRaw);
+  if(!q) return 999;
+  const values=companySearchValues(c).map(v=>({raw:String(v),norm:normalizeCompanyText(v)}));
+  let score=999;
+  for(const v of values){
+    if(v.norm===q) score=Math.min(score,0);
+    else if(v.norm.startsWith(q)) score=Math.min(score,10 + Math.min(v.norm.length-q.length,20));
+    else if(v.norm.includes(q)) score=Math.min(score,40 + Math.min(v.norm.indexOf(q),20));
+  }
+  if(normalizeCompanyText(c.code)===q) score=-10;
+  if(normalizeCompanyText(c.name)===q) score=-5;
+  return score;
+}
+
+function companyMatchHint(c,qRaw){
+  const q=normalizeCompanyText(qRaw);
+  if(!q) return "";
+  const candidates=[c.code,c.name,c.englishName,c.kana,...(Array.isArray(c.aliases)?c.aliases:[])].filter(Boolean);
+  const exact=candidates.find(v=>normalizeCompanyText(v)===q);
+  const prefix=candidates.find(v=>normalizeCompanyText(v).startsWith(q));
+  const part=candidates.find(v=>normalizeCompanyText(v).includes(q));
+  const hit=exact||prefix||part;
+  if(!hit || hit===c.name || hit===c.code) return "";
+  return `一致: ${hit}`;
+}
+
+function getCompanySuggestions(){
+  const q=$("companySearch")?.value||"";
+  const nq=normalizeCompanyText(q);
+  if(!nq) return [];
+  const ind=$("industryFilter")?.value||"";
+  return (dashboardState.companyData||[])
+    .filter(c=>(!ind||c.industry===ind) && companySearchScore(c,q)<999)
+    .sort((a,b)=>companySearchScore(a,q)-companySearchScore(b,q) || String(a.code).localeCompare(String(b.code)))
+    .slice(0,8);
+}
+
+function closeCompanySuggestions(){
+  companyAutocompleteIndex=-1;
+  companyAutocompleteResults=[];
+  const box=$("companySuggestions");
+  if(box){box.classList.remove("open");box.innerHTML="";}
+  $("companySearch")?.setAttribute("aria-expanded","false");
+}
+
+function chooseCompanySuggestion(c){
+  if(!c)return;
+  selectedCompanyCode=c.code;
+  $("companySearch").value=c.name;
+  closeCompanySuggestions();
+  renderCompanies();
+  const detail=$("companyDetail");
+  if(detail)detail.scrollIntoView({block:"nearest",behavior:"smooth"});
+}
+
+function renderCompanySuggestions(){
+  const box=$("companySuggestions"), input=$("companySearch");
+  if(!box||!input)return;
+  const q=input.value.trim();
+  if(!q){closeCompanySuggestions();return;}
+  companyAutocompleteResults=getCompanySuggestions();
+  companyAutocompleteIndex=-1;
+  if(!companyAutocompleteResults.length){
+    box.innerHTML='<div class="company-no-suggestion">候補がありません。別名・証券コードでも検索できます。</div>';
+    box.classList.add("open");input.setAttribute("aria-expanded","true");return;
+  }
+  box.innerHTML=companyAutocompleteResults.map((c,i)=>{
+    const hint=companyMatchHint(c,q);
+    const meta=[c.industry,c.market,hint].filter(Boolean).map(esc).join(" / ");
+    return `<button type="button" class="company-suggestion" role="option" data-company-suggest-index="${i}" aria-selected="false"><span class="company-suggestion-code">${esc(c.code)}</span><span><span class="company-suggestion-name">${esc(c.name)}</span><span class="company-suggestion-meta">${meta}</span></span></button>`;
+  }).join("");
+  box.classList.add("open");input.setAttribute("aria-expanded","true");
+  box.querySelectorAll("[data-company-suggest-index]").forEach(btn=>btn.addEventListener("click",()=>{
+    chooseCompanySuggestion(companyAutocompleteResults[Number(btn.dataset.companySuggestIndex)]);
+  }));
+}
+
+function moveCompanyAutocomplete(step){
+  if(!companyAutocompleteResults.length)return;
+  companyAutocompleteIndex=(companyAutocompleteIndex+step+companyAutocompleteResults.length)%companyAutocompleteResults.length;
+  document.querySelectorAll("[data-company-suggest-index]").forEach((el,i)=>{
+    const active=i===companyAutocompleteIndex;
+    el.classList.toggle("active",active);el.setAttribute("aria-selected",active?"true":"false");
+    if(active)el.scrollIntoView({block:"nearest"});
+  });
 }
 
 function filteredCompanies(){
-  const q=normalizeCompanyText($("companySearch")?.value||"");
+  const q=$("companySearch")?.value||"";
+  const nq=normalizeCompanyText(q);
   const ind=$("industryFilter")?.value||"";
   return (dashboardState.companyData||[]).filter(c=>{
-    const searchable=[c.code,c.name,...(Array.isArray(c.aliases)?c.aliases:[])].map(normalizeCompanyText);
-    const hit=!q || searchable.some(v=>v.includes(q));
+    const hit=!nq || companySearchScore(c,q)<999;
     return hit && (!ind || c.industry===ind);
+  }).sort((a,b)=>{
+    if(!nq)return String(a.code).localeCompare(String(b.code));
+    return companySearchScore(a,q)-companySearchScore(b,q) || String(a.code).localeCompare(String(b.code));
   });
 }
 
@@ -1341,8 +1478,16 @@ function setupEvents(){
   $("jsonSaveBtn").addEventListener("click",saveJSON);
   $("jsonFileInput").addEventListener("change",e=>{if(e.target.files?.[0])loadJSONFile(e.target.files[0]);});
   $("applyEditorBtn").addEventListener("click",applyEditor);
-  $("companySearch").addEventListener("input",renderCompanies);
-  $("industryFilter").addEventListener("change",renderCompanies);
+  $("companySearch").addEventListener("input",()=>{renderCompanySuggestions();renderCompanies();});
+  $("companySearch").addEventListener("focus",()=>{if($("companySearch").value.trim())renderCompanySuggestions();});
+  $("companySearch").addEventListener("keydown",e=>{
+    if(e.key==="ArrowDown"){e.preventDefault();if(!$("companySuggestions").classList.contains("open"))renderCompanySuggestions();moveCompanyAutocomplete(1);}
+    else if(e.key==="ArrowUp"){e.preventDefault();if(!$("companySuggestions").classList.contains("open"))renderCompanySuggestions();moveCompanyAutocomplete(-1);}
+    else if(e.key==="Enter" && companyAutocompleteIndex>=0){e.preventDefault();chooseCompanySuggestion(companyAutocompleteResults[companyAutocompleteIndex]);}
+    else if(e.key==="Escape"){closeCompanySuggestions();}
+  });
+  $("industryFilter").addEventListener("change",()=>{renderCompanies();renderCompanySuggestions();});
+  document.addEventListener("pointerdown",e=>{if(!$("companySearchWrap")?.contains(e.target))closeCompanySuggestions();});
   $("newsCategoryFilter").addEventListener("change",renderEconomicNews);
   $("candlestickSymbol").addEventListener("change",e=>{selectedCandlestickKey=e.target.value;renderCandlestick();});
   document.querySelectorAll("[data-candle-range]").forEach(b=>b.addEventListener("click",()=>{candleRange=Number(b.dataset.candleRange);renderCandlestick();}));
