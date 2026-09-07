@@ -1165,7 +1165,7 @@ function renderCompanyDetail(){
   }
 
   const m=c.metrics||{}, f=c.forecasts||{}, d=c.fullDetail||{};
-  const price=d.price||{}, val=d.valuation||{}, prof=d.profitability||{}, growth=d.growth||{}, fin=d.financials||{}, corp=d.corporate||{}, analyst=d.analyst||{}, dividend=d.dividend||{};
+  const price=d.price||{}, val=d.valuation||{}, prof=d.profitability||{}, growth=d.growth||{}, fin=d.financials||{}, corp=d.corporate||{}, basic=d.basicInfo||{}, analyst=d.analyst||{}, dividend=d.dividend||{};
   const fmtN=(v,digits=2,suffix='')=>isNum(v)?`${fmt(v,digits)}${suffix}`:'未取得';
   const fmtPctN=(v,digits=2)=>isNum(v)?`${fmt(v,digits)}%`:'未取得';
   const fmtBig=(v)=>isNum(v)?`${Math.round(v).toLocaleString('ja-JP')}円`:'未取得';
@@ -1175,7 +1175,10 @@ function renderCompanyDetail(){
   const kvRows=(rows)=>`<div class="company-detail-kv">${rows.map(([k,v])=>`<div class="k">${esc(k)}</div><div class="v">${v}</div>`).join('')}</div>`;
   const statusText=c.detailLoading?'企業詳細を取得中…':c.detailError?`詳細取得エラー: ${c.detailError}`:d.fetchedAt?`外部詳細取得 ${d.fetchedAt}`:'企業マスター情報';
   const website=corp.website?`<a class="company-detail-link" href="${esc(corp.website)}" target="_blank" rel="noopener">${esc(corp.website)} ↗</a>`:'未取得';
-  const address=[corp.address1,corp.address2,corp.city,corp.state,corp.zip,corp.country].filter(Boolean).join(' ');
+  const address=corp.headquarters||'';
+  const jpxUrl=basic.jpx?.sourceUrl||`https://www2.jpx.co.jp/tseHpFront/StockSearch.do?topSearchStr=${encodeURIComponent(c.code)}`;
+  const jpxLink=`<a class="company-detail-link" href="${esc(jpxUrl)}" target="_blank" rel="noopener">JPXで確認 ↗</a>`;
+  const wikidataLink=basic.wikidata?.entityUrl?`<a class="company-detail-link" href="${esc(basic.wikidata.entityUrl)}" target="_blank" rel="noopener">Wikidataで確認 ↗</a>`:'未取得';
 
   $('companyDetail').innerHTML=`
     <div class="company-detail-toolbar">
@@ -1190,9 +1193,9 @@ function renderCompanyDetail(){
       <button type="button" class="btn small" id="companyDetailRefreshBtn" ${c.detailLoading?'disabled':''}>${c.detailLoading?'取得中…':'企業詳細を更新'}</button>
     </div>
     <div class="company-detail-status">${esc(statusText)}</div>
-    ${c.detailError?`<div class="company-detail-error">株価など取得できた項目は表示します。Yahoo Financeの詳細APIが制限された場合は未取得項目を残します。</div>`:''}
+    ${c.detailError?`<div class="company-detail-error">取得できた項目だけ表示します。会社基本情報はJPX・Wikidata、株価・市場指標はYahoo Financeから取得します。</div>`:''}
 
-    <div class="company-desc">${esc(corp.longBusinessSummary||c.profile||'会社概要未取得')}</div>
+    <div class="company-desc">${esc(corp.description||c.profile||'会社概要未取得')}</div>
 
     <div class="company-detail-section">
       <h4>株価・市場データ</h4>
@@ -1293,20 +1296,23 @@ function renderCompanyDetail(){
     </div>
 
     <div class="company-detail-section">
-      <h4>会社基本情報</h4>
+      <h4>会社基本情報 <span class="badge">Yahoo Finance不使用</span></h4>
       ${kvRows([
-        ['英文社名',esc(c.englishName||price.longName||'未取得')],
-        ['業種',esc(c.industry||corp.industry||'未取得')],
-        ['セクター',esc(corp.sector||'未取得')],
-        ['市場',esc(c.market||price.exchange||'未取得')],
-        ['通貨',esc(price.currency||'JPY')],
-        ['決算期',esc(c.fiscalYearEnd||'未取得')],
+        ['会社名',esc(basic.jpx?.name||c.name||'未取得')],
+        ['英文社名',esc(corp.englishName||c.englishName||'未取得')],
+        ['証券コード',esc(c.code||'未取得')],
+        ['市場区分',esc(corp.market||c.market||'未取得')],
+        ['業種',esc(corp.industry||c.industry||'未取得')],
+        ['決算期',esc(corp.fiscalYearEnd||c.fiscalYearEnd||'未取得')],
+        ['本社所在地',esc(address||'未取得')],
+        ['設立',esc(corp.inception||'未取得')],
+        ['代表者/CEO',esc(corp.representative||'未取得')],
         ['従業員数',esc(isNum(corp.employees)?fmt(corp.employees,0):'未取得')],
-        ['電話',esc(corp.phone||'未取得')],
-        ['所在地',esc(address||'未取得')],
         ['Webサイト',website],
-        ['出典',esc(d.source||c.source||'未取得')],
-        ['データ更新',esc(d.fetchedAt||c.updated||'未取得')]
+        ['JPX',jpxLink],
+        ['Wikidata',wikidataLink],
+        ['基本情報出典',esc(d.basicSource||basic.source||'JPX / Wikidata（補助）')],
+        ['データ更新',esc(basic.fetchedAt||d.fetchedAt||c.updated||'未取得')]
       ])}
     </div>
   `;
@@ -1693,6 +1699,7 @@ function updateTimestamp(){
    - 日銀政策: 日本銀行公式ホームページ
    - FRB政策: Federal Reserve FOMC calendar / statement
    - 株価・商品・企業OHLC: Yahoo Finance chart API
+   - 会社基本情報: JPX 東証上場会社情報サービス + Wikidata（補助）
      （Cloudflare Worker経由で取得）
 ============================================================ */
 
@@ -1765,8 +1772,12 @@ async function fetchExternalJSON(target,{direct=true}={}){
 
 /* ============================================================
    企業詳細フル取得（選択企業のみ）
-   Yahoo FinanceをCloudflare Worker経由で参照。
-   API側の制限時はchart APIで取得できる株価項目のみ反映する。
+
+   会社基本情報：JPX（日本取引所グループ）を主情報源、
+                 Wikidataを補助情報源として取得。
+   株価・市場指標：Yahoo FinanceをCloudflare Worker経由で取得。
+
+   会社基本情報にはYahoo FinanceのassetProfileを使用しない。
 ============================================================ */
 const companyDetailInflight=new Map();
 const COMPANY_DETAIL_TTL_MS=10*60*1000;
@@ -1792,8 +1803,8 @@ function unixToDate(v){
 
 async function fetchYahooQuoteSummary(symbol){
   const modules=[
-    'price','summaryDetail','defaultKeyStatistics','financialData','assetProfile',
-    'calendarEvents','earningsTrend','incomeStatementHistory','balanceSheetHistory','cashflowStatementHistory'
+    'price','summaryDetail','defaultKeyStatistics','financialData',
+    'earningsTrend','incomeStatementHistory','balanceSheetHistory','cashflowStatementHistory'
   ].join(',');
   const target=`https://query1.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(symbol)}?modules=${encodeURIComponent(modules)}&formatted=true&corsDomain=finance.yahoo.com`;
   const {data,via}=await fetchExternalJSON(target,{direct:false});
@@ -1810,7 +1821,162 @@ async function fetchYahooQuote(symbol){
   return {q,via};
 }
 
-function applyYahooCompanyDetail(company,detail){
+
+/* ============================================================
+   会社基本情報：JPX + Wikidata
+============================================================ */
+
+function cleanBasicText(v){
+  return String(v??'').replace(/\u00a0/g,' ').replace(/\s+/g,' ').trim();
+}
+
+function normalizeJPXCode(v){
+  const t=cleanBasicText(v).replace(/[^0-9A-Za-z]/g,'');
+  if(/^\d{5}$/.test(t) && t.endsWith('0'))return t.slice(0,4);
+  return t.slice(0,4);
+}
+
+function parseJPXSearchHTML(html,code){
+  const doc=new DOMParser().parseFromString(html,'text/html');
+  const target=String(code);
+  const rows=[...doc.querySelectorAll('tr')];
+  for(const tr of rows){
+    const cells=[...tr.querySelectorAll('th,td')].map(td=>cleanBasicText(td.textContent));
+    if(cells.length<5)continue;
+    const first=normalizeJPXCode(cells[0]);
+    if(first!==target)continue;
+    return {
+      code:target,
+      name:cells[1]||'',
+      market:cells[2]||'',
+      industry:cells[3]||'',
+      fiscalYearEnd:cells[4]||'',
+      sourceUrl:`https://www2.jpx.co.jp/tseHpFront/StockSearch.do?topSearchStr=${encodeURIComponent(target)}`
+    };
+  }
+
+  // DOM構造変更時のフォールバック：ページ全文から検索結果の並びを拾う。
+  const text=cleanBasicText(doc.body?.textContent||html);
+  const code5=`${target}0`;
+  const idx=Math.max(text.indexOf(code5),text.indexOf(target));
+  if(idx>=0){
+    const part=text.slice(idx,idx+500);
+    const markets=['プライム','スタンダード','グロース','TOKYO PRO Market'];
+    const market=markets.find(x=>part.includes(x))||'';
+    return {code:target,name:'',market,industry:'',fiscalYearEnd:'',sourceUrl:`https://www2.jpx.co.jp/tseHpFront/StockSearch.do?topSearchStr=${encodeURIComponent(target)}`};
+  }
+  throw new Error('JPX検索結果から該当企業を判定できませんでした');
+}
+
+async function fetchJPXBasicInfo(company){
+  const code=String(company.code);
+  const target=`https://www2.jpx.co.jp/tseHpFront/StockSearch.do?topSearchStr=${encodeURIComponent(code)}`;
+  const {text}=await fetchExternalText(target,{direct:false});
+  return parseJPXSearchHTML(text,code);
+}
+
+function wikidataClaimEntityId(claims,property){
+  return claims?.[property]?.[0]?.mainsnak?.datavalue?.value?.id||'';
+}
+function wikidataClaimString(claims,property){
+  const v=claims?.[property]?.[0]?.mainsnak?.datavalue?.value;
+  return typeof v==='string'?v:'';
+}
+function wikidataClaimTime(claims,property){
+  const t=claims?.[property]?.[0]?.mainsnak?.datavalue?.value?.time||'';
+  return t?String(t).replace(/^\+/,'').slice(0,10):'';
+}
+function wikidataQuantityValue(claim){
+  const amount=claim?.mainsnak?.datavalue?.value?.amount;
+  const n=Number(amount);
+  return Number.isFinite(n)?n:null;
+}
+function wikidataLatestQuantity(claims,property){
+  const arr=claims?.[property]||[];
+  if(!arr.length)return null;
+  const scored=arr.map(c=>{
+    const q=c.qualifiers?.P585?.[0]?.datavalue?.value?.time||c.qualifiers?.P585?.[0]?.datavalue?.value||'';
+    return {c,date:String(q||'')};
+  }).sort((a,b)=>b.date.localeCompare(a.date));
+  return wikidataQuantityValue(scored[0].c);
+}
+
+async function fetchWikidataEntityLabels(ids){
+  const uniq=[...new Set(ids.filter(Boolean))];
+  if(!uniq.length)return {};
+  const target=`https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${encodeURIComponent(uniq.join('|'))}&props=labels&languages=ja|en&format=json&origin=*`;
+  const {data}=await fetchExternalJSON(target,{direct:false});
+  const out={};
+  for(const id of uniq){
+    const e=data?.entities?.[id];
+    out[id]=e?.labels?.ja?.value||e?.labels?.en?.value||id;
+  }
+  return out;
+}
+
+async function fetchWikidataBasicInfo(company){
+  const query=company.name;
+  const searchUrl=`https://www.wikidata.org/w/api.php?action=wbsearchentities&search=${encodeURIComponent(query)}&language=ja&uselang=ja&type=item&limit=8&format=json&origin=*`;
+  const {data:searchData}=await fetchExternalJSON(searchUrl,{direct:false});
+  const candidates=searchData?.search||[];
+  if(!candidates.length)throw new Error('Wikidataに候補がありません');
+
+  // 会社名一致を優先。上場コードはJPXで照合するため、Wikidataは補助情報として使う。
+  const nName=normalizeCompanyText(company.name);
+  const selected=candidates.find(x=>normalizeCompanyText(x.label)===nName)
+    ||candidates.find(x=>normalizeCompanyText(x.label).includes(nName)||nName.includes(normalizeCompanyText(x.label)))
+    ||candidates[0];
+  const id=selected.id;
+  const entityUrl=`https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${encodeURIComponent(id)}&props=labels|descriptions|claims|sitelinks&languages=ja|en&format=json&origin=*`;
+  const {data}=await fetchExternalJSON(entityUrl,{direct:false});
+  const e=data?.entities?.[id];
+  if(!e||e.missing!==undefined)throw new Error('Wikidataエンティティを取得できません');
+  const claims=e.claims||{};
+  const hqId=wikidataClaimEntityId(claims,'P159');
+  const industryId=wikidataClaimEntityId(claims,'P452');
+  const ceoId=wikidataClaimEntityId(claims,'P169');
+  const labels=await fetchWikidataEntityLabels([hqId,industryId,ceoId]);
+  return {
+    entityId:id,
+    entityUrl:`https://www.wikidata.org/wiki/${id}`,
+    englishName:e.labels?.en?.value||'',
+    japaneseName:e.labels?.ja?.value||selected.label||'',
+    description:e.descriptions?.ja?.value||e.descriptions?.en?.value||selected.description||'',
+    website:wikidataClaimString(claims,'P856'),
+    inception:wikidataClaimTime(claims,'P571'),
+    employees:wikidataLatestQuantity(claims,'P1128'),
+    headquarters:hqId?(labels[hqId]||hqId):'',
+    industry:industryId?(labels[industryId]||industryId):'',
+    representative:ceoId?(labels[ceoId]||ceoId):''
+  };
+}
+
+async function fetchCompanyBasicInfoExternal(company){
+  let jpx=null,wikidata=null;
+  const errors=[];
+  try{jpx=await fetchJPXBasicInfo(company);}catch(e){errors.push(`JPX: ${e.message}`);}
+  try{wikidata=await fetchWikidataBasicInfo(company);}catch(e){errors.push(`Wikidata: ${e.message}`);}
+  if(!jpx&&!wikidata)throw new Error(errors.join(' / ')||'会社基本情報を取得できませんでした');
+  const corporate={
+    englishName:wikidata?.englishName||company.englishName||'',
+    industry:jpx?.industry||company.industry||wikidata?.industry||'',
+    market:jpx?.market||company.market||'',
+    fiscalYearEnd:jpx?.fiscalYearEnd||company.fiscalYearEnd||'',
+    website:wikidata?.website||'',
+    headquarters:wikidata?.headquarters||'',
+    inception:wikidata?.inception||'',
+    employees:wikidata?.employees??null,
+    representative:wikidata?.representative||'',
+    description:wikidata?.description||company.profile||''
+  };
+  return {
+    fetchedAt:new Date().toISOString(),
+    jpx,wikidata,corporate,errors,
+    source:[jpx?'JPX 東証上場会社情報サービス':'',wikidata?'Wikidata（補助）':''].filter(Boolean).join(' + ')
+  };
+}
+
+function applyCompanyDetail(company,detail){
   company.fullDetail=detail;
   company.metrics ||= {};
   const m=company.metrics, p=detail.price||{}, v=detail.valuation||{}, pr=detail.profitability||{}, div=detail.dividend||{};
@@ -1822,17 +1988,21 @@ function applyYahooCompanyDetail(company,detail){
   if(isNum(div.yield))m.dividendYield=div.yield;
   if(isNum(v.trailingEps))m.eps=v.trailingEps;
   if(isNum(v.bookValue))m.bps=v.bookValue;
-  company.updated=detail.fetchedAt?.slice(0,10)||company.updated;
-  if(detail.corporate?.industry && (!company.industry||company.industry==='未取得'))company.industry=detail.corporate.industry;
-  if(detail.corporate?.longBusinessSummary && (!company.profile||company.dataLevel==='master'))company.profile=detail.corporate.longBusinessSummary;
 
+  const basic=detail.basicInfo||{};
+  const corp=basic.corporate||{};
+  if(basic.jpx?.name)company.name=basic.jpx.name;
+  if(corp.englishName)company.englishName=corp.englishName;
+  if(corp.market)company.market=corp.market.startsWith('東証')?corp.market:`東証${corp.market}`;
+  if(corp.industry)company.industry=corp.industry;
+  if(corp.fiscalYearEnd)company.fiscalYearEnd=corp.fiscalYearEnd;
+  if(corp.description && (!company.profile||company.dataLevel==='master'))company.profile=corp.description;
+
+  company.updated=detail.fetchedAt?.slice(0,10)||company.updated;
   const annual=Array.isArray(detail.annualPerformance)?detail.annualPerformance.filter(x=>isNum(x.sales)||isNum(x.netIncome)):[];
   if(annual.length){
     const existingForecast=(company.performance||[]).filter(x=>String(x.period||'').includes('予'));
     company.performance=[...annual,...existingForecast].slice(-6);
-  }
-  if(Array.isArray(detail.officers) && detail.officers.length){
-    // 公式手入力役員は維持し、外部役員はfullDetail側に保持する。
   }
 }
 
@@ -1842,8 +2012,6 @@ function buildCompanyDetailFromYahoo({company,symbol,chart,summary,quote,errors=
   const sd=root.summaryDetail||{};
   const ks=root.defaultKeyStatistics||{};
   const fd=root.financialData||{};
-  const ap=root.assetProfile||{};
-  const ce=root.calendarEvents||{};
   const q=quote?.q||{};
   const meta=chart?.meta||{};
   const bars=chart?.bars||[];
@@ -1869,10 +2037,7 @@ function buildCompanyDetailFromYahoo({company,symbol,chart,summary,quote,errors=
     };
   }).filter(x=>Object.values(x).some(v=>isNum(v))).sort((a,b)=>String(a.period).localeCompare(String(b.period)));
 
-  const officers=(ap.companyOfficers||[]).map(o=>({
-    name:o.name||'', role:o.title||'', age:yahooRaw(o.age), yearBorn:yahooRaw(o.yearBorn), totalPay:yahooRaw(o.totalPay),
-    note:[yahooRaw(o.fiscalYear)?`報酬年度 ${yahooRaw(o.fiscalYear)}`:'',o.exercisedValue?`権利行使 ${yahooText(o.exercisedValue)}`:''].filter(Boolean).join(' / ')
-  }));
+  const officers=[]; // 役員情報はYahoo Financeから取得しない。公式登録データを優先。
 
   return {
     fetchedAt:new Date().toISOString(),
@@ -1931,11 +2096,8 @@ function buildCompanyDetailFromYahoo({company,symbol,chart,summary,quote,errors=
       targetHigh:yahooRaw(fd.targetHighPrice), targetLow:yahooRaw(fd.targetLowPrice), targetMean:yahooRaw(fd.targetMeanPrice),
       recommendationMean:yahooRaw(fd.recommendationMean), recommendation:yahooText(fd.recommendationKey)||'', count:yahooRaw(fd.numberOfAnalystOpinions)
     },
-    corporate:{
-      address1:ap.address1||'',address2:ap.address2||'',city:ap.city||'',state:ap.state||'',zip:ap.zip||'',country:ap.country||'',
-      phone:ap.phone||'',website:ap.website||'',industry:ap.industry||'',sector:ap.sector||'',longBusinessSummary:ap.longBusinessSummary||'',
-      employees:yahooRaw(ap.fullTimeEmployees)
-    },
+    corporate:{}, // 会社基本情報はJPX + Wikidata側で設定
+
     officers,
     annualPerformance:annual
   };
@@ -1946,14 +2108,27 @@ async function fetchCompanyFullDetailExternal(code){
   if(!company)throw new Error('企業マスターにありません');
   if(!/^\d{4}$/.test(String(code)))throw new Error('4桁証券コードではありません');
   const symbol=`${code}.T`;
-  let chart=null, summary=null, quote=null;
+  let chart=null,summary=null,quote=null,basicInfo=null;
   const errors=[];
-  try{ chart=await fetchYahooChart(symbol,'1y'); }catch(e){ errors.push(`chart: ${e.message}`); }
-  try{ summary=await fetchYahooQuoteSummary(symbol); }catch(e){ errors.push(`quoteSummary: ${e.message}`); }
-  try{ quote=await fetchYahooQuote(symbol); }catch(e){ errors.push(`quote: ${e.message}`); }
-  if(!chart&&!summary&&!quote)throw new Error(errors.join(' / ')||'企業詳細を取得できませんでした');
+
+  // 株価・財務指標はYahoo Finance。会社基本情報には使わない。
+  try{chart=await fetchYahooChart(symbol,'1y');}catch(e){errors.push(`Yahoo chart: ${e.message}`);}
+  try{summary=await fetchYahooQuoteSummary(symbol);}catch(e){errors.push(`Yahoo financials: ${e.message}`);}
+  try{quote=await fetchYahooQuote(symbol);}catch(e){errors.push(`Yahoo quote: ${e.message}`);}
+
+  // 会社基本情報はJPX + Wikidata。
+  try{basicInfo=await fetchCompanyBasicInfoExternal(company);}catch(e){errors.push(`基本情報: ${e.message}`);}
+
+  if(!chart&&!summary&&!quote&&!basicInfo)throw new Error(errors.join(' / ')||'企業詳細を取得できませんでした');
+
   const detail=buildCompanyDetailFromYahoo({company,symbol,chart,summary,quote,errors});
-  applyYahooCompanyDetail(company,detail);
+  detail.basicInfo=basicInfo||{};
+  detail.corporate=basicInfo?.corporate||{};
+  detail.basicSource=basicInfo?.source||'会社基本情報 未取得';
+  detail.source=[detail.source,basicInfo?.source].filter(Boolean).join(' / ');
+  if(Array.isArray(basicInfo?.errors) && basicInfo.errors.length)detail.errors.push(...basicInfo.errors);
+
+  applyCompanyDetail(company,detail);
   if(chart?.bars?.length){
     dashboardState.candlestickData.companies ||= {};
     dashboardState.candlestickData.companies[String(code)]={label:company.name,code:String(code),unit:'円',status:'verified',source:`Yahoo Finance chart API（${symbol} / Cloudflare Worker経由）`,bars:chart.bars.slice(-90)};
