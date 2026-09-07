@@ -171,7 +171,14 @@ footer{color:var(--muted);font-size:11px;padding:24px 4px 12px}
 .company-suggestion-meta{font-size:10px;color:var(--muted);margin-top:2px;line-height:1.45}
 .company-suggestion-match{color:var(--accent);font-weight:700}
 .company-no-suggestion{padding:10px 11px;color:var(--muted);font-size:12px}
-.company-layout{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(340px,.85fr);gap:12px}
+.company-layout{display:grid;grid-template-columns:1fr;gap:12px}
+/* 企業一覧を画面幅いっぱいに表示 */
+#companyTable{width:100%;min-width:1060px}
+#companyTable th,#companyTable td{padding:7px 6px;font-size:11px;white-space:nowrap}
+#companyTable th:nth-child(2),#companyTable td:nth-child(2){text-align:left;white-space:normal;min-width:132px}
+#companyTable th:nth-child(3),#companyTable td:nth-child(3){text-align:left;min-width:64px}
+#companyTable td:last-child,#companyTable th:last-child{width:54px}
+@media(min-width:1180px){#companyTable{min-width:0}}
 .company-detail{display:grid;gap:12px}
 .company-hero{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap}
 .company-code{font-family:var(--mono);font-size:12px;color:var(--muted)}
@@ -365,8 +372,8 @@ footer{color:var(--muted);font-size:11px;padding:24px 4px 12px}
   </div>
   <div class="company-layout">
     <div class="panel">
-      <div class="panel-head"><h3>企業一覧・スクリーナー</h3><span class="badge" id="companyCountBadge">0社</span></div>
-      <div class="table-wrap"><table id="companyTable"></table></div>
+      <div class="panel-head"><h3>企業一覧・スクリーナー</h3><span class="badge" id="companyCountBadge">0社・全件表示</span></div>
+      <div class="note" style="margin:0 12px 8px">ページ分割なしで該当企業をすべて一括表示します。横画面では全列を見渡しやすく、狭い画面では横スクロールできます。</div><div class="table-wrap"><table id="companyTable"></table></div>
     </div>
     <div class="panel">
       <div class="panel-head"><h3>企業詳細</h3><span class="badge">役員情報を含む</span></div>
@@ -1119,7 +1126,7 @@ function filteredCompanies(){
 function renderCompanies(){
   renderCompanyFilters();
   const list=filteredCompanies();
-  $("companyCountBadge").textContent=`${list.length}社`;
+  $("companyCountBadge").textContent=`${list.length}社・全件表示`;
   makeTable("companyTable",["コード","会社名","業種","株価","PER","PBR","ROE","配当利回り","売上予想","営業益予想","詳細"],
     list.map(c=>[
       esc(c.code),`${esc(c.name)}<br><span class="${statusClass(c.status)}">${statusLabel(c.status)}</span>`,esc(c.industry||"未取得"),
