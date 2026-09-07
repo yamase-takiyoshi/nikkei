@@ -214,7 +214,7 @@ footer{color:var(--muted);font-size:11px;padding:24px 4px 12px}
 </header>
 
 <div class="toolbar">
-  <button class="btn primary" id="refreshBtn">外部サイトから更新</button>
+  <button class="btn primary" id="refreshBtn">Cloudflare経由で更新</button>
   <span class="badge" id="externalUpdateStatus" aria-live="polite">未実行</span>
   <label class="date-box">基準日 <input type="date" id="baseDateInput" value="2026-09-04"></label>
   <button class="btn" data-range="30">30日</button>
@@ -1534,16 +1534,27 @@ function updateTimestamp(){
    - 日銀政策: 日本銀行公式ホームページ
    - FRB政策: Federal Reserve FOMC calendar / statement
    - 株価・商品・企業OHLC: Yahoo Finance chart API
-     （ブラウザCORS対策として公開CORSプロキシをフォールバック使用）
+     （Cloudflare Worker経由で取得）
 ============================================================ */
 
 const externalUpdateConfig={
-  timeoutMs:20000,
-  proxies:[
-    url=>`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-    url=>`https://corsproxy.io/?url=${encodeURIComponent(url)}`
-  ]
+  timeoutMs:25000,
+  workerBase:"https://marketdata.nitta-katsuhiko.workers.dev"
 };
+
+function workerProxyUrl(target){
+  const base=externalUpdateConfig.workerBase.replace(/\/+$/,"");
+  return `${base}/proxy?url=${encodeURIComponent(target)}`;
+}
+
+async function checkCloudflareWorker(){
+  const base=externalUpdateConfig.workerBase.replace(/\/+$/,"");
+  const text=await fetchTextTimed(`${base}/health`,{headers:{Accept:"application/json"}});
+  let data;
+  try{ data=JSON.parse(text); }catch(_){ throw new Error("Workerのhealth応答がJSONではありません"); }
+  if(!data?.ok)throw new Error(data?.error||"Worker health check failed");
+  return data;
+}
 
 function setExternalUpdateStatus(text,kind="normal",detail=""){
   const el=$("externalUpdateStatus");
@@ -1569,38 +1580,27 @@ async function fetchTextTimed(url,options={}){
 }
 
 async function fetchExternalText(target,{direct=true}={}){
-  const attempts=[];
-  if(direct)attempts.push({url:target,via:"直接"});
-  externalUpdateConfig.proxies.forEach((fn,i)=>attempts.push({url:fn(target),via:i===0?"AllOrigins":"CorsProxy"}));
-  const errors=[];
-  for(const a of attempts){
-    try{
-      const text=await fetchTextTimed(a.url,{headers:{Accept:"*/*"}});
-      if(!text || text.length<2)throw new Error("空レスポンス");
-      return {text,via:a.via};
-    }catch(e){
-      errors.push(`${a.via}: ${e.message}`);
-    }
+  void direct; // 旧呼び出し互換。実際の取得はCloudflare Worker経由。
+  const url=workerProxyUrl(target);
+  try{
+    const text=await fetchTextTimed(url,{headers:{Accept:"*/*"}});
+    if(!text || text.length<2)throw new Error("空レスポンス");
+    return {text,via:"Cloudflare Worker"};
+  }catch(e){
+    throw new Error(`Cloudflare Worker経由の取得失敗: ${e.message}`);
   }
-  throw new Error(errors.join(" / "));
 }
 
 async function fetchExternalJSON(target,{direct=true}={}){
-  const attempts=[];
-  if(direct)attempts.push({url:target,via:"直接"});
-  externalUpdateConfig.proxies.forEach((fn,i)=>attempts.push({url:fn(target),via:i===0?"AllOrigins":"CorsProxy"}));
-  const errors=[];
-  for(const a of attempts){
-    try{
-      const text=await fetchTextTimed(a.url,{headers:{Accept:"application/json,text/plain,*/*"}});
-      const clean=text.replace(/^\uFEFF/,"").trim();
-      const data=JSON.parse(clean);
-      return {data,via:a.via};
-    }catch(e){
-      errors.push(`${a.via}: ${e.message}`);
-    }
+  void direct; // 旧呼び出し互換。実際の取得はCloudflare Worker経由。
+  const url=workerProxyUrl(target);
+  try{
+    const text=await fetchTextTimed(url,{headers:{Accept:"application/json,text/plain,*/*"}});
+    const clean=text.replace(/^\uFEFF/,"").trim();
+    return {data:JSON.parse(clean),via:"Cloudflare Worker"};
+  }catch(e){
+    throw new Error(`Cloudflare Worker経由のJSON取得失敗: ${e.message}`);
   }
-  throw new Error(errors.join(" / "));
 }
 
 function isoJSTNowDate(){
@@ -1944,9 +1944,18 @@ function restoreExternalCache(){
 
 async function autoUpdateExternal(){
   const btn=$("refreshBtn");
-  const oldText=btn?.textContent||"外部サイトから更新";
-  if(btn){btn.disabled=true;btn.textContent="外部更新中…";}
-  setExternalUpdateStatus("更新中…","normal","外部サイトへ接続しています");
+  const oldText=btn?.textContent||"Cloudflare経由で更新";
+  if(btn){btn.disabled=true;btn.textContent="Cloudflare更新中…";}
+  setExternalUpdateStatus("Worker接続中…","normal",externalUpdateConfig.workerBase);
+  try{
+    await checkCloudflareWorker();
+  }catch(e){
+    console.warn("Cloudflare Worker接続失敗",e);
+    setExternalUpdateStatus("Worker接続失敗","error",e.message);
+    if(btn){btn.disabled=false;btn.textContent=oldText;}
+    return;
+  }
+  setExternalUpdateStatus("更新中…","normal","Cloudflare Worker経由で外部サイトへ接続しています");
   const jobs=[
     ["為替",updateFXExternal],
     ["日本国債",updateJGBExternal],
@@ -1979,7 +1988,7 @@ async function autoUpdateExternal(){
     else if(success>0)setExternalUpdateStatus(`一部更新 ${success}/${jobs.length}`,"warn",details.join("\n"));
     else setExternalUpdateStatus("更新失敗","error",details.join("\n"));
     const badge=$("dataModeBadge");
-    if(badge)badge.textContent=`外部自動更新 ${success}/${jobs.length}｜企業検索 ${dashboardState.companyData?.length||0}社`;
+    if(badge)badge.textContent=`Cloudflare自動更新 ${success}/${jobs.length}｜企業検索 ${dashboardState.companyData?.length||0}社`;
   }finally{
     if(btn){btn.disabled=false;btn.textContent=oldText;}
   }
