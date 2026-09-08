@@ -1,0 +1,101 @@
+name: Fix company master fallback
+
+on:
+  push:
+    paths:
+      - .github/workflows/fix-company-master-fallback.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Patch company master fallback
+        shell: python
+        run: |
+          from pathlib import Path
+          import json
+          import re
+
+          path = Path('index.html')
+          text = path.read_text(encoding='utf-8')
+          original = text
+
+          anchor = 'mergeCompanyMasterSeed();\n\n/* 企業一覧の自己修復：'
+          replacement = '''mergeCompanyMasterSeed();
+
+/* 内蔵企業マスターは dashboardState と配列を共有しない。
+   状態復元やJSON適用で companyData が空になっても、このスナップショットから必ず復元する。 */
+const BUILTIN_COMPANY_MASTER = companyData.map(c=>JSON.parse(JSON.stringify(c)));
+
+/* 企業一覧の自己修復：'''
+          if 'const BUILTIN_COMPANY_MASTER =' not in text:
+              if anchor not in text:
+                  raise SystemExit('snapshot insertion anchor not found')
+              text = text.replace(anchor, replacement, 1)
+
+          old_loop = '  for(const base of companyData){'
+          new_loop = '  for(const base of BUILTIN_COMPANY_MASTER){'
+          if old_loop in text:
+              text = text.replace(old_loop, new_loop, 1)
+          elif new_loop not in text:
+              raise SystemExit('company master loop anchor not found')
+
+          old_state = 'let dashboardState = {marketData,bondYields,stockData,commodityData,inflationData,bankRates,companyData,candlestickData,economicNews,historyData,policyInfo};'
+          new_state = 'let dashboardState = {marketData,bondYields,stockData,commodityData,inflationData,bankRates,companyData:BUILTIN_COMPANY_MASTER.map(cloneCompanyRecord),candlestickData,economicNews,historyData,policyInfo};'
+          if old_state in text:
+              text = text.replace(old_state, new_state, 1)
+          elif new_state not in text:
+              raise SystemExit('dashboardState initialization anchor not found')
+
+          # 描画時にも最後の防波堤を置く。状態が空なら内蔵マスターを直接復元してから絞り込む。
+          old_filtered = '''function filteredCompanies(){
+  const q=$("companySearch")?.value||"";
+  const nq=normalizeCompanyText(q);
+  const ind=$("industryFilter")?.value||"";
+  return (dashboardState.companyData||[]).filter(c=>{'''
+          new_filtered = '''function filteredCompanies(){
+  const q=$("companySearch")?.value||"";
+  const nq=normalizeCompanyText(q);
+  const ind=$("industryFilter")?.value||"";
+  if(!Array.isArray(dashboardState.companyData) || dashboardState.companyData.length===0){
+    dashboardState.companyData=BUILTIN_COMPANY_MASTER.map(cloneCompanyRecord);
+  }
+  return dashboardState.companyData.filter(c=>{'''
+          if old_filtered in text:
+              text = text.replace(old_filtered, new_filtered, 1)
+          elif new_filtered not in text:
+              raise SystemExit('filteredCompanies anchor not found')
+
+          # 内蔵検索マスターが実際に十分な件数を持つことを静的確認。
+          m = re.search(r'const companyMasterSeed\s*=\s*(\[\[.*?\]\]);', text, re.S)
+          if not m:
+              raise SystemExit('companyMasterSeed not found')
+          seed = json.loads(m.group(1))
+          if len(seed) < 50:
+              raise SystemExit(f'companyMasterSeed too small: {len(seed)}')
+          print(f'companyMasterSeed entries: {len(seed)}')
+
+          if text == original:
+              print('index.html already patched')
+          else:
+              path.write_text(text, encoding='utf-8')
+              print('index.html patched')
+
+      - name: Commit fix
+        run: |
+          if git diff --quiet -- index.html; then
+            echo "No change needed"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Fix company master fallback"
+          git push
