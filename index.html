@@ -735,7 +735,34 @@ const candlestickData = {
       ]
     }
   },
-  assets:{}
+  assets:{
+    topix:{
+      label:"TOPIX", code:"998405.T", unit:"pt", decimals:2, status:"verified",
+      source:"Yahoo!ファイナンス TOPIX時系列（998405.T / 2026-09-04まで）",
+      bars:[
+        {date:"2026-08-07",open:4063.74,high:4079.15,low:4045.34,close:4074.93,volume:null},
+        {date:"2026-08-10",open:4078.80,high:4111.35,low:4063.49,close:4100.61,volume:null},
+        {date:"2026-08-12",open:4120.04,high:4139.24,low:4101.40,close:4139.00,volume:null},
+        {date:"2026-08-13",open:4158.97,high:4185.68,low:4149.78,close:4176.04,volume:null},
+        {date:"2026-08-14",open:4181.44,high:4220.31,low:4177.03,close:4197.20,volume:null},
+        {date:"2026-08-17",open:4204.36,high:4207.16,low:4169.75,close:4184.11,volume:null},
+        {date:"2026-08-18",open:4169.89,high:4192.60,low:4134.56,close:4140.22,volume:null},
+        {date:"2026-08-19",open:4107.74,high:4107.74,low:4005.45,close:4012.31,volume:null},
+        {date:"2026-08-20",open:4033.85,high:4060.55,low:4031.56,close:4059.73,volume:null},
+        {date:"2026-08-21",open:4038.04,high:4071.77,low:4034.78,close:4067.29,volume:null},
+        {date:"2026-08-24",open:4074.83,high:4083.44,low:4064.90,close:4073.29,volume:null},
+        {date:"2026-08-25",open:4073.89,high:4096.05,low:4060.97,close:4093.67,volume:null},
+        {date:"2026-08-26",open:4096.35,high:4118.44,low:4090.39,close:4111.02,volume:null},
+        {date:"2026-08-27",open:4124.59,high:4130.91,low:4109.57,close:4117.22,volume:null},
+        {date:"2026-08-28",open:4116.82,high:4162.36,low:4114.38,close:4146.71,volume:null},
+        {date:"2026-08-31",open:4118.95,high:4158.72,low:4097.76,close:4156.29,volume:null},
+        {date:"2026-09-01",open:4137.12,high:4196.87,low:4132.24,close:4181.86,volume:null},
+        {date:"2026-09-02",open:4128.97,high:4131.51,low:4078.61,close:4081.60,volume:null},
+        {date:"2026-09-03",open:4109.67,high:4131.17,low:4089.89,close:4102.04,volume:null},
+        {date:"2026-09-04",open:4116.63,high:4116.63,low:4070.64,close:4103.23,volume:null}
+      ]
+    }
+  }
 };
 
 /* 経済ニュース：2026-09-07 公開情報の要約 */
@@ -1664,6 +1691,66 @@ function aggregateMonthlyBars(bars,months=12){
   return [...groups.values()].map(g=>{if(!g._hasVolume)g.volume=null;delete g._hasVolume;return g;});
 }
 
+
+function compactYmd(d){
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,"0"), day=String(d.getDate()).padStart(2,"0");
+  return `${y}${m}${day}`;
+}
+
+function parseYahooJapanHistoryNumber(s){
+  const n=Number(String(s||"").replace(/,/g,"").replace(/[^0-9.+-]/g,""));
+  return Number.isFinite(n)?n:null;
+}
+
+function normalizeYahooJapanHistoryDate(s){
+  const t=String(s||"").trim();
+  let m=t.match(/(\d{4})\/(\d{1,2})\/(\d{1,2})/);
+  if(m)return `${m[1]}-${String(m[2]).padStart(2,"0")}-${String(m[3]).padStart(2,"0")}`;
+  m=t.match(/(\d{4})\/(\d{1,2})/);
+  if(m)return `${m[1]}-${String(m[2]).padStart(2,"0")}`;
+  return "";
+}
+
+function parseYahooJapanHistoryHTML(text){
+  const doc=new DOMParser().parseFromString(text,"text/html");
+  const rows=[];
+  for(const tr of doc.querySelectorAll("table tr")){
+    const cells=[...tr.querySelectorAll("th,td")].map(td=>(td.textContent||"").trim());
+    if(cells.length<5)continue;
+    const date=normalizeYahooJapanHistoryDate(cells[0]);
+    if(!date)continue;
+    const open=parseYahooJapanHistoryNumber(cells[1]), high=parseYahooJapanHistoryNumber(cells[2]), low=parseYahooJapanHistoryNumber(cells[3]), close=parseYahooJapanHistoryNumber(cells[4]);
+    if(![open,high,low,close].every(isNum))continue;
+    rows.push({date,open,high,low,close,volume:null});
+  }
+  return rows;
+}
+
+async function fetchTopixYahooJapan(interval="1d"){
+  const now=new Date();
+  const from=new Date(now);
+  let frame="d", years=2, pages=6;
+  if(interval==="1wk"){frame="w";years=6;pages=6;}
+  if(interval==="1mo" || interval==="1y"){frame="m";years=21;pages=13;}
+  from.setFullYear(from.getFullYear()-years);
+  const uniq=new Map();
+  let via="Cloudflare Worker";
+  for(let page=1;page<=pages;page++){
+    const target=`https://finance.yahoo.co.jp/quote/998405.T/history?from=${compactYmd(from)}&to=${compactYmd(now)}&timeFrame=${frame}&page=${page}`;
+    const r=await fetchExternalText(target,{direct:false}); via=r.via||via;
+    const rows=parseYahooJapanHistoryHTML(r.text);
+    if(!rows.length){ if(page===1)throw new Error("Yahoo!ファイナンスTOPIX時系列を解析できません"); break; }
+    let added=0;
+    for(const b of rows){ if(!uniq.has(b.date)){uniq.set(b.date,b);added++;} }
+    if(!added)break;
+    if(rows.length<20)break;
+  }
+  let bars=[...uniq.values()].sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+  if(interval==="1y")bars=aggregateMonthlyBars(bars,12);
+  if(!bars.length)throw new Error("TOPIX OHLCなし");
+  return {bars,via,meta:{exchangeTimezoneName:"Asia/Tokyo"}};
+}
+
 async function loadCandlestickInterval(interval=candleInterval,{force=false}={}){
   if(!candleIntervalConfig[interval])interval="1d";
   candleInterval=interval;
@@ -1693,18 +1780,25 @@ async function loadCandlestickInterval(interval=candleInterval,{force=false}={})
   $("candleSource").textContent=`Yahoo Finance ${cfg.label}をCloudflare Worker経由で取得しています…`;
   const refresh=$("candleRefreshBtn"); if(refresh)refresh.disabled=true;
   try{
-    const y=await fetchYahooChart(symbol,cfg.range,cfg.yahooInterval);
+    let y;
+    if(key==="topix" && ["1d","1wk","1mo","1y"].includes(interval)){
+      y=await fetchTopixYahooJapan(interval);
+    }else{
+      y=await fetchYahooChart(symbol,cfg.range,cfg.yahooInterval);
+    }
     let bars=y.bars;
     if(cfg.aggregateMinutes)bars=aggregateMinuteBars(bars,cfg.aggregateMinutes,y.meta?.exchangeTimezoneName||"Asia/Tokyo");
     if(cfg.aggregateMonths)bars=aggregateMonthlyBars(bars,cfg.aggregateMonths);
     if(interval==="1mo")bars=bars.map(b=>({...b,date:String(b.date).slice(0,7)}));
     if(!bars.length)throw new Error(`${cfg.label} OHLCなし`);
     const label=baseEntry.data?.label||baseEntry.label||meta.label||symbol;
-    const source=cfg.aggregateMinutes
-      ? `Yahoo Finance chart API（${symbol} / 5分足を${cfg.aggregateMinutes}分単位へ合成 / ${y.via}経由）`
-      : cfg.aggregateMonths
-        ? `Yahoo Finance chart API（${symbol} / 月足を年足へ集計 / ${y.via}経由）`
-        : `Yahoo Finance chart API（${symbol} / ${cfg.label} / ${y.via}経由）`;
+    const source=(key==="topix" && ["1d","1wk","1mo","1y"].includes(interval))
+      ? `Yahoo!ファイナンス日本版 TOPIX時系列（998405.T / ${cfg.label} / ${y.via}経由）`
+      : cfg.aggregateMinutes
+        ? `Yahoo Finance chart API（${symbol} / 5分足を${cfg.aggregateMinutes}分単位へ合成 / ${y.via}経由）`
+        : cfg.aggregateMonths
+          ? `Yahoo Finance chart API（${symbol} / 月足を年足へ集計 / ${y.via}経由）`
+          : `Yahoo Finance chart API（${symbol} / ${cfg.label} / ${y.via}経由）`;
     const obj={label,code:baseEntry.data?.code||meta.code||symbol,unit:baseEntry.data?.unit||meta.unit||"",decimals:baseEntry.data?.decimals??meta.decimals??null,status:"verified",source,bars,fetchedAt:new Date().toISOString()};
     if(interval==="1d")setBaseDailyCandleData(key,obj);
     else dashboardState.candlestickData.intraday[interval][key]=obj;
@@ -2982,9 +3076,13 @@ async function updateMarketPricesExternal(){
     {kind:"commodity",name:"銅",symbol:"HG=F"}
   ];
   const results=await mapLimit(tasks,3,async t=>{
-    const y=await fetchYahooChart(t.symbol,"1mo","1d");
+    let y;
+    if(t.name==="TOPIX")y=await fetchTopixYahooJapan("1d");
+    else y=await fetchYahooChart(t.symbol,"1mo","1d");
     const last=y.bars.at(-1), prev=y.bars.at(-2);
-    const source=`Yahoo Finance chart API（${t.symbol} / ${y.via}経由）`;
+    const source=t.name==="TOPIX"
+      ? `Yahoo!ファイナンス日本版 TOPIX時系列（998405.T / ${y.via}経由）`
+      : `Yahoo Finance chart API（${t.symbol} / ${y.via}経由）`;
     if(t.kind==="jpstock"){
       const item=(dashboardState.stockData.japan||[]).find(x=>x.name===t.name);
       if(!item)throw new Error("表示項目なし");
