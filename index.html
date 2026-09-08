@@ -1370,6 +1370,20 @@ function renderCompanyDetail(){
   const statusText=c.detailLoading?'企業詳細を取得中…':c.detailError?`詳細取得エラー: ${c.detailError}`:d.fetchedAt?`${d.warnings?.length?'一部取得':'取得完了'} ${new Date(d.fetchedAt).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'})}`:'企業マスター情報';
   const website=corp.website?`<a class="company-detail-link" href="${esc(corp.website)}" target="_blank" rel="noopener">${esc(corp.website)} ↗</a>`:'未取得';
   const address=corp.headquarters||'';
+
+  // 直近の通期決算・次期予想・配当をまとめて表示
+  const perfRows=(Array.isArray(c.performance)&&c.performance.length?c.performance:(Array.isArray(d.annualPerformance)?d.annualPerformance:[]))
+    .filter(x=>x&&(isNum(x.sales)||isNum(x.operatingProfit)||isNum(x.ordinaryProfit)||isNum(x.netIncome)||isNum(x.eps)||isNum(x.dividend)));
+  const actualRows=perfRows.filter(x=>!x.forecast&&!String(x.period||'').includes('予'));
+  const forecastRows=perfRows.filter(x=>x.forecast||String(x.period||'').includes('予'));
+  const latestResult=actualRows.at(-1)||{};
+  const prevResult=actualRows.at(-2)||{};
+  const nextForecast=forecastRows.at(-1)||{};
+  const resultGrowth=(now,prev)=>isNum(now)&&isNum(prev)&&prev!==0?(now-prev)/Math.abs(prev)*100:null;
+  const resultPct=(v)=>isNum(v)?`${v>=0?'+':''}${fmt(v,1)}%`:'未取得';
+  const resultMoney=(v)=>isNum(v)?`${fmt(v,0)}百万円`:'未取得';
+  const latestActualDividend=isNum(dividend.actualRate)?dividend.actualRate:(isNum(latestResult.dividend)?latestResult.dividend:null);
+  const forecastDividend=isNum(dividend.rate)?dividend.rate:(isNum(nextForecast.dividend)?nextForecast.dividend:null);
   const jpxUrl=basic.jpx?.sourceUrl||`https://www2.jpx.co.jp/tseHpFront/StockSearch.do?method=topsearch&topSearchStr=${encodeURIComponent(c.code)}`;
   const jpxLink=`<a class="company-detail-link" href="${esc(jpxUrl)}" target="_blank" rel="noopener">JPXで確認 ↗</a>`;
   const wikidataLink=basic.wikidata?.entityUrl?`<a class="company-detail-link" href="${esc(basic.wikidata.entityUrl)}" target="_blank" rel="noopener">Wikidataで確認 ↗</a>`:'未取得';
@@ -1394,6 +1408,56 @@ function renderCompanyDetail(){
     ${c.detailError?`<div class="company-detail-error">取得できた項目だけ表示します。会社基本情報はJPX・Wikidata、株価・市場指標は株探・株予報Proを優先し、未取得分のみYahoo Financeで補完します。</div>`:''}${Array.isArray(d.warnings)&&d.warnings.length?`<div class="company-detail-status">補助取得: ${esc(d.warnings.join(' / '))}</div>`:''}
 
     <div class="company-desc">${esc(corp.description||c.profile||'会社概要未取得')}</div>
+
+    <div class="company-detail-section">
+      <h4>直近の決算・配当</h4>
+      <div class="company-detail-status">
+        直近実績 ${esc(latestResult.period||d.periods?.income||'未取得')}
+        ${latestResult.announced?` ／ 発表日 ${esc(latestResult.announced)}`:''}
+        ${nextForecast.period?` ／ 次期予想 ${esc(nextForecast.period)}`:''}
+      </div>
+      <div class="company-detail-grid">
+        ${card('直近決算期',latestResult.period||d.periods?.income||'未取得')}
+        ${card('決算発表日',latestResult.announced||'未取得')}
+        ${card('売上高',resultMoney(latestResult.sales))}
+        ${card('売上高 前期比',resultPct(resultGrowth(latestResult.sales,prevResult.sales)))}
+        ${card('営業利益',resultMoney(latestResult.operatingProfit))}
+        ${card('営業利益 前期比',resultPct(resultGrowth(latestResult.operatingProfit,prevResult.operatingProfit)))}
+        ${card('経常利益',resultMoney(latestResult.ordinaryProfit))}
+        ${card('経常利益 前期比',resultPct(resultGrowth(latestResult.ordinaryProfit,prevResult.ordinaryProfit)))}
+        ${card('純利益',resultMoney(latestResult.netIncome))}
+        ${card('純利益 前期比',resultPct(resultGrowth(latestResult.netIncome,prevResult.netIncome)))}
+        ${card('EPS（直近実績）',fmtN(latestResult.eps??val.trailingEps,2,'円'))}
+        ${card('EPS（次期予想）',fmtN(nextForecast.eps??val.forwardEps,2,'円'))}
+        ${card('1株配当（直近実績）',fmtN(latestActualDividend,2,'円'))}
+        ${card('1株配当（次期予想）',fmtN(forecastDividend,2,'円'))}
+        ${card('配当利回り',fmtPctN(m.dividendYield??dividend.yield,2))}
+        ${card('配当性向（直近通期）',fmtPctN(dividend.payoutRatio,2))}
+      </div>
+      ${perfRows.length?`
+      <div class="table-wrap" style="margin-top:10px">
+        <table>
+          <thead>
+            <tr>
+              <th>決算期</th><th>区分</th><th>売上高</th><th>営業利益</th><th>経常利益</th><th>純利益</th><th>EPS</th><th>1株配当</th><th>発表日</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${perfRows.slice(-4).map(r=>`<tr>
+              <td>${esc(r.period||'未取得')}</td>
+              <td>${r.forecast||String(r.period||'').includes('予')?'予想':'実績'}</td>
+              <td>${esc(resultMoney(r.sales))}</td>
+              <td>${esc(resultMoney(r.operatingProfit))}</td>
+              <td>${esc(resultMoney(r.ordinaryProfit))}</td>
+              <td>${esc(resultMoney(r.netIncome))}</td>
+              <td>${esc(fmtN(r.eps,2,'円'))}</td>
+              <td>${esc(fmtN(r.dividend,2,'円'))}</td>
+              <td>${esc(r.announced||'未取得')}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`:''}
+    </div>
 
     <div class="company-detail-section">
       <h4>株価・市場データ</h4>
