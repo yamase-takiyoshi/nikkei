@@ -40,6 +40,8 @@ h1{font-size:clamp(24px,4vw,38px);margin:0 0 8px;letter-spacing:.02em}
 }
 .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
 .btn.small{padding:6px 9px;font-size:12px}
+.btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.candle-period-label{font-size:11px;color:var(--muted);font-weight:700;margin-left:2px}
 .date-box{display:flex;align-items:center;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:5px 9px}
 .date-box input{border:0;background:transparent;color:var(--text)}
 .note{
@@ -329,12 +331,22 @@ footer{color:var(--muted);font-size:11px;padding:24px 4px 12px}
 
 
 <section class="section" id="candlestickSection">
-  <div class="section-title"><h2>ローソク足・価格推移</h2><div class="sub">始値・高値・安値・終値（OHLC）＋出来高＋5日移動平均</div></div>
+  <div class="section-title"><h2>ローソク足・価格推移</h2><div class="sub">1分足・5分足・10分足・1時間足・日足 / OHLC＋出来高＋5本移動平均</div></div>
   <div class="candle-controls">
     <select id="candlestickSymbol"></select>
-    <button class="btn small" data-candle-range="5">直近5本</button>
-    <button class="btn small" data-candle-range="10">直近10本</button>
-    <button class="btn small" data-candle-range="20">直近20本</button>
+    <span class="candle-period-label">足種</span>
+    <button class="btn small" data-candle-interval="1m">1分足</button>
+    <button class="btn small" data-candle-interval="5m">5分足</button>
+    <button class="btn small" data-candle-interval="10m">10分足</button>
+    <button class="btn small" data-candle-interval="60m">1時間足</button>
+    <button class="btn small active" data-candle-interval="1d">日足</button>
+    <span class="candle-period-label">表示本数</span>
+    <button class="btn small" data-candle-range="5">5本</button>
+    <button class="btn small" data-candle-range="10">10本</button>
+    <button class="btn small active" data-candle-range="20">20本</button>
+    <button class="btn small" data-candle-range="50">50本</button>
+    <button class="btn small" data-candle-range="100">100本</button>
+    <button class="btn small" id="candleRefreshBtn">この足を更新</button>
     <span class="badge" id="candleStatusBadge">確認済みデータ</span>
   </div>
   <div class="candle-layout">
@@ -343,7 +355,7 @@ footer{color:var(--muted);font-size:11px;padding:24px 4px 12px}
         <canvas id="candlestickCanvas"></canvas>
         <div class="candle-tooltip" id="candlestickTooltip"></div>
       </div>
-      <div class="candle-legend"><span><i class="candle-dot" style="background:var(--up)"></i>陽線（終値＞始値）</span><span><i class="candle-dot" style="background:var(--down)"></i>陰線（終値＜始値）</span><span>— 5日移動平均</span></div>
+      <div class="candle-legend"><span><i class="candle-dot" style="background:var(--up)"></i>陽線（終値＞始値）</span><span><i class="candle-dot" style="background:var(--down)"></i>陰線（終値＜始値）</span><span>— 5本移動平均</span></div>
       <div class="candle-source" id="candleSource"></div>
       <div class="table-wrap" style="margin-top:8px"><table id="latestOHLCtable"></table></div>
     </div>
@@ -354,7 +366,7 @@ footer{color:var(--muted);font-size:11px;padding:24px 4px 12px}
         <div class="guide-item"><strong>上ヒゲ・下ヒゲ</strong><span>上ヒゲ先端が高値、下ヒゲ先端が安値です。長いヒゲは「そこまで動いたが押し戻された」ことを表します。</span></div>
         <div class="guide-item"><strong>陽線と陰線</strong><span>この画面では上昇日を赤、下落日を緑で表示します。色だけで良し悪しを判断せず、出来高と前後の流れも見ます。</span></div>
         <div class="guide-item"><strong>出来高</strong><span>下段の棒です。価格変動と出来高が同時に大きい日は、市場参加者の関心が強かった可能性があります。</span></div>
-        <div class="guide-item"><strong>5日移動平均</strong><span>終値の短期的な平均です。ローソク足が平均線より上か下かで、短期の方向感を大づかみにできます。</span></div>
+        <div class="guide-item"><strong>5本移動平均</strong><span>選択した足種の終値を5本平均した線です。1分足なら5分相当、日足なら5営業日相当の短期方向を確認できます。</span></div>
       </div>
     </div>
   </div>
@@ -776,8 +788,18 @@ let dashboardState = {marketData,bondYields,stockData,commodityData,inflationDat
 let charts = {};
 let currentRange = 30;
 let candleRange = 20;
+let candleInterval = "1d";
 let selectedCandlestickKey = "company:7679";
 let candlestickHitMap = [];
+let candleLoadSeq = 0;
+const CANDLE_INTRADAY_TTL_MS = 45 * 1000;
+const candleIntervalConfig = {
+  "1m":  {label:"1分足",   yahooInterval:"1m",  range:"5d"},
+  "5m":  {label:"5分足",   yahooInterval:"5m",  range:"5d"},
+  "10m": {label:"10分足",  yahooInterval:"5m",  range:"5d", aggregateMinutes:10},
+  "60m": {label:"1時間足", yahooInterval:"60m", range:"1mo"},
+  "1d":  {label:"日足",     yahooInterval:"1d",  range:"6mo"}
+};
 
 const $ = id => document.getElementById(id);
 const isNum = v => typeof v === "number" && Number.isFinite(v);
@@ -1200,7 +1222,7 @@ function renderCompanyDetail(){
       </div>
       <button type="button" class="btn small" id="companyDetailRefreshBtn" ${c.detailLoading?'disabled':''}>${c.detailLoading?'取得中…':'企業詳細を更新'}</button>
     </div>
-    <div class="company-detail-status">${esc(statusText)}｜企業データ v3</div>
+    <div class="company-detail-status">${esc(statusText)}｜企業データ v3 / ロウソク足5周期対応</div>
     ${d.schemaVersion===COMPANY_DATA_VERSION?`<div class="company-detail-status">株価 ${esc(price.asOf||'時点未取得')} ／ 通期決算 ${esc(d.periods?.income||'未取得')} ／ CF ${esc(d.periods?.cashflow||'未取得')} ／ B/S ${esc(d.periods?.balance||'未取得')} ／ 平均株価 ${esc(price.maAsOf||'履歴未取得')}</div>`:''}
     ${Array.isArray(d.sourceRecords)&&d.sourceRecords.length?`<div class="company-detail-status">出典：${d.sourceRecords.map(x=>`<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.label)}</a>`).join(' ／ ')}</div>`:''}
     ${Array.isArray(d.derivedFields)&&d.derivedFields.length?`<div class="company-detail-status">自動計算で補完：${esc(d.derivedFields.join(' ／ '))}</div>`:''}
@@ -1422,31 +1444,138 @@ function renderCandlestickOptions(){
   sel.value=selectedCandlestickKey;
 }
 
+function setCandleControlState(){
+  document.querySelectorAll("[data-candle-interval]").forEach(b=>b.classList.toggle("active",b.dataset.candleInterval===candleInterval));
+  document.querySelectorAll("[data-candle-range]").forEach(b=>b.classList.toggle("active",Number(b.dataset.candleRange)===candleRange));
+}
+
+function getBaseSelectedCandleEntry(){
+  return candleDatasetEntries().find(e=>e.key===selectedCandlestickKey)||null;
+}
+
 function getSelectedCandleData(){
-  return candleDatasetEntries().find(e=>e.key===selectedCandlestickKey)?.data||null;
+  if(candleInterval==="1d")return getBaseSelectedCandleEntry()?.data||null;
+  return dashboardState.candlestickData?.intraday?.[candleInterval]?.[selectedCandlestickKey]||null;
+}
+
+function yahooSymbolForCandleKey(key){
+  if(key==="nikkei")return "^N225";
+  if(String(key).startsWith("company:")){
+    const code=String(key).slice(8);
+    if(/^[0-9A-Z]{4}$/i.test(code))return `${code}.T`;
+  }
+  return "";
 }
 
 function colorVar(name){return getComputedStyle(document.documentElement).getPropertyValue(name).trim();}
 
 function renderLatestOHLC(data,bars){
-  if(!data||!bars.length){makeTable("latestOHLCtable",["日付","始値","高値","安値","終値","日中騰落","出来高"],[]);return;}
+  if(!data||!bars.length){makeTable("latestOHLCtable",["日時","始値","高値","安値","終値","騰落","出来高"],[]);return;}
   const b=bars[bars.length-1], diff=b.close-b.open, pct=b.open?diff/b.open*100:null;
-  makeTable("latestOHLCtable",["日付","始値","高値","安値","終値","日中騰落","出来高"],[
-    [esc(b.date),fmt(b.open,2),fmt(b.high,2),fmt(b.low,2),fmt(b.close,2),`<span class="${cls(diff)}">${sign(diff)} ${fmt(Math.abs(diff),2)} (${fmt(pct,2)}%)</span>`,isNum(b.volume)?b.volume.toLocaleString("ja-JP"):"指数のためなし"]
+  makeTable("latestOHLCtable",["日時","始値","高値","安値","終値","騰落","出来高"],[
+    [esc(b.date),fmt(b.open,2),fmt(b.high,2),fmt(b.low,2),fmt(b.close,2),`<span class="${cls(diff)}">${sign(diff)} ${fmt(Math.abs(diff),2)} (${fmt(pct,2)}%)</span>`,isNum(b.volume)?b.volume.toLocaleString("ja-JP"):"—"]
   ]);
 }
 
 function renderCandlestick(){
   renderCandlestickOptions();
+  setCandleControlState();
   const data=getSelectedCandleData();
-  if(!data){$("candleSource").textContent="ローソク足データ未取得";return;}
-  let bars=(data.bars||[]).slice().sort((a,b)=>a.date.localeCompare(b.date));
+  const intervalLabel=candleIntervalConfig[candleInterval]?.label||candleInterval;
+  if(!data){
+    $("candleStatusBadge").textContent=`${intervalLabel} / 未取得`;
+    $("candleStatusBadge").className="badge status-missing";
+    $("candleSource").textContent=`${intervalLabel}データ未取得。「この足を更新」を押してください。`;
+    renderLatestOHLC(null,[]);
+    drawCandlestick({unit:"円"},[]);
+    return;
+  }
+  let bars=(data.bars||[]).slice().sort((a,b)=>String(a.date).localeCompare(String(b.date)));
   bars=bars.slice(-Math.min(candleRange,bars.length));
-  $("candleStatusBadge").textContent=`${statusLabel(data.status)} / ${bars.length}本`;
+  $("candleStatusBadge").textContent=`${intervalLabel} / ${statusLabel(data.status)} / ${bars.length}本`;
   $("candleStatusBadge").className=`badge ${statusClass(data.status)}`;
-  $("candleSource").textContent=`${data.label}｜出典：${data.source}｜最新OHLC ${bars.at(-1)?.date||"未取得"}`;
+  $("candleSource").textContent=`${data.label}｜${intervalLabel}｜出典：${data.source}｜最新OHLC ${bars.at(-1)?.date||"未取得"}`;
   renderLatestOHLC(data,bars);
   drawCandlestick(data,bars);
+}
+
+function dateTimePartsInTimeZone(unixSeconds,timeZone="UTC"){
+  const d=new Date(unixSeconds*1000);
+  const parts=new Intl.DateTimeFormat("en-CA",{timeZone,year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hour12:false}).formatToParts(d);
+  const g=t=>parts.find(x=>x.type===t)?.value||"";
+  return {date:`${g("year")}-${g("month")}-${g("day")}`,hour:Number(g("hour")),minute:Number(g("minute")),hh:g("hour"),mm:g("minute")};
+}
+
+function aggregateMinuteBars(bars,minutes,timeZone="Asia/Tokyo"){
+  const groups=new Map();
+  for(const b of bars){
+    if(!isNum(b.timestamp)||!isNum(b.open)||!isNum(b.high)||!isNum(b.low)||!isNum(b.close))continue;
+    const p=dateTimePartsInTimeZone(b.timestamp,timeZone);
+    const bucketMinute=Math.floor(p.minute/minutes)*minutes;
+    const key=`${p.date} ${String(p.hour).padStart(2,"0")}:${String(bucketMinute).padStart(2,"0")}`;
+    if(!groups.has(key))groups.set(key,{date:key,timestamp:b.timestamp,open:b.open,high:b.high,low:b.low,close:b.close,volume:isNum(b.volume)?b.volume:0,_hasVolume:isNum(b.volume)});
+    else{
+      const g=groups.get(key);
+      g.high=Math.max(g.high,b.high); g.low=Math.min(g.low,b.low); g.close=b.close;
+      if(isNum(b.volume)){g.volume+=b.volume;g._hasVolume=true;}
+    }
+  }
+  return [...groups.values()].map(g=>{if(!g._hasVolume)g.volume=null;delete g._hasVolume;return g;}).sort((a,b)=>a.timestamp-b.timestamp);
+}
+
+async function loadCandlestickInterval(interval=candleInterval,{force=false}={}){
+  if(!candleIntervalConfig[interval])interval="1d";
+  candleInterval=interval;
+  setCandleControlState();
+  const key=selectedCandlestickKey;
+  const baseEntry=getBaseSelectedCandleEntry();
+  const symbol=yahooSymbolForCandleKey(key);
+  if(!baseEntry||!symbol){renderCandlestick();return;}
+
+  if(interval==="1d" && !force){renderCandlestick();return;}
+
+  dashboardState.candlestickData.intraday ||= {};
+  dashboardState.candlestickData.intraday[interval] ||= {};
+  const cached=interval==="1d"?baseEntry.data:dashboardState.candlestickData.intraday[interval][key];
+  const fetchedAt=Date.parse(cached?.fetchedAt||"");
+  if(!force && interval!=="1d" && cached && Number.isFinite(fetchedAt) && Date.now()-fetchedAt<CANDLE_INTRADAY_TTL_MS){renderCandlestick();return;}
+
+  const cfg=candleIntervalConfig[interval];
+  const seq=++candleLoadSeq;
+  $("candleStatusBadge").textContent=`${cfg.label} 取得中…`;
+  $("candleStatusBadge").className="badge";
+  $("candleSource").textContent=`Yahoo Finance ${cfg.label}をCloudflare Worker経由で取得しています…`;
+  const refresh=$("candleRefreshBtn"); if(refresh)refresh.disabled=true;
+  try{
+    const y=await fetchYahooChart(symbol,cfg.range,cfg.yahooInterval);
+    let bars=y.bars;
+    if(cfg.aggregateMinutes)bars=aggregateMinuteBars(bars,cfg.aggregateMinutes,y.meta?.exchangeTimezoneName||"Asia/Tokyo");
+    if(!bars.length)throw new Error(`${cfg.label} OHLCなし`);
+    const label=baseEntry.data?.label||baseEntry.label||symbol;
+    const source=cfg.aggregateMinutes
+      ? `Yahoo Finance chart API（${symbol} / 5分足を${cfg.aggregateMinutes}分単位へ合成 / ${y.via}経由）`
+      : `Yahoo Finance chart API（${symbol} / ${cfg.label} / ${y.via}経由）`;
+    const obj={label,code:baseEntry.data?.code||symbol,unit:baseEntry.data?.unit||"円",status:"verified",source,bars,fetchedAt:new Date().toISOString()};
+    if(interval==="1d"){
+      if(key==="nikkei")dashboardState.candlestickData.nikkei=obj;
+      else if(key.startsWith("company:")){
+        const code=key.slice(8); dashboardState.candlestickData.companies ||= {}; dashboardState.candlestickData.companies[code]=obj;
+      }
+    }else dashboardState.candlestickData.intraday[interval][key]=obj;
+    saveExternalCache();
+    if(seq===candleLoadSeq)renderCandlestick();
+  }catch(e){
+    console.warn("ローソク足取得",e);
+    if(seq===candleLoadSeq){
+      $("candleStatusBadge").textContent=`${cfg.label} 取得失敗`;
+      $("candleStatusBadge").className="badge status-missing";
+      $("candleSource").textContent=`${cfg.label}取得失敗：${e.message||e}`;
+      const existing=getSelectedCandleData();
+      if(existing)renderCandlestick(); else {renderLatestOHLC(null,[]);drawCandlestick({unit:"円"},[]);}
+    }
+  }finally{
+    if(refresh)refresh.disabled=false;
+  }
 }
 
 function drawCandlestick(data,bars){
@@ -1456,11 +1585,11 @@ function drawCandlestick(data,bars){
   canvas.width=Math.round(w*dpr); canvas.height=Math.round(h*dpr); canvas.style.width=w+"px"; canvas.style.height=h+"px";
   const ctx=canvas.getContext("2d"); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,w,h);
   if(!bars.length){ctx.fillStyle=colorVar("--muted");ctx.font="13px sans-serif";ctx.fillText("OHLCデータ未取得",20,30);return;}
-  const left=56,right=14,top=16,bottom=28,volH=72,gap=14,priceBottom=h-bottom-volH-gap;
+  const left=56,right=14,top=16,bottom=32,volH=72,gap=14,priceBottom=h-bottom-volH-gap;
   const lows=bars.map(b=>b.low), highs=bars.map(b=>b.high); let min=Math.min(...lows),max=Math.max(...highs);
   const pad=Math.max((max-min)*.08,1); min-=pad;max+=pad;
   const y=v=>top+(max-v)/(max-min)*(priceBottom-top);
-  const plotW=w-left-right, step=plotW/bars.length, bodyW=Math.max(3,Math.min(16,step*.58));
+  const plotW=w-left-right, step=plotW/bars.length, bodyW=Math.max(2,Math.min(16,step*.58));
   const line=colorVar("--line"), muted=colorVar("--muted"), up=colorVar("--up"), down=colorVar("--down"), accent=colorVar("--accent");
   ctx.font="10px "+colorVar("--mono"); ctx.textAlign="right"; ctx.textBaseline="middle";
   for(let i=0;i<=5;i++){const val=max-(max-min)*i/5, yy=top+(priceBottom-top)*i/5;ctx.strokeStyle=line;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(left,yy);ctx.lineTo(w-right,yy);ctx.stroke();ctx.fillStyle=muted;ctx.fillText(val.toLocaleString("ja-JP",{maximumFractionDigits:2}),left-6,yy);}
@@ -1473,11 +1602,11 @@ function drawCandlestick(data,bars){
     if(isNum(b.volume)){const vh=(b.volume/maxVol)*volH;ctx.globalAlpha=.38;ctx.fillRect(x-bodyW/2,h-bottom-vh,bodyW,vh);ctx.globalAlpha=1;}
     candlestickHitMap.push({x0:x-step/2,x1:x+step/2,bar:b,x});
   });
-  // 5日移動平均
+  // 選択足種の5本移動平均
   if(bars.length>=5){ctx.strokeStyle=accent;ctx.lineWidth=2;ctx.beginPath();let started=false;bars.forEach((b,i)=>{if(i<4)return;const avg=bars.slice(i-4,i+1).reduce((a,z)=>a+z.close,0)/5;const x=left+step*(i+.5),yy=y(avg);if(!started){ctx.moveTo(x,yy);started=true}else ctx.lineTo(x,yy);});ctx.stroke();}
-  // 日付
+  // 日時ラベル
   ctx.fillStyle=muted;ctx.textAlign="center";ctx.textBaseline="top";const every=Math.max(1,Math.ceil(bars.length/6));
-  bars.forEach((b,i)=>{if(i%every===0||i===bars.length-1){const x=left+step*(i+.5);ctx.fillText(b.date.slice(5).replace("-","/"),x,h-bottom+5);}});
+  bars.forEach((b,i)=>{if(i%every===0||i===bars.length-1){const x=left+step*(i+.5);let label=String(b.date||"");label=label.length>10?label.slice(5):label.slice(5).replace("-","/");if(label.length>10)label=label.replace("-","/");ctx.fillText(label,x,h-bottom+5);}});
   ctx.textAlign="left";ctx.textBaseline="middle";ctx.fillText("出来高",4,h-bottom-volH/2);
 
   canvas.onpointermove=e=>{
@@ -2466,7 +2595,7 @@ async function fetchCompanyFullDetailExternal(code){
   const company=(dashboardState.companyData||[]).find(c=>String(c.code)===String(code));
   if(!company||!/^[0-9A-Z]{4}$/i.test(String(code)))throw new Error('企業の証券コードを確認してください');
   const warnings=[];
-  const jobs=[['株探・株式情報',()=>fetchKabutanCompanyInfo(company)],['株予報Pro',()=>fetchKabuyohoCompanyInfo(company)],['株探・決算表',()=>fetchKabutanFinance(company)],['日足終値',()=>fetchYahooChart(`${code}.T`,'2y')],['役員情報',()=>fetchCompanyOfficers(company)]];
+  const jobs=[['株探・株式情報',()=>fetchKabutanCompanyInfo(company)],['株予報Pro',()=>fetchKabuyohoCompanyInfo(company)],['株探・決算表',()=>fetchKabutanFinance(company)],['日足終値',()=>fetchYahooChart(`${code}.T`,'2y','1d')],['役員情報',()=>fetchCompanyOfficers(company)]];
   const results=await Promise.allSettled(jobs.map(([,run])=>run()));
   const data=results.map((r,i)=>{if(r.status==='fulfilled')return r.value;warnings.push(`${jobs[i][0]}: ${r.reason?.message||r.reason}`);return null;});
   company.sourceDataCache ||= {schemaVersion:COMPANY_DATA_VERSION};
@@ -2600,23 +2729,28 @@ async function updateFXExternal(){
 }
 
 /* ---------- Yahoo Finance OHLC ---------- */
-function parseYahooChart(data){
+function parseYahooChart(data,interval="1d"){
   const r=data?.chart?.result?.[0];
   if(!r)throw new Error(data?.chart?.error?.description||"Yahooデータなし");
   const q=r.indicators?.quote?.[0]||{};
   const tz=r.meta?.exchangeTimezoneName||"UTC";
-  const bars=(r.timestamp||[]).map((ts,i)=>({
-    date:isoDateInTimeZone(ts,tz),
-    open:q.open?.[i],high:q.high?.[i],low:q.low?.[i],close:q.close?.[i],volume:q.volume?.[i]
-  })).filter(b=>isNum(b.close));
+  const intraday=interval!=="1d";
+  const bars=(r.timestamp||[]).map((ts,i)=>{
+    const p=dateTimePartsInTimeZone(ts,tz);
+    return {
+      timestamp:ts,
+      date:intraday?`${p.date} ${p.hh}:${p.mm}`:p.date,
+      open:q.open?.[i],high:q.high?.[i],low:q.low?.[i],close:q.close?.[i],volume:q.volume?.[i]
+    };
+  }).filter(b=>isNum(b.close));
   if(!bars.length)throw new Error("OHLCなし");
   return {bars,meta:r.meta||{}};
 }
 
-async function fetchYahooChart(symbol,range="1mo"){
-  const target=`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=${range}&interval=1d&events=div%2Csplits&includePrePost=false`;
+async function fetchYahooChart(symbol,range="1mo",interval="1d"){
+  const target=`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=${encodeURIComponent(range)}&interval=${encodeURIComponent(interval)}&events=div%2Csplits&includePrePost=false`;
   const {data,via}=await fetchExternalJSON(target,{direct:false});
-  return {...parseYahooChart(data),via};
+  return {...parseYahooChart(data,interval),via};
 }
 
 async function mapLimit(items,limit,worker){
@@ -2646,7 +2780,7 @@ async function updateMarketPricesExternal(){
     {kind:"commodity",name:"銅",symbol:"HG=F"}
   ];
   const results=await mapLimit(tasks,3,async t=>{
-    const y=await fetchYahooChart(t.symbol,"1mo");
+    const y=await fetchYahooChart(t.symbol,"1mo","1d");
     const last=y.bars.at(-1), prev=y.bars.at(-2);
     const source=`Yahoo Finance chart API（${t.symbol} / ${y.via}経由）`;
     if(t.kind==="jpstock"){
@@ -2681,7 +2815,7 @@ async function updateMarketPricesExternal(){
 async function updateCompanyCandlesExternal(){
   const codes=[...new Set(["9948","7679",String(selectedCompanyCode||"")].filter(x=>/^[0-9A-Z]{4}$/i.test(x)))];
   const results=await mapLimit(codes,2,async code=>{
-    const y=await fetchYahooChart(`${code}.T`,"1mo");
+    const y=await fetchYahooChart(`${code}.T`,"1mo","1d");
     const company=(dashboardState.companyData||[]).find(c=>String(c.code)===code);
     const label=company?.name||code;
     const source=`Yahoo Finance chart API（${code}.T / ${y.via}経由）`;
@@ -2954,8 +3088,10 @@ function setupEvents(){
   $("industryFilter").addEventListener("change",()=>{renderCompanies();renderCompanySuggestions();});
   document.addEventListener("pointerdown",e=>{if(!$("companySearchWrap")?.contains(e.target))closeCompanySuggestions();});
   $("newsCategoryFilter").addEventListener("change",renderEconomicNews);
-  $("candlestickSymbol").addEventListener("change",e=>{selectedCandlestickKey=e.target.value;renderCandlestick();});
+  $("candlestickSymbol").addEventListener("change",e=>{selectedCandlestickKey=e.target.value;loadCandlestickInterval(candleInterval).catch(err=>console.warn(err));});
+  document.querySelectorAll("[data-candle-interval]").forEach(b=>b.addEventListener("click",()=>loadCandlestickInterval(b.dataset.candleInterval).catch(err=>console.warn(err))));
   document.querySelectorAll("[data-candle-range]").forEach(b=>b.addEventListener("click",()=>{candleRange=Number(b.dataset.candleRange);renderCandlestick();}));
+  $("candleRefreshBtn")?.addEventListener("click",()=>loadCandlestickInterval(candleInterval,{force:true}).catch(err=>console.warn(err)));
   $("themeBtn").addEventListener("click",()=>{
     const root=document.documentElement;
     const dark=root.dataset.theme==="dark";
