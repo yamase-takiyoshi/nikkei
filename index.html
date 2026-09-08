@@ -28,7 +28,30 @@ a{color:var(--accent)}
 header{background:linear-gradient(135deg,#0d3557,#164b7a);color:#fff;border-radius:16px;padding:20px;box-shadow:var(--shadow)}
 html[data-theme="dark"] header{background:linear-gradient(135deg,#0d3557,#164b7a);color:#fff}
 #dataModeBadge{background:#0b2239;border-color:#0b2239;color:#fff;font-weight:800}
-html:not([data-theme="dark"]) .status-sample,html:not([data-theme="dark"]) .status-official,html[data-theme="light"] .status-sample,html[data-theme="light"] .status-official{display:inline-block;padding:1px 6px;border-radius:999px;background:#0b2239;color:#fff;font-weight:800}
+/* ライトモード：ヘッダー以外は白地＋黒文字を基本にする */
+html:not([data-theme="dark"]) .status-sample,
+html:not([data-theme="dark"]) .status-official,
+html[data-theme="light"] .status-sample,
+html[data-theme="light"] .status-official{
+  display:inline;
+  padding:0;
+  border-radius:0;
+  background:transparent;
+  color:#17202a;
+  font-weight:800;
+}
+html:not([data-theme="dark"]) .badge:not(#dataModeBadge),
+html[data-theme="light"] .badge:not(#dataModeBadge){
+  background:#fff;
+  color:#17202a;
+  border-color:#d9e0e7;
+}
+html:not([data-theme="dark"]) .note,
+html[data-theme="light"] .note{
+  background:#fff;
+  color:#17202a;
+}
+
 .header-top{display:flex;gap:16px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
 h1{font-size:clamp(24px,4vw,38px);margin:0 0 8px;letter-spacing:.02em}
 .subtitle{opacity:.9;font-size:14px}
