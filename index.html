@@ -281,6 +281,19 @@ footer{color:var(--muted);font-size:11px;padding:24px 4px 12px}
 .company-sales-card button:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
 @media(max-width:600px){.company-sales-card{padding:12px}.company-sales-chart{height:320px}.company-sales-summary strong{font-size:18px}}
 
+
+/* 日本経済新聞の公開見出し */
+.nikkei-news-controls{gap:10px 18px;font-size:13px}
+.nikkei-news-controls button{font-size:14px;min-height:42px}
+.nikkei-news-card{display:flex;flex-direction:column;justify-content:space-between}
+.nikkei-news-card .news-meta{font-size:13px;gap:8px;flex-wrap:wrap}
+.nikkei-news-card .news-card-head h3{font-size:17px;line-height:1.65;margin:10px 0 4px}
+.nikkei-news-card h3 a{color:var(--text);text-decoration:none}
+.nikkei-news-card h3 a:hover{text-decoration:underline;color:var(--accent)}
+.nikkei-news-card a:focus-visible,.nikkei-news-controls a:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.nikkei-news-link{padding:0 14px 14px;text-align:right;font-size:14px}
+#nikkeiNewsUpdated{color:var(--muted)}
+
 </style>
 </head>
 <body>
@@ -328,7 +341,7 @@ footer{color:var(--muted);font-size:11px;padding:24px 4px 12px}
   <span class="status-sample">「サンプル」</span>は入力値、
   <span class="status-official">「確認済み」</span>は公表値、
   <span class="status-missing">「データ未取得」</span>は推測せず空欄扱いです。
-  「外部サイトから更新」を押すと、為替・主要株価指数・商品・日米国債利回り・日銀/FRB政策金利・CPI・選択企業の株価/ローソク足（企業・為替・商品・暗号資産・指数）を外部サイトから取得して再描画します。取得に失敗した項目は直前値を保持します。
+  「外部サイトから更新」を押すと、為替・主要株価指数・商品・日米国債利回り・日銀/FRB政策金利・CPI・選択企業の株価/ローソク足（企業・為替・商品・暗号資産・指数）と日経の記事見出しを外部サイトから取得して再描画します。取得に失敗した項目は直前値を保持します。
 </div>
 
 <section class="section">
@@ -336,6 +349,14 @@ footer{color:var(--muted);font-size:11px;padding:24px 4px 12px}
   <div class="summary-grid" id="summaryGrid"></div>
 </section>
 
+
+<section class="section" id="nikkeiNewsSection" aria-labelledby="nikkeiNewsTitle">
+  <div class="section-title"><h2 id="nikkeiNewsTitle">日本経済新聞の記事</h2><span class="badge" id="nikkeiNewsCount">取得中</span></div>
+  <div class="news-controls nikkei-news-controls"><button class="btn primary" id="nikkeiNewsRefresh" type="button">日経の記事を更新</button><span id="nikkeiNewsUpdated"></span><a href="https://www.nikkei.com/" target="_blank" rel="noopener noreferrer">日経電子版を開く ↗</a></div>
+  <div class="note hidden" id="nikkeiNewsStatus" role="status" aria-live="polite"></div>
+  <div class="news-grid" id="nikkeiNewsGrid"></div>
+  <div class="note">Googleニュースに掲載された日経の記事見出しです。本文は記事リンクから日経電子版でご覧ください。記事によってはログイン・購読が必要です。</div>
+</section>
 
 <section class="section" id="economicNewsSection">
   <div class="section-title"><h2>経済ニュース・かみ砕き解説</h2><div class="sub">何が起きた → なぜ重要 → 市場・生活への影響 → 次に見る数字</div></div>
@@ -346,7 +367,7 @@ footer{color:var(--muted);font-size:11px;padding:24px 4px 12px}
     <span class="badge" id="newsUpdatedBadge">ニュース基準日 2026-09-07</span>
   </div>
   <div class="news-grid" id="economicNewsGrid"></div>
-  <div class="note">ニュース解説は初期データです。更新ボタンは市場・金利・物価・企業株価を自動更新しますが、ニュース本文の自動転載・AI要約は行いません。</div>
+  <div class="note">この欄の解説は初期データです。日経の記事見出しは上の専用欄で更新できます。</div>
 </section>
 
 <section class="section">
@@ -857,6 +878,111 @@ const candlestickData = {
     }
   }
 };
+
+const NIKKEI_NEWS_SNAPSHOT={"items": [{"title": "東証後場寄り 日経平均は堅調 ソフトバンクG一段高、トヨタは下げ幅拡大", "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE9rSUFyb01TTjV0dU9QdGZPbXNhdGR6M2E4dDVROUxtSFRQRUxyVmpad1lRMlJtSzkxcGpYZS1QRjJnNHBWeWdzRXZvWTVpY3hpN0EwYjhHWV83aUw3OXpoVGxWeTFSa2pZNEVGcg?oc=5", "published": "2026-09-08T03:59:25+00:00", "source": "日本経済新聞"}, {"title": "新興株前引け グロース250が反発 テーマ株物色続く、オンコリス急伸", "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE1VLVRYSVF0MjMwZGp4UjE0MVFxbXNfaXZyOUZ5RVYzWXhfdS1GQzRHdEpHQTRIdkxQS3l3SEpwczZTb3ZZZ3BDaWFiZWNrRFNDbXRRY200UUZGc2M1dzVmYlk5T2lyWk1leG5GUw?oc=5", "published": "2026-09-08T02:41:06+00:00", "source": "日本経済新聞"}, {"title": "HDDが最高値更新、7〜9月15%高 SSD代替と中国需要で", "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE1PeU56SHVSQ1Q5SWNOSEtXZXlYcWY3Mk5ENHZ0YmFRYXZyQnJsVUZPNWZoNDEyUW5wNHFLMVdBU3hBcjBoQk9wVEZJbGxuRmVmc3lZWkV0RkI1X2h5TVhrYUttT2wwODZfMHFYaQ?oc=5", "published": "2026-09-08T02:00:00+00:00", "source": "日本経済新聞"}, {"title": "ソウルの住宅高騰、韓国・李政権を直撃 対策迷走で支持下落止まらず", "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE1kdnlyVTRnSmsybFJGM0xWS2U2N183dDl5cVpMOFByVUlpXzVGOU9oRlkwcEpHeEdsZ0hDLU9abXhzM2lPY0R3bG94dWM5Z0NxcDlxTnBtWWN2WlBhSkE5YmRYeGtWYnhfaGtYcA?oc=5", "published": "2026-09-08T02:00:00+00:00", "source": "日本経済新聞"}, {"title": "綻ぶ反ナチス、戦後ドイツ「終わりの始まり」 州議会選で極右圧勝", "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE5QR2RUbW1DTHh2UHJzb1JNbnp2TEd2M2hXSWV2V1J5V0tQVTduY0VtSnRyZlR5QXRfOGJEa0RkOUlOZmV3YkliNU1WZlA1Zl9UWDFkMG9xWHA0dThENkxrTVpSOEQ3aHk3eGhuOQ?oc=5", "published": "2026-09-08T01:00:00+00:00", "source": "日本経済新聞"}, {"title": "実質GDP年率1.4%増に上方修正 4〜6月改定値、3期連続プラス", "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE5kMloyd1d5eDFnSmxlQ2FNSEx3THZqcV94ajJvU3FSVk1ZUG1FaTZLLU84R2ZwQ19YSjBGd3pXN1NORTBqMWhqNUFYUTVOWmRBQ1AyZlNxUlZDSjI2T1BsdUlXcy1Wcl9OZFA4Mw?oc=5", "published": "2026-09-07T23:55:43+00:00", "source": "日本経済新聞"}, {"title": "トヨタ、レクサスの小型SUV「UX」生産終了 2027年2月で", "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE5OQXJJbl82Q1hEcl9uLWpySzRQQUlTN3FYQXc0aHctZnk1Z2JMc2paamFGdzNCMGlwc3hUN0MyNkd0ZXZxSVE2cE1aOFlIdUh5SEFORGFWLUtxeVY4Z1RaMGRDLXVIZTFadUdsdQ?oc=5", "published": "2026-09-07T22:40:48+00:00", "source": "日本経済新聞"}, {"title": "[FT]コンサル大手、若手に出社回帰促す AI普及で対人スキル重視", "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTFBXOFJoSHBtRWVuWmdUY2RzSWdONlNVYnpvTUpUalhBamdydXBFcTlpMjlUYlpmYkdiRlhLbERINVlSdVFwbko1Q2NySlN6WkFVNzBIRHViclk2clBGaEhXem9WUkZMZk1KeTQxYw?oc=5", "published": "2026-09-07T21:00:00+00:00", "source": "日本経済新聞"}, {"title": "刺激求める「ドパガキ」、ドラマは切り抜き視聴 退屈を嫌う時代に", "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE9DMWdjczhUUllXdkhNOGUxZWNILWdZWnBIMEdIQmFMVzZLQURGdVBraUdBdjNSTXlMdlh3TERjRHdkNUIwdzNxcVlWeEViUlktNzRObXFZZ2lWWl9xWTJzTUxzYzh3TUt2T2ZobA?oc=5", "published": "2026-09-07T20:00:00+00:00", "source": "日本経済新聞"}, {"title": "日立を離れたKOKUSAI、変貌支えた「2人の師」 グローバル経営体得", "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTE42ZWphSm9TZ2FGSlFWTkxYeHBybzNXVEpoYUJJSG80Q0g2R1pMVGlBQmFyRHN3V2xJSUJrVGpkWGUwZWNQSWtvanBCTjVON2RBWkdyX0JRTFVxR1duUTNhdUJBTUJNQ3E4bm9LdA?oc=5", "published": "2026-09-07T20:00:00+00:00", "source": "日本経済新聞"}], "fetchedAt": "2026-09-08T05:24:44.764716+00:00", "source": "Google ニュースに掲載された日本経済新聞の見出し"};
+// Only public headlines and article links are stored; article bodies are opened at the publisher.
+const NIKKEI_RSS_URL='https://news.google.com/rss/search?'+new URLSearchParams({q:'site:nikkei.com when:7d',hl:'ja',gl:'JP',ceid:'JP:ja'}).toString();
+const NIKKEI_FEED_API='https://api.rss2json.com/v1/api.json?'+new URLSearchParams({rss_url:NIKKEI_RSS_URL}).toString();
+const nikkeiNewsRuntime={loading:false,error:'',inflight:null};
+
+function nikkeiArticleUrl(value){
+  try{
+    const url=new URL(String(value||''));
+    if(url.protocol!=='https:'||url.username||url.password||url.port)return '';
+    const direct=['nikkei.com','www.nikkei.com'].includes(url.hostname)&&url.pathname.startsWith('/article/');
+    const indexed=url.hostname==='news.google.com'&&/^\/(?:rss\/)?articles\/[A-Za-z0-9_-]+\/?$/.test(url.pathname);
+    if(!direct&&!indexed)return '';
+    url.hash='';return url.href;
+  }catch(_){return '';}
+}
+
+function nikkeiPublishedAt(value){
+  const raw=String(value||'').trim();
+  // RSS2JSON's zone-less date is UTC, verified against the original RSS pubDate.
+  const normalized=/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(raw)?raw.replace(' ','T')+'Z':raw;
+  const time=Date.parse(normalized);
+  return Number.isFinite(time)?new Date(time).toISOString():'';
+}
+
+function normalizeNikkeiItems(items){
+  const unique=new Map();
+  for(const item of Array.isArray(items)?items:[]){
+    if(!item||typeof item!=='object')continue;
+    const rawTitle=String(item.title||'').trim();
+    const url=nikkeiArticleUrl(item.url||item.link);
+    if(!url||!rawTitle)continue;
+    const direct=['nikkei.com','www.nikkei.com'].includes(new URL(url).hostname);
+    const publisher=item.source==='日本経済新聞'||/\s[-–—]\s日本経済新聞$/.test(rawTitle)||direct;
+    if(!publisher)continue;
+    const title=rawTitle.replace(/\s[-–—]\s日本経済新聞$/,'').replace(/\s+/g,' ').trim();
+    if(!title)continue;
+    const published=nikkeiPublishedAt(item.published||item.pubDate);
+    const key=new URL(url).origin+new URL(url).pathname;
+    if(unique.has(key))continue;
+    unique.set(key,{title,url,published,source:'日本経済新聞'});
+  }
+  return [...unique.values()].sort((a,b)=>(Date.parse(b.published)||0)-(Date.parse(a.published)||0)).slice(0,20);
+}
+
+function parseNikkeiFeedJSON(value){
+  if(!value||value.status!=='ok'||!Array.isArray(value.items))throw new Error('日経の見出しを取得できませんでした。');
+  // The request is fixed to Nikkei; never attribute items from another feed to Nikkei.
+  const feed=new URL(value.feed?.url||'https://invalid.example/');
+  if(feed.hostname!=='news.google.com'||feed.pathname!=='/rss/search'||feed.searchParams.get('q')!=='site:nikkei.com when:7d')throw new Error('取得した記事の配信元を確認できませんでした。');
+  const items=normalizeNikkeiItems(value.items);
+  if(!items.length)throw new Error('日経の見出しが取得結果にありませんでした。');
+  return items;
+}
+
+function ensureNikkeiNewsState(){
+  const current=dashboardState.nikkeiNews;
+  if(!current||!Array.isArray(current.items))dashboardState.nikkeiNews=JSON.parse(JSON.stringify(NIKKEI_NEWS_SNAPSHOT));
+  return dashboardState.nikkeiNews;
+}
+
+function nikkeiDateLabel(value){
+  const date=nikkeiPublishedAt(value);
+  return date?new Date(date).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false})+'（日本時間）':'日時未取得';
+}
+
+function renderNikkeiNews(){
+  if(!$('nikkeiNewsGrid'))return;
+  const state=ensureNikkeiNewsState(),items=normalizeNikkeiItems(state.items);
+  const button=$('nikkeiNewsRefresh');button.disabled=nikkeiNewsRuntime.loading;
+  button.textContent=nikkeiNewsRuntime.loading?'日経の記事を取得中…':'日経の記事を更新';
+  $('nikkeiNewsCount').textContent=`${items.length}件・配信日時順`;
+  $('nikkeiNewsUpdated').textContent='見出し取得 '+nikkeiDateLabel(state.fetchedAt);
+  const status=$('nikkeiNewsStatus');
+  status.textContent=nikkeiNewsRuntime.error?(items.length?'更新できませんでした。前回取得した記事を表示しています。時間をおいて再度お試しください。':'記事を取得できませんでした。時間をおいて再度お試しください。'):nikkeiNewsRuntime.loading?'新しい見出しを確認しています…':'';
+  status.classList.toggle('hidden',!status.textContent);
+  $('nikkeiNewsGrid').innerHTML=items.map(item=>`<article class="news-card nikkei-news-card">
+    <div class="news-card-head"><div class="news-meta"><span class="badge">日本経済新聞</span><time${item.published?` datetime="${esc(item.published)}"`:''}>配信 ${esc(nikkeiDateLabel(item.published))}</time></div>
+    <h3><a href="${esc(item.url)}" target="_blank" rel="noopener noreferrer">${esc(item.title)}</a></h3></div>
+    <div class="nikkei-news-link"><a href="${esc(item.url)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(item.title)}の記事を開く">記事を開く ↗</a></div>
+  </article>`).join('')||'<div class="note">まだ日経の記事を取得できていません。「日経の記事を更新」を押してください。</div>';
+}
+
+function updateNikkeiNewsExternal(){
+  if(nikkeiNewsRuntime.inflight)return nikkeiNewsRuntime.inflight;
+  nikkeiNewsRuntime.loading=true;nikkeiNewsRuntime.error='';renderNikkeiNews();
+  const task=(async()=>{
+    try{
+      // This public endpoint supports CORS, including standalone HTML opened on an iPad.
+      const text=await fetchTextTimed(NIKKEI_FEED_API,{headers:{Accept:'application/json'},credentials:'omit'});
+      const items=parseNikkeiFeedJSON(JSON.parse(text));
+      dashboardState.nikkeiNews={items,fetchedAt:new Date().toISOString(),source:'Google ニュースに掲載された日本経済新聞の見出し'};
+      saveExternalCache();
+      return `日本経済新聞 ${items.length}件`;
+    }catch(error){nikkeiNewsRuntime.error=error.message||String(error);throw error;}
+    finally{nikkeiNewsRuntime.loading=false;nikkeiNewsRuntime.inflight=null;renderNikkeiNews();}
+  })();
+  nikkeiNewsRuntime.inflight=task;return task;
+}
+
+document.addEventListener('click',e=>{
+  if(e.target.closest('#nikkeiNewsRefresh'))updateNikkeiNewsExternal().catch(()=>{});
+});
+
 
 /* 経済ニュース：2026-09-07 公開情報の要約 */
 const economicNews = [
@@ -2802,7 +2928,7 @@ function renderEditor(){
 
 function renderAll(updateEditor=true){
   renderMeta();renderSummary();renderFX();renderJPRates();renderUSRates();renderStocks();
-  renderCommodities();renderCPI();renderRealRates();renderBanks();renderEconomicNews();renderCandlestick();renderPolicy();
+  renderCommodities();renderCPI();renderRealRates();renderBanks();renderNikkeiNews();renderEconomicNews();renderCandlestick();renderPolicy();
   renderSpreads();renderComments();renderSources();renderCharts();renderCompanies();
   if(updateEditor)renderEditor();
 }
@@ -4234,6 +4360,7 @@ async function autoUpdateExternal(){
   }
   setExternalUpdateStatus("更新中…","normal","Cloudflare Worker経由で外部サイトへ接続しています");
   const jobs=[
+    ["日経記事",updateNikkeiNewsExternal],
     ["為替",updateFXExternal],
     ["日本国債",updateJGBExternal],
     ["米国債",updateUSTreasuryExternal],
@@ -4326,6 +4453,7 @@ saveExternalCache();
 migrateCompanyDetailCache();
 setupEvents();
 renderAll();
+updateNikkeiNewsExternal().catch(()=>{});
 </script>
 </body>
 </html>
