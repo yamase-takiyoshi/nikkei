@@ -511,7 +511,7 @@ footer{color:var(--muted);font-size:11px;padding:24px 4px 12px}
   </div>
   <div class="company-layout">
     <div class="panel">
-      <div class="panel-head"><h3>企業一覧・スクリーナー</h3><span class="badge" id="companyCountBadge">0社・全件表示</span></div>
+      <div class="panel-head"><h3>企業一覧・スクリーナー</h3><span class="badge" id="companyCountBadge">企業マスター読込中…</span></div>
       <div class="note" style="margin:0 12px 8px">ページ分割なしで該当企業をすべて一括表示します。横画面では全列を見渡しやすく、狭い画面では横スクロールできます。</div><div class="table-wrap"><table id="companyTable"></table></div>
     </div>
     <div class="panel">
@@ -811,6 +811,42 @@ function mergeCompanyMasterSeed(){
   });
 }
 mergeCompanyMasterSeed();
+
+/* 企業一覧の自己修復：古いlocalStorage/JSONがcompanyDataを空にしても、
+   このHTMLに内蔵した最新企業マスターを必ず合流する。 */
+function cloneCompanyRecord(c){
+  return JSON.parse(JSON.stringify(c));
+}
+function ensureCompanyMasterInState(){
+  if(!dashboardState || typeof dashboardState!=="object")return 0;
+  const current=Array.isArray(dashboardState.companyData)?dashboardState.companyData:[];
+  const byCode=new Map(current.filter(Boolean).map(c=>[String(c.code||""),c]));
+  for(const base of companyData){
+    const code=String(base.code||"");
+    if(!code)continue;
+    const old=byCode.get(code);
+    if(!old){
+      const added=cloneCompanyRecord(base);
+      current.push(added);
+      byCode.set(code,added);
+      continue;
+    }
+    // 外部取得済みの値は優先し、検索に必要な基本情報だけ欠損補完する。
+    if(!old.name)old.name=base.name;
+    if(!old.englishName && base.englishName)old.englishName=base.englishName;
+    if(!old.kana && base.kana)old.kana=base.kana;
+    if(!old.industry)old.industry=base.industry;
+    if(!old.market)old.market=base.market;
+    if(!old.fiscalYearEnd)old.fiscalYearEnd=base.fiscalYearEnd;
+    old.aliases=[...new Set([...(Array.isArray(old.aliases)?old.aliases:[]),...(Array.isArray(base.aliases)?base.aliases:[])])];
+    if(!old.metrics || typeof old.metrics!=="object")old.metrics=cloneCompanyRecord(base.metrics||{});
+    if(!old.forecasts || typeof old.forecasts!=="object")old.forecasts=cloneCompanyRecord(base.forecasts||{});
+    if(!Array.isArray(old.performance))old.performance=cloneCompanyRecord(base.performance||[]);
+    if(!Array.isArray(old.officers))old.officers=cloneCompanyRecord(base.officers||[]);
+  }
+  dashboardState.companyData=current;
+  return current.length;
+}
 
 
 /* ローソク足データ：確認できたOHLCのみ */
@@ -1777,6 +1813,8 @@ function filteredCompanies(){
 }
 
 function renderCompanies(){
+  // 旧キャッシュや旧JSONで companyData が空でも、描画直前に必ず自己修復する。
+  ensureCompanyMasterInState();
   renderCompanyFilters();
   const list=filteredCompanies();
   $("companyCountBadge").textContent=`${list.length}社・全件表示`;
@@ -3007,14 +3045,14 @@ function saveJSON(){
 function loadJSONFile(file){
   const reader=new FileReader();
   reader.onload=()=>{
-    try{dashboardState=JSON.parse(reader.result);renderAll();alert("JSONを読み込みました。");}
+    try{dashboardState=JSON.parse(reader.result);ensureCompanyMasterInState();renderAll();alert("JSONを読み込みました。企業マスターも自動補完しました。");}
     catch(e){alert("JSONの形式が正しくありません: "+e.message);}
   };
   reader.readAsText(file,"utf-8");
 }
 
 function applyEditor(){
-  try{dashboardState=JSON.parse($("jsonEditor").value);renderAll(false);alert("JSONを適用しました。");}
+  try{dashboardState=JSON.parse($("jsonEditor").value);ensureCompanyMasterInState();renderAll(false);alert("JSONを適用しました。企業マスターも自動補完しました。");}
   catch(e){alert("JSONの形式が正しくありません: "+e.message);}
 }
 
@@ -4411,8 +4449,9 @@ function restoreExternalCache(){
     const obj=JSON.parse(raw);
     if(obj?.dashboardState){
       dashboardState=obj.dashboardState;
+      const restoredCompanies=ensureCompanyMasterInState();
       ensureTopixCandlestickFallback();
-      setExternalUpdateStatus("前回更新値を復元","ok",obj.savedAt||"");
+      setExternalUpdateStatus("前回更新値を復元","ok",`${obj.savedAt||""} / 企業 ${restoredCompanies}社を確認`);
       return true;
     }
   }catch(e){}
@@ -4553,6 +4592,7 @@ let candleResizeTimer;
 window.addEventListener("resize",()=>{clearTimeout(candleResizeTimer);candleResizeTimer=setTimeout(renderCandlestick,120);});
 
 restoreExternalCache();
+ensureCompanyMasterInState();
 applyVerifiedSnapshotFallbacks();
 ensureTopixCandlestickFallback();
 saveExternalCache();
