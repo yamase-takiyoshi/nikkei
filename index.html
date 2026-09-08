@@ -25,7 +25,10 @@ button,input,select,textarea{font:inherit}
 button{cursor:pointer}
 a{color:var(--accent)}
 .app{max-width:1680px;margin:auto;padding:14px}
-header{background:linear-gradient(135deg,var(--accent2),var(--accent));color:#fff;border-radius:16px;padding:20px;box-shadow:var(--shadow)}
+header{background:linear-gradient(135deg,#0d3557,#164b7a);color:#fff;border-radius:16px;padding:20px;box-shadow:var(--shadow)}
+html[data-theme="dark"] header{background:linear-gradient(135deg,#0d3557,#164b7a);color:#fff}
+#dataModeBadge{background:#0b2239;border-color:#0b2239;color:#fff;font-weight:800}
+html:not([data-theme="dark"]) .status-sample,html:not([data-theme="dark"]) .status-official,html[data-theme="light"] .status-sample,html[data-theme="light"] .status-official{display:inline-block;padding:1px 6px;border-radius:999px;background:#0b2239;color:#fff;font-weight:800}
 .header-top{display:flex;gap:16px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
 h1{font-size:clamp(24px,4vw,38px);margin:0 0 8px;letter-spacing:.02em}
 .subtitle{opacity:.9;font-size:14px}
@@ -100,6 +103,7 @@ footer{color:var(--muted);font-size:11px;padding:24px 4px 12px}
 
 /* 経済ニュース */
 .news-controls,.candle-controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+.candle-tabbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px}
 .news-controls select,.candle-controls select{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:9px;padding:8px 10px}
 .news-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .news-card{background:var(--panel);border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow);overflow:hidden}
@@ -231,7 +235,7 @@ footer{color:var(--muted);font-size:11px;padding:24px 4px 12px}
       <h1>市況・金融・経済ダッシュボード</h1>
       <div class="subtitle">日本・米国の市場、物価、金利、銀行預金を一画面で確認</div>
     </div>
-    <div class="badge" id="dataModeBadge">サンプル＋公式確認値</div>
+    <div class="badge" id="dataModeBadge">サンプル＋公式確認済み</div>
   </div>
   <div class="meta">
     <div class="meta-card"><div class="meta-label">データ基準日</div><div class="meta-value" id="baseDateLabel">2026-09-04</div></div>
@@ -260,7 +264,7 @@ footer{color:var(--muted);font-size:11px;padding:24px 4px 12px}
   <span class="status-sample">「サンプル」</span>は入力値、
   <span class="status-official">「確認済み」</span>は公表値、
   <span class="status-missing">「データ未取得」</span>は推測せず空欄扱いです。
-  「外部サイトから更新」を押すと、為替・主要株価指数・商品・日米国債利回り・日銀/FRB政策金利・CPI・選択企業の株価/ローソク足を外部サイトから取得して再描画します。取得に失敗した項目は直前値を保持します。
+  「外部サイトから更新」を押すと、為替・主要株価指数・商品・日米国債利回り・日銀/FRB政策金利・CPI・選択企業の株価/ローソク足（企業・為替・商品・暗号資産・指数）を外部サイトから取得して再描画します。取得に失敗した項目は直前値を保持します。
 </div>
 
 <section class="section">
@@ -331,7 +335,16 @@ footer{color:var(--muted);font-size:11px;padding:24px 4px 12px}
 
 
 <section class="section" id="candlestickSection">
-  <div class="section-title"><h2>ローソク足・価格推移</h2><div class="sub">1分足・5分足・10分足・1時間足・日足・週足・月足 / 株式・指数・為替・商品 / OHLC＋出来高＋5本移動平均</div></div>
+  <div class="section-title"><h2>ローソク足・価格推移</h2><div class="sub">1分足・5分足・10分足・1時間足・日足・週足・月足・年足 / 企業・為替・商品・暗号資産・指数 / OHLC＋出来高＋5本移動平均</div></div>
+  <div class="candle-tabbar">
+    <span class="candle-period-label">分類</span>
+    <button class="btn small active" data-candle-tab="company">企業</button>
+    <button class="btn small" data-candle-tab="fx">為替</button>
+    <button class="btn small" data-candle-tab="commodity">商品</button>
+    <button class="btn small" data-candle-tab="crypto">暗号資産</button>
+    <button class="btn small" data-candle-tab="index">指数</button>
+    <button class="btn small" data-candle-tab="all">全部</button>
+  </div>
   <div class="candle-controls">
     <select id="candlestickSymbol"></select>
     <span class="candle-period-label">足種</span>
@@ -342,6 +355,7 @@ footer{color:var(--muted);font-size:11px;padding:24px 4px 12px}
     <button class="btn small active" data-candle-interval="1d">日足</button>
     <button class="btn small" data-candle-interval="1wk">週足</button>
     <button class="btn small" data-candle-interval="1mo">月足</button>
+    <button class="btn small" data-candle-interval="1y">年足</button>
     <span class="candle-period-label">表示本数</span>
     <button class="btn small" data-candle-range="5">5本</button>
     <button class="btn small" data-candle-range="10">10本</button>
@@ -368,7 +382,7 @@ footer{color:var(--muted);font-size:11px;padding:24px 4px 12px}
         <div class="guide-item"><strong>上ヒゲ・下ヒゲ</strong><span>上ヒゲ先端が高値、下ヒゲ先端が安値です。長いヒゲは「そこまで動いたが押し戻された」ことを表します。</span></div>
         <div class="guide-item"><strong>陽線と陰線</strong><span>この画面では上昇日を赤、下落日を緑で表示します。色だけで良し悪しを判断せず、出来高と前後の流れも見ます。</span></div>
         <div class="guide-item"><strong>出来高</strong><span>下段の棒です。価格変動と出来高が同時に大きい日は、市場参加者の関心が強かった可能性があります。為替や一部指数では出来高が配信されず「—」表示になることがあります。</span></div>
-        <div class="guide-item"><strong>5本移動平均</strong><span>選択した足種の終値を5本平均した線です。1分足なら約5分、日足なら5営業日、週足なら約5週間、月足なら約5か月の短期方向を確認できます。</span></div>
+        <div class="guide-item"><strong>5本移動平均</strong><span>選択した足種の終値を5本平均した線です。1分足なら約5分、日足なら5営業日、週足なら約5週間、月足なら約5か月、年足なら約5年の方向感を確認できます。</span></div>
       </div>
     </div>
   </div>
@@ -794,6 +808,7 @@ let currentRange = 30;
 let candleRange = 20;
 let candleInterval = "1d";
 let selectedCandlestickKey = "company:7679";
+let selectedCandleTab = "company";
 let candlestickHitMap = [];
 let candleLoadSeq = 0;
 const CANDLE_INTRADAY_TTL_MS = 45 * 1000;
@@ -804,25 +819,41 @@ const candleIntervalConfig = {
   "60m": {label:"1時間足", yahooInterval:"60m", range:"1mo"},
   "1d":  {label:"日足",     yahooInterval:"1d",  range:"6mo"},
   "1wk": {label:"週足",     yahooInterval:"1wk", range:"5y"},
-  "1mo": {label:"月足",     yahooInterval:"1mo", range:"10y"}
+  "1mo": {label:"月足",     yahooInterval:"1mo", range:"10y"},
+  "1y":  {label:"年足",     yahooInterval:"1mo", range:"20y", aggregateMonths:12}
 };
 
 const candleSeriesMaster = [
-  {key:"nikkei",label:"日経平均株価",symbol:"^N225",unit:"円",decimals:2},
-  {key:"topix",label:"TOPIX",symbol:"^TOPX",unit:"pt",decimals:2},
-  {key:"dow",label:"NYダウ",symbol:"^DJI",unit:"ドル",decimals:2},
-  {key:"sp500",label:"S&P500",symbol:"^GSPC",unit:"pt",decimals:2},
-  {key:"nasdaq",label:"NASDAQ総合",symbol:"^IXIC",unit:"pt",decimals:2},
-  {key:"fx:USDJPY",label:"ドル円",symbol:"USDJPY=X",unit:"円",decimals:3},
-  {key:"fx:EURJPY",label:"ユーロ円",symbol:"EURJPY=X",unit:"円",decimals:3},
-  {key:"fx:EURUSD",label:"ユーロドル",symbol:"EURUSD=X",unit:"ドル",decimals:4},
-  {key:"fx:GBPJPY",label:"英ポンド円",symbol:"GBPJPY=X",unit:"円",decimals:3},
-  {key:"fx:AUDJPY",label:"豪ドル円",symbol:"AUDJPY=X",unit:"円",decimals:3},
-  {key:"commodity:WTI",label:"WTI原油",symbol:"CL=F",unit:"ドル",decimals:2},
-  {key:"commodity:BRENT",label:"Brent原油",symbol:"BZ=F",unit:"ドル",decimals:2},
-  {key:"commodity:GOLD",label:"NY金",symbol:"GC=F",unit:"ドル",decimals:2},
-  {key:"commodity:SILVER",label:"銀",symbol:"SI=F",unit:"ドル",decimals:3},
-  {key:"commodity:COPPER",label:"銅",symbol:"HG=F",unit:"ドル",decimals:3}
+  {key:"nikkei",label:"日経平均株価",symbol:"^N225",unit:"円",decimals:2,category:"index"},
+  {key:"topix",label:"TOPIX",symbol:"^TOPX",unit:"pt",decimals:2,category:"index"},
+  {key:"dow",label:"NYダウ",symbol:"^DJI",unit:"ドル",decimals:2,category:"index"},
+  {key:"sp500",label:"S&P500",symbol:"^GSPC",unit:"pt",decimals:2,category:"index"},
+  {key:"nasdaq",label:"NASDAQ総合",symbol:"^IXIC",unit:"pt",decimals:2,category:"index"},
+  {key:"fx:USDJPY",label:"ドル円",symbol:"USDJPY=X",unit:"円",decimals:3,category:"fx"},
+  {key:"fx:EURJPY",label:"ユーロ円",symbol:"EURJPY=X",unit:"円",decimals:3,category:"fx"},
+  {key:"fx:EURUSD",label:"ユーロドル",symbol:"EURUSD=X",unit:"ドル",decimals:4,category:"fx"},
+  {key:"fx:GBPJPY",label:"英ポンド円",symbol:"GBPJPY=X",unit:"円",decimals:3,category:"fx"},
+  {key:"fx:AUDJPY",label:"豪ドル円",symbol:"AUDJPY=X",unit:"円",decimals:3,category:"fx"},
+  {key:"fx:GBPUSD",label:"英ポンドドル",symbol:"GBPUSD=X",unit:"ドル",decimals:4,category:"fx"},
+  {key:"fx:AUDUSD",label:"豪ドルドル",symbol:"AUDUSD=X",unit:"ドル",decimals:4,category:"fx"},
+  {key:"fx:NZDJPY",label:"NZドル円",symbol:"NZDJPY=X",unit:"円",decimals:3,category:"fx"},
+  {key:"fx:CADJPY",label:"カナダドル円",symbol:"CADJPY=X",unit:"円",decimals:3,category:"fx"},
+  {key:"fx:CHFJPY",label:"スイスフラン円",symbol:"CHFJPY=X",unit:"円",decimals:3,category:"fx"},
+  {key:"fx:NZDUSD",label:"NZドルドル",symbol:"NZDUSD=X",unit:"ドル",decimals:4,category:"fx"},
+  {key:"fx:USDCHF",label:"ドルスイス",symbol:"USDCHF=X",unit:"フラン",decimals:4,category:"fx"},
+  {key:"fx:USDCAD",label:"ドルカナダ",symbol:"USDCAD=X",unit:"CAD",decimals:4,category:"fx"},
+  {key:"fx:EURGBP",label:"ユーロポンド",symbol:"EURGBP=X",unit:"ポンド",decimals:4,category:"fx"},
+  {key:"fx:ZARJPY",label:"南アランド円",symbol:"ZARJPY=X",unit:"円",decimals:3,category:"fx"},
+  {key:"commodity:WTI",label:"WTI原油",symbol:"CL=F",unit:"ドル",decimals:2,category:"commodity"},
+  {key:"commodity:BRENT",label:"Brent原油",symbol:"BZ=F",unit:"ドル",decimals:2,category:"commodity"},
+  {key:"commodity:GOLD",label:"NY金",symbol:"GC=F",unit:"ドル",decimals:2,category:"commodity"},
+  {key:"commodity:SILVER",label:"銀",symbol:"SI=F",unit:"ドル",decimals:3,category:"commodity"},
+  {key:"commodity:COPPER",label:"銅",symbol:"HG=F",unit:"ドル",decimals:3,category:"commodity"},
+  {key:"crypto:BTCUSD",label:"ビットコイン",symbol:"BTC-USD",unit:"ドル",decimals:2,category:"crypto"},
+  {key:"crypto:ETHUSD",label:"イーサリアム",symbol:"ETH-USD",unit:"ドル",decimals:2,category:"crypto"},
+  {key:"crypto:XRPUSD",label:"XRP",symbol:"XRP-USD",unit:"ドル",decimals:4,category:"crypto"},
+  {key:"crypto:SOLUSD",label:"ソラナ",symbol:"SOL-USD",unit:"ドル",decimals:2,category:"crypto"},
+  {key:"crypto:DOGEUSD",label:"ドージコイン",symbol:"DOGE-USD",unit:"ドル",decimals:5,category:"crypto"}
 ];
 
 const $ = id => document.getElementById(id);
@@ -875,11 +906,30 @@ function candleDigitsFromBars(data,bars=[]){
     const n=s.includes('.') ? s.split('.')[1].replace(/0+$/,'').length : 0;
     digits=Math.max(digits,n);
   }
-  return Math.min(4, digits || 0);
+  return Math.min(5, digits || 0);
 }
 
 function fmtValue(v,digits=2){
   return isNum(v) ? v.toLocaleString('ja-JP',{minimumFractionDigits:digits,maximumFractionDigits:digits}) : 'データ未取得';
+}
+
+function candleCategoryOfKey(key){
+  if(String(key).startsWith('company:'))return 'company';
+  return getCandleMasterByKey(key)?.category || 'index';
+}
+
+function filteredCandleEntries(){
+  const entries=candleDatasetEntries();
+  return selectedCandleTab==='all' ? entries : entries.filter(e=>(e.meta?.category || candleCategoryOfKey(e.key))===selectedCandleTab);
+}
+
+function formatCandleAxisLabel(raw){
+  const s=String(raw||'');
+  if(/^\d{4}$/.test(s))return s;
+  if(/^\d{4}-\d{2}$/.test(s))return s.replace('-','/');
+  if(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(s))return `${s.slice(5,10).replace('-','/')} ${s.slice(11)}`;
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s))return s.slice(5).replace('-','/');
+  return s;
 }
 
 function renderMeta(){
@@ -1227,7 +1277,7 @@ function renderCompanies(){
   );
   document.querySelectorAll("[data-company-code]").forEach(b=>b.addEventListener("click",()=>{
     selectedCompanyCode=b.dataset.companyCode;
-    if(dashboardState.candlestickData?.companies?.[selectedCompanyCode]){selectedCandlestickKey=`company:${selectedCompanyCode}`; if($("candlestickSymbol"))$("candlestickSymbol").value=selectedCandlestickKey; renderCandlestick();}
+    if(dashboardState.candlestickData?.companies?.[selectedCompanyCode]){selectedCandleTab="company"; selectedCandlestickKey=`company:${selectedCompanyCode}`; if($("candlestickSymbol"))$("candlestickSymbol").value=selectedCandlestickKey; renderCandlestick();}
     renderCompanyDetail();
     requestCompanyFullDetail(selectedCompanyCode).catch(e=>console.warn("企業詳細取得",e));
   }));
@@ -1497,13 +1547,13 @@ function candleDatasetEntries(){
     const data=getBaseDailyCandleData(meta.key);
     entries.push({key:meta.key,label:meta.label,data:data?{...meta,...data}:null,meta});
   });
-  Object.entries(dashboardState.candlestickData?.companies||{}).forEach(([code,v])=>entries.push({key:`company:${code}`,label:`${code} ${v.label||code}`,data:v,meta:{key:`company:${code}`,symbol:`${code}.T`,unit:v.unit||'円',decimals:v.decimals}}));
+  Object.entries(dashboardState.candlestickData?.companies||{}).forEach(([code,v])=>entries.push({key:`company:${code}`,label:`${code} ${v.label||code}`,data:v,meta:{key:`company:${code}`,symbol:`${code}.T`,unit:v.unit||'円',decimals:v.decimals,category:'company'}}));
   return entries;
 }
 
 function renderCandlestickOptions(){
   const sel=$("candlestickSymbol"); if(!sel)return;
-  const entries=candleDatasetEntries();
+  const entries=filteredCandleEntries();
   sel.innerHTML=entries.map(e=>`<option value="${esc(e.key)}">${esc(e.label)}</option>`).join("");
   if(!entries.some(e=>e.key===selectedCandlestickKey))selectedCandlestickKey=entries[0]?.key||"";
   sel.value=selectedCandlestickKey;
@@ -1512,6 +1562,7 @@ function renderCandlestickOptions(){
 function setCandleControlState(){
   document.querySelectorAll("[data-candle-interval]").forEach(b=>b.classList.toggle("active",b.dataset.candleInterval===candleInterval));
   document.querySelectorAll("[data-candle-range]").forEach(b=>b.classList.toggle("active",Number(b.dataset.candleRange)===candleRange));
+  document.querySelectorAll("[data-candle-tab]").forEach(b=>b.classList.toggle("active",b.dataset.candleTab===selectedCandleTab));
 }
 
 function getBaseSelectedCandleEntry(){
@@ -1519,8 +1570,8 @@ function getBaseSelectedCandleEntry(){
 }
 
 function getSelectedCandleData(){
-  const data=candleInterval==="1d" || candleInterval==="1wk" || candleInterval==="1mo"
-    ? (candleInterval==="1d" ? getBaseSelectedCandleEntry()?.data||null : dashboardState.candlestickData?.intraday?.[candleInterval]?.[selectedCandlestickKey]||null)
+  const data=(candleInterval==="1d")
+    ? getBaseSelectedCandleEntry()?.data||null
     : dashboardState.candlestickData?.intraday?.[candleInterval]?.[selectedCandlestickKey]||null;
   return Array.isArray(data?.bars) && data.bars.length ? data : null;
 }
@@ -1556,7 +1607,7 @@ function renderCandlestick(){
     $("candleStatusBadge").className="badge status-missing";
     $("candleSource").textContent=`${meta.label||baseEntry?.label||selectedCandlestickKey} の${intervalLabel}データ未取得。「この足を更新」を押してください。`;
     renderLatestOHLC(null,[]);
-    drawCandlestick({unit:meta.unit||""},[]);
+    drawCandlestick({unit:meta.unit||"",decimals:meta.decimals},[]);
     return;
   }
   let bars=(data.bars||[]).slice().sort((a,b)=>String(a.date).localeCompare(String(b.date)));
@@ -1569,6 +1620,7 @@ function renderCandlestick(){
 }
 
 function dateTimePartsInTimeZone(unixSeconds,timeZone="UTC"){
+
 
   const d=new Date(unixSeconds*1000);
   const parts=new Intl.DateTimeFormat("en-CA",{timeZone,year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hour12:false}).formatToParts(d);
@@ -1593,6 +1645,25 @@ function aggregateMinuteBars(bars,minutes,timeZone="Asia/Tokyo"){
   return [...groups.values()].map(g=>{if(!g._hasVolume)g.volume=null;delete g._hasVolume;return g;}).sort((a,b)=>a.timestamp-b.timestamp);
 }
 
+function aggregateMonthlyBars(bars,months=12){
+  const groups=new Map();
+  for(const b of (bars||[]).slice().sort((a,b)=>String(a.date).localeCompare(String(b.date)))){
+    if(!isNum(b.open)||!isNum(b.high)||!isNum(b.low)||!isNum(b.close))continue;
+    const m=String(b.date||"").match(/^(\d{4})-(\d{2})/);
+    if(!m)continue;
+    const year=Number(m[1]), month=Number(m[2]);
+    const startMonth=Math.floor((month-1)/months)*months+1;
+    const key=months===12 ? `${year}` : `${year}-${String(startMonth).padStart(2,'0')}`;
+    if(!groups.has(key))groups.set(key,{date:key,open:b.open,high:b.high,low:b.low,close:b.close,volume:isNum(b.volume)?b.volume:0,_hasVolume:isNum(b.volume)});
+    else{
+      const g=groups.get(key);
+      g.high=Math.max(g.high,b.high); g.low=Math.min(g.low,b.low); g.close=b.close;
+      if(isNum(b.volume)){g.volume+=b.volume;g._hasVolume=true;}
+    }
+  }
+  return [...groups.values()].map(g=>{if(!g._hasVolume)g.volume=null;delete g._hasVolume;return g;});
+}
+
 async function loadCandlestickInterval(interval=candleInterval,{force=false}={}){
   if(!candleIntervalConfig[interval])interval="1d";
   candleInterval=interval;
@@ -1608,7 +1679,7 @@ async function loadCandlestickInterval(interval=candleInterval,{force=false}={})
   const cached=(interval==="1d") ? getBaseDailyCandleData(key) : dashboardState.candlestickData.intraday[interval][key];
   const fetchedAt=Date.parse(cached?.fetchedAt||"");
   if(!force && cached && Array.isArray(cached?.bars) && cached.bars.length){
-    const longInterval = interval==="1d" || interval==="1wk" || interval==="1mo";
+    const longInterval = ["1d","1wk","1mo","1y"].includes(interval);
     if(longInterval || (Number.isFinite(fetchedAt) && Date.now()-fetchedAt<CANDLE_INTRADAY_TTL_MS)){
       renderCandlestick();
       return;
@@ -1625,11 +1696,15 @@ async function loadCandlestickInterval(interval=candleInterval,{force=false}={})
     const y=await fetchYahooChart(symbol,cfg.range,cfg.yahooInterval);
     let bars=y.bars;
     if(cfg.aggregateMinutes)bars=aggregateMinuteBars(bars,cfg.aggregateMinutes,y.meta?.exchangeTimezoneName||"Asia/Tokyo");
+    if(cfg.aggregateMonths)bars=aggregateMonthlyBars(bars,cfg.aggregateMonths);
+    if(interval==="1mo")bars=bars.map(b=>({...b,date:String(b.date).slice(0,7)}));
     if(!bars.length)throw new Error(`${cfg.label} OHLCなし`);
     const label=baseEntry.data?.label||baseEntry.label||meta.label||symbol;
     const source=cfg.aggregateMinutes
       ? `Yahoo Finance chart API（${symbol} / 5分足を${cfg.aggregateMinutes}分単位へ合成 / ${y.via}経由）`
-      : `Yahoo Finance chart API（${symbol} / ${cfg.label} / ${y.via}経由）`;
+      : cfg.aggregateMonths
+        ? `Yahoo Finance chart API（${symbol} / 月足を年足へ集計 / ${y.via}経由）`
+        : `Yahoo Finance chart API（${symbol} / ${cfg.label} / ${y.via}経由）`;
     const obj={label,code:baseEntry.data?.code||meta.code||symbol,unit:baseEntry.data?.unit||meta.unit||"",decimals:baseEntry.data?.decimals??meta.decimals??null,status:"verified",source,bars,fetchedAt:new Date().toISOString()};
     if(interval==="1d")setBaseDailyCandleData(key,obj);
     else dashboardState.candlestickData.intraday[interval][key]=obj;
@@ -1642,7 +1717,7 @@ async function loadCandlestickInterval(interval=candleInterval,{force=false}={})
       $("candleStatusBadge").className="badge status-missing";
       $("candleSource").textContent=`${cfg.label}取得失敗：${e.message||e}`;
       const existing=getSelectedCandleData();
-      if(existing)renderCandlestick(); else {renderLatestOHLC(null,[]);drawCandlestick({unit:meta.unit||""},[]);}
+      if(existing)renderCandlestick(); else {renderLatestOHLC(null,[]);drawCandlestick({unit:meta.unit||"",decimals:meta.decimals},[]);}
     }
   }finally{
     if(refresh)refresh.disabled=false;
@@ -1680,7 +1755,7 @@ function drawCandlestick(data,bars){
   if(bars.length>=5){ctx.strokeStyle=accent;ctx.lineWidth=2;ctx.beginPath();let started=false;bars.forEach((b,i)=>{if(i<4)return;const avg=bars.slice(i-4,i+1).reduce((a,z)=>a+z.close,0)/5;const x=left+step*(i+.5),yy=y(avg);if(!started){ctx.moveTo(x,yy);started=true}else ctx.lineTo(x,yy);});ctx.stroke();}
   // 日時ラベル
   ctx.fillStyle=muted;ctx.textAlign="center";ctx.textBaseline="top";const every=Math.max(1,Math.ceil(bars.length/6));
-  bars.forEach((b,i)=>{if(i%every===0||i===bars.length-1){const x=left+step*(i+.5);let label=String(b.date||"");label=label.length>10?label.slice(5):label.slice(5).replace("-","/");if(label.length>10)label=label.replace("-","/");ctx.fillText(label,x,h-bottom+5);}});
+  bars.forEach((b,i)=>{if(i%every===0||i===bars.length-1){const x=left+step*(i+.5);const label=formatCandleAxisLabel(b.date);ctx.fillText(label,x,h-bottom+5);}});
   ctx.textAlign="left";ctx.textBaseline="middle";ctx.fillText("出来高",4,h-bottom-volH/2);
 
   canvas.onpointermove=e=>{
@@ -3248,6 +3323,12 @@ function setupEvents(){
   document.addEventListener("pointerdown",e=>{if(!$("companySearchWrap")?.contains(e.target))closeCompanySuggestions();});
   $("newsCategoryFilter").addEventListener("change",renderEconomicNews);
   $("candlestickSymbol").addEventListener("change",e=>{selectedCandlestickKey=e.target.value;loadCandlestickInterval(candleInterval).catch(err=>console.warn(err));});
+  document.querySelectorAll("[data-candle-tab]").forEach(b=>b.addEventListener("click",()=>{
+    selectedCandleTab=b.dataset.candleTab||"all";
+    const entries=filteredCandleEntries();
+    if(entries.length && !entries.some(e=>e.key===selectedCandlestickKey))selectedCandlestickKey=entries[0].key;
+    loadCandlestickInterval(candleInterval).catch(err=>console.warn(err));
+  }));
   document.querySelectorAll("[data-candle-interval]").forEach(b=>b.addEventListener("click",()=>loadCandlestickInterval(b.dataset.candleInterval).catch(err=>console.warn(err))));
   document.querySelectorAll("[data-candle-range]").forEach(b=>b.addEventListener("click",()=>{candleRange=Number(b.dataset.candleRange);renderCandlestick();}));
   $("candleRefreshBtn")?.addEventListener("click",()=>loadCandlestickInterval(candleInterval,{force:true}).catch(err=>console.warn(err)));
