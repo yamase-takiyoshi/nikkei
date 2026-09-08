@@ -314,7 +314,7 @@ footer{color:var(--muted);font-size:11px;padding:24px 4px 12px}
     <div class="panel"><div class="panel-head"><h3>消費者物価指数</h3><span class="badge">2025年基準</span></div><div class="table-wrap"><table id="cpiTable"></table></div></div>
     <div class="panel"><div class="panel-head"><h3>名目金利・実質金利</h3><span class="badge">概算</span></div><div class="table-wrap"><table id="realRateTable"></table></div></div>
   </div>
-  <div class="note">実質金利は簡易近似「名目金利 − 総合CPI前年同月比」で計算します。「実質インフレ率」という独自統計は作成しません。</div>
+  <div class="note">実質金利は簡易近似「名目金利 − 総合CPI前年同月比」で計算します。CPI前月比は総務省統計局の季節調整値です。「実質インフレ率」という独自統計は作成しません。</div>
 </section>
 
 <section class="section">
@@ -539,20 +539,21 @@ const inflationData = {
   source:"総務省統計局 消費者物価指数",
   status:"verified",
   items:[
-    {name:"総合CPI",index:102.0,yoy:1.9,mom:null},
-    {name:"コアCPI（生鮮食品を除く）",index:102.1,yoy:1.8,mom:null},
-    {name:"コアコアCPI（生鮮食品及びエネルギーを除く）",index:102.1,yoy:1.9,mom:null}
+    {name:"総合CPI",index:102.0,yoy:1.9,mom:0.4},
+    {name:"コアCPI（生鮮食品を除く）",index:102.1,yoy:1.8,mom:0.3},
+    {name:"コアコアCPI（生鮮食品及びエネルギーを除く）",index:102.1,yoy:1.9,mom:0.3}
   ]
 };
 
+/* 2026-09-08時点の各行公式公表値。サンプルではなく実データ。 */
 const bankRates = [
-  {group:"都市銀行",bank:"三菱UFJ銀行",ordinary:0.400,term1:null,term3:null,term5:null,shortPrime:null,effective:"2026-08-03",checked:"2026-09-07",source:"三菱UFJ銀行公式",status:"verified"},
-  {group:"都市銀行",bank:"三井住友銀行",ordinary:0.400,term1:0.500,term3:0.800,term5:1.000,shortPrime:2.375,effective:"2026-08-03",checked:"2026-09-06",source:"三井住友銀行公式",status:"verified"},
-  {group:"都市銀行",bank:"みずほ銀行",ordinary:null,term1:null,term3:null,term5:null,shortPrime:2.375,effective:"2026-08-03",checked:"2026-09-07",source:"みずほ銀行公式",status:"verified"},
-  {group:"都市銀行",bank:"りそな銀行",ordinary:0.400,term1:0.500,term3:0.800,term5:1.000,shortPrime:null,effective:"2026-09-07",checked:"2026-09-07",source:"りそな銀行公式",status:"verified"},
-  {group:"岩手県",bank:"岩手銀行",ordinary:0.400,term1:0.500,term3:0.625,term5:0.725,shortPrime:null,effective:"2026-09-07",checked:"2026-09-07",source:"岩手銀行公式",status:"verified"},
-  {group:"岩手県",bank:"北日本銀行",ordinary:0.400,term1:0.500,term3:0.625,term5:0.725,shortPrime:null,effective:"2026-09-03",checked:"2026-09-07",source:"北日本銀行公式",status:"verified"},
-  {group:"岩手県",bank:"東北銀行",ordinary:null,term1:null,term3:null,term5:null,shortPrime:null,effective:"データ未取得",checked:"2026-09-07",source:"データ未取得",status:"missing"}
+  {group:"都市銀行",bank:"三菱UFJ銀行",ordinary:0.400,term1:0.500,term3:0.800,term5:1.000,shortPrime:2.375,effective:"2026-08-03",checked:"2026-09-08",source:"三菱UFJ銀行公式（円預金金利・短期プライムレート）",status:"verified"},
+  {group:"都市銀行",bank:"三井住友銀行",ordinary:0.400,term1:0.500,term3:0.800,term5:1.000,shortPrime:2.375,effective:"2026-08-03",checked:"2026-09-08",source:"三井住友銀行公式",status:"verified"},
+  {group:"都市銀行",bank:"みずほ銀行",ordinary:0.400,term1:0.500,term3:0.700,term5:0.825,shortPrime:2.375,effective:"2026-08-03",checked:"2026-09-08",source:"みずほ銀行公式（2026-06-16・07-30公表）",status:"verified"},
+  {group:"都市銀行",bank:"りそな銀行",ordinary:0.400,term1:0.500,term3:0.800,term5:1.000,shortPrime:2.625,effective:"2026-09-08",checked:"2026-09-08",source:"りそな銀行公式（円預金金利・短期プライムレート）",status:"verified"},
+  {group:"岩手県",bank:"岩手銀行",ordinary:0.400,term1:0.500,term3:0.625,term5:0.725,shortPrime:2.875,effective:"2026-09-07",checked:"2026-09-08",source:"岩手銀行公式（円預金金利・短期プライムレート）",status:"verified"},
+  {group:"岩手県",bank:"北日本銀行",ordinary:0.400,term1:0.500,term3:0.625,term5:0.725,shortPrime:2.875,effective:"2026-09-07",checked:"2026-09-08",source:"北日本銀行公式（円預金金利・短期プライムレート）",status:"verified"},
+  {group:"岩手県",bank:"東北銀行",ordinary:0.400,term1:0.500,term3:0.625,term5:0.700,shortPrime:2.875,effective:"2026-08-03",checked:"2026-09-08",source:"東北銀行公式（2026-06-22・07-31公表）",status:"verified"}
 ];
 
 /* 企業情報：公開情報ベースの実在企業＋UI確認用サンプル */
@@ -1685,7 +1686,7 @@ function renderSources(){
     {name:"ユーザー指定初期値",detail:"為替・株価・政策金利・WTI・NY金",status:"sample"},
     {name:"薬王堂ホールディングス",detail:"公式会社概要・役員一覧・財務ハイライト・2027年2月期1Q決算短信（7679）",status:"verified"},
     {name:"企業情報サンプル",detail:"サンプル産業はUI動作確認用の架空データ",status:"sample"},
-    {name:"東北銀行ほか未確認項目",detail:"推測せず「データ未取得」と表示",status:"missing"}
+    {name:"東北銀行",detail:"普通預金・定期預金・短期プライムレート / 2026-09-08確認",status:"verified"}
   ];
   $("sourceList").innerHTML=sources.map(s=>`
     <div class="source-item"><strong>${esc(s.name)}</strong><br>${esc(s.detail)}<br>
@@ -3067,6 +3068,38 @@ function restoreExternalCache(){
   return false;
 }
 
+/* 旧キャッシュに残った「データ未取得」を、確認済み実データで補正する。
+   checked が 2026-09-08 より新しい行は上書きしない。 */
+function applyVerifiedSnapshotFallbacks(){
+  const cpi=dashboardState.inflationData;
+  if(cpi?.period==="2026-07" && Array.isArray(cpi.items)){
+    const moms=[0.4,0.3,0.3];
+    cpi.items.forEach((x,i)=>{ if(x && i<moms.length && !isNum(x.mom))x.mom=moms[i]; });
+  }
+
+  const snapshots={
+    "三菱UFJ銀行":{ordinary:0.400,term1:0.500,term3:0.800,term5:1.000,shortPrime:2.375,effective:"2026-08-03",checked:"2026-09-08",source:"三菱UFJ銀行公式（円預金金利・短期プライムレート）"},
+    "三井住友銀行":{ordinary:0.400,term1:0.500,term3:0.800,term5:1.000,shortPrime:2.375,effective:"2026-08-03",checked:"2026-09-08",source:"三井住友銀行公式"},
+    "みずほ銀行":{ordinary:0.400,term1:0.500,term3:0.700,term5:0.825,shortPrime:2.375,effective:"2026-08-03",checked:"2026-09-08",source:"みずほ銀行公式（2026-06-16・07-30公表）"},
+    "りそな銀行":{ordinary:0.400,term1:0.500,term3:0.800,term5:1.000,shortPrime:2.625,effective:"2026-09-08",checked:"2026-09-08",source:"りそな銀行公式（円預金金利・短期プライムレート）"},
+    "岩手銀行":{ordinary:0.400,term1:0.500,term3:0.625,term5:0.725,shortPrime:2.875,effective:"2026-09-07",checked:"2026-09-08",source:"岩手銀行公式（円預金金利・短期プライムレート）"},
+    "北日本銀行":{ordinary:0.400,term1:0.500,term3:0.625,term5:0.725,shortPrime:2.875,effective:"2026-09-07",checked:"2026-09-08",source:"北日本銀行公式（円預金金利・短期プライムレート）"},
+    "東北銀行":{ordinary:0.400,term1:0.500,term3:0.625,term5:0.700,shortPrime:2.875,effective:"2026-08-03",checked:"2026-09-08",source:"東北銀行公式（2026-06-22・07-31公表）"}
+  };
+  if(!Array.isArray(dashboardState.bankRates))dashboardState.bankRates=[];
+  for(const [bank,snap] of Object.entries(snapshots)){
+    let row=dashboardState.bankRates.find(x=>x.bank===bank);
+    if(!row){
+      const group=["岩手銀行","北日本銀行","東北銀行"].includes(bank)?"岩手県":"都市銀行";
+      row={group,bank}; dashboardState.bankRates.push(row);
+    }
+    const checked=String(row.checked||"");
+    if(!checked || checked<="2026-09-08"){
+      Object.assign(row,snap,{status:"verified"});
+    }
+  }
+}
+
 async function autoUpdateExternal(){
   const btn=$("refreshBtn");
   const oldText=btn?.textContent||"Cloudflare経由で更新";
@@ -3159,6 +3192,7 @@ let candleResizeTimer;
 window.addEventListener("resize",()=>{clearTimeout(candleResizeTimer);candleResizeTimer=setTimeout(renderCandlestick,120);});
 
 restoreExternalCache();
+applyVerifiedSnapshotFallbacks();
 migrateCompanyDetailCache();
 setupEvents();
 renderAll();
