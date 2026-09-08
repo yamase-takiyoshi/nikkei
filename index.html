@@ -1340,6 +1340,66 @@ function renderCompanies(){
   renderCompanyDetail();
 }
 
+function buildCompanyOverviewText(c,corp,d){
+  const parts=[];
+  const push=s=>{
+    const t=String(s||'').replace(/\s+/g,' ').trim();
+    if(t && !parts.some(x=>x===t))parts.push(t);
+  };
+
+  const base=corp?.description||c?.profile||'';
+  push(base);
+
+  const facts=[];
+  const industry=corp?.industry||c?.industry||'';
+  const market=corp?.market||c?.market||'';
+  const fiscal=corp?.fiscalYearEnd||c?.fiscalYearEnd||'';
+  if(market)facts.push(`上場市場は${market}`);
+  if(industry)facts.push(`業種は${industry}`);
+  if(fiscal)facts.push(`決算期は${fiscal}`);
+  if(facts.length)push(`${facts.join('、')}。`);
+
+  const companyFacts=[];
+  if(corp?.headquarters)companyFacts.push(`本社所在地は${corp.headquarters}`);
+  if(corp?.inception)companyFacts.push(`設立・創業は${corp.inception}`);
+  if(corp?.representative)companyFacts.push(`代表者は${corp.representative}`);
+  if(isNum(corp?.employees))companyFacts.push(`従業員数は${Math.round(corp.employees).toLocaleString('ja-JP')}人`);
+  if(companyFacts.length)push(`${companyFacts.join('。')}。`);
+
+  const perf=(Array.isArray(c?.performance)&&c.performance.length?c.performance:(Array.isArray(d?.annualPerformance)?d.annualPerformance:[]));
+  const actual=perf.filter(x=>x&&!x.forecast&&!String(x.period||'').includes('予')&&(isNum(x.sales)||isNum(x.operatingProfit)||isNum(x.ordinaryProfit)||isNum(x.netIncome))).at(-1);
+  const forecast=perf.filter(x=>x&&(x.forecast||String(x.period||'').includes('予'))).at(-1);
+  if(actual){
+    const p=[];
+    if(actual.period)p.push(`${actual.period}の通期実績`);
+    if(isNum(actual.sales))p.push(`売上高${Math.round(actual.sales).toLocaleString('ja-JP')}百万円`);
+    if(isNum(actual.operatingProfit))p.push(`営業利益${Math.round(actual.operatingProfit).toLocaleString('ja-JP')}百万円`);
+    if(isNum(actual.ordinaryProfit))p.push(`経常利益${Math.round(actual.ordinaryProfit).toLocaleString('ja-JP')}百万円`);
+    if(isNum(actual.netIncome))p.push(`純利益${Math.round(actual.netIncome).toLocaleString('ja-JP')}百万円`);
+    if(p.length)push(`${p.join('、')}。`);
+  }
+  if(forecast){
+    const p=[];
+    if(forecast.period)p.push(`${forecast.period}の会社予想`);
+    if(isNum(forecast.sales))p.push(`売上高${Math.round(forecast.sales).toLocaleString('ja-JP')}百万円`);
+    if(isNum(forecast.operatingProfit))p.push(`営業利益${Math.round(forecast.operatingProfit).toLocaleString('ja-JP')}百万円`);
+    if(isNum(forecast.ordinaryProfit))p.push(`経常利益${Math.round(forecast.ordinaryProfit).toLocaleString('ja-JP')}百万円`);
+    if(isNum(forecast.netIncome))p.push(`純利益${Math.round(forecast.netIncome).toLocaleString('ja-JP')}百万円`);
+    if(p.length)push(`${p.join('、')}。`);
+  }
+
+  const div=d?.dividend||{};
+  const divParts=[];
+  if(isNum(div.actualRate))divParts.push(`直近実績1株配当${div.actualRate.toFixed(2)}円`);
+  if(isNum(div.rate))divParts.push(`予想1株配当${div.rate.toFixed(2)}円`);
+  if(isNum(div.yield))divParts.push(`予想配当利回り${div.yield.toFixed(2)}%`);
+  if(divParts.length)push(`配当は${divParts.join('、')}。`);
+
+  let result=parts.join('\n\n');
+  if(result.length>2000)result=result.slice(0,1999)+'…';
+  return result||'会社概要未取得';
+}
+
 function renderCompanyDetail(){
   const c=(dashboardState.companyData||[]).find(x=>String(x.code)===String(selectedCompanyCode));
   if(!c){
@@ -1400,14 +1460,17 @@ function renderCompanyDetail(){
       </div>
       <button type="button" class="btn small" id="companyDetailRefreshBtn" ${c.detailLoading?'disabled':''}>${c.detailLoading?'取得中…':'企業詳細を更新'}</button>
     </div>
-    <div class="company-detail-status">${esc(statusText)}｜企業データ v4 / 未取得補完強化 / ロウソク足5周期対応</div>
+    <div class="company-detail-status">${esc(statusText)}｜企業データ v5 / 会社概要2000文字対応 / 未取得補完強化</div>
     ${d.schemaVersion===COMPANY_DATA_VERSION?`<div class="company-detail-status">株価 ${esc(price.asOf||'時点未取得')} ／ 通期決算 ${esc(d.periods?.income||'未取得')} ／ CF ${esc(d.periods?.cashflow||'未取得')} ／ B/S ${esc(d.periods?.balance||'未取得')} ／ 平均株価 ${esc(price.maAsOf||'履歴未取得')}</div>`:''}
     ${Array.isArray(d.sourceRecords)&&d.sourceRecords.length?`<div class="company-detail-status">出典：${d.sourceRecords.map(x=>`<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.label)}</a>`).join(' ／ ')}</div>`:''}
     ${Array.isArray(d.derivedFields)&&d.derivedFields.length?`<div class="company-detail-status">自動計算で補完：${esc(d.derivedFields.join(' ／ '))}</div>`:''}
     ${d.schemaVersion===COMPANY_DATA_VERSION?`<details class="company-detail-status"><summary>計算方法と未取得の理由</summary><p>${esc(d.calculationNotes||'')}</p><p>「計算材料不足」は式は定義できるものの、必要な元数値の一部が取得できていない項目です。「公開データで取得できず」は、公開元が値を掲載していない、または取得先が一時的に応答しなかった項目です。β・権利落ち日・浮動株・保有比率などはYahoo Financeの補完取得も試します。元データのない比率を0%にはしません。</p></details>`:''}
     ${c.detailError?`<div class="company-detail-error">取得できた項目だけ表示します。会社基本情報はJPX・Wikidata、株価・市場指標は株探・株予報Proを優先し、未取得分のみYahoo Financeで補完します。</div>`:''}${Array.isArray(d.warnings)&&d.warnings.length?`<div class="company-detail-status">補助取得: ${esc(d.warnings.join(' / '))}</div>`:''}
 
-    <div class="company-desc">${esc(corp.description||c.profile||'会社概要未取得')}</div>
+    <div class="company-detail-section" style="border-top:0;padding-top:0">
+      <h4>会社概要 <span class="company-detail-status">（2000文字以内）</span></h4>
+      <div class="company-desc" style="white-space:pre-wrap;line-height:1.8">${esc(buildCompanyOverviewText(c,corp,d))}</div>
+    </div>
 
     <div class="company-detail-section">
       <h4>直近の決算・配当</h4>
@@ -2434,7 +2497,7 @@ async function fetchWikidataBasicInfo(company){
 
 
 /* Company data v3: public tables only; missing values stay null. */
-const COMPANY_DATA_VERSION=4;
+const COMPANY_DATA_VERSION=5;
 function parseJapaneseNumber(value){
   if(value==null || typeof value==='boolean')return null;
   if(typeof value==='object')return Object.hasOwn(value,'raw')?parseJapaneseNumber(value.raw):null;
@@ -2538,7 +2601,7 @@ function parseKabuyohoCompanyHTML(html,code){
     dividend:{yield:n('DPS_YEALD_EST')??value('配当利回り(予)')},
     analyst:{targetMean:n('TARGET_PRICE')??value('目標株価(コ)'),consensusOrdinary:value('予想経常利益(コ)増益率')??value('予想経常利益(コ)')},
     forecasts:{ordinaryProfit:value('予想経常利益(予)増益率')??value('予想経常利益(予)')},
-    corporate:{description:companyHTMLText(description).slice(0,700)},dataAsOf:body.match(/財務データ[:：]\s*(\d{4}\/\d{2}\/\d{2})/)?.[1]||''};
+    corporate:{description:companyHTMLText(description).slice(0,2000)},dataAsOf:body.match(/財務データ[:：]\s*(\d{4}\/\d{2}\/\d{2})/)?.[1]||''};
 }
 async function fetchKabuyohoCompanyInfo(company){const u=`https://kabuyoho.jp/reportTop?bcode=${encodeURIComponent(company.code)}`;return parseKabuyohoCompanyHTML((await fetchExternalText(u)).text,company.code);}
 function parseKabutanFinanceHTML(html,code){
@@ -2730,6 +2793,14 @@ async function fetchCompanyBasicInfoExternal(company,supplement={}){
     throw new Error(errors.join(' / ')||'会社基本情報を取得できませんでした');
   }
 
+  const descriptionCandidates=[
+    kabuyoho?.corporate?.description,
+    kabutan?.corporate?.description,
+    company.profile,
+    wikidata?.description
+  ].map(x=>String(x||'').replace(/\s+/g,' ').trim()).filter(Boolean);
+  const bestDescription=descriptionCandidates.sort((a,b)=>b.length-a.length)[0]||'';
+
   const corporate={
     englishName:wikidata?.englishName||kabutan?.corporate?.englishName||company.englishName||'',
     industry:jpx?.industry||company.industry||wikidata?.industry||kabuyoho?.corporate?.industry||'',
@@ -2740,7 +2811,7 @@ async function fetchCompanyBasicInfoExternal(company,supplement={}){
     inception:wikidata?.inception||'',
     employees:wikidata?.employees??null,
     representative:wikidata?.representative||'',
-    description:wikidata?.description||kabuyoho?.corporate?.description||kabutan?.corporate?.description||company.profile||''
+    description:bestDescription.slice(0,2000)
   };
 
   return {
