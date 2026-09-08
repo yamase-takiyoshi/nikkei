@@ -257,6 +257,30 @@ footer{color:var(--muted);font-size:11px;padding:24px 4px 12px}
 @media(max-width:1100px){.company-detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.company-detail-kv{grid-template-columns:minmax(110px,.8fr) minmax(0,1.5fr)}}
 @media(max-width:600px){.company-detail-grid{grid-template-columns:1fr 1fr}.company-detail-kv{grid-template-columns:1fr}.company-detail-kv .v{margin-bottom:4px}}
 
+
+/* 売上高のローソク形：前期と当期の金額を比較。実際の高値・安値は作らない。 */
+.company-sales-card{margin:14px 0;padding:16px;scroll-margin-top:150px}
+.company-sales-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.company-sales-heading h3{font-size:18px;margin:0}
+.company-sales-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0}
+.company-sales-controls .btn{min-height:40px;font-size:14px}
+.company-sales-company{font-weight:700;font-size:16px}
+.company-sales-summary{display:flex;align-items:baseline;gap:12px 24px;flex-wrap:wrap;padding:12px 0;font-size:14px}
+.company-sales-summary strong{font-family:var(--mono);font-size:20px}
+.company-sales-legend{display:flex;gap:8px 22px;flex-wrap:wrap;font-size:13px;margin-top:8px}
+.company-sales-legend i{display:inline-block;width:10px;height:14px;margin-right:5px;vertical-align:middle;background:currentColor}
+.company-sales-legend .flat i{height:2px}
+.company-sales-legend .sales-point{color:var(--accent)}
+.company-sales-legend .sales-point i{height:8px;width:8px;border-radius:50%}
+.company-sales-chart{height:370px;margin-top:8px}
+.company-sales-caption{text-align:left;color:var(--muted);font-size:13px;padding:12px 8px}
+.company-sales-card details{margin-top:12px;font-size:14px}
+.company-sales-card .company-detail-status{font-size:13px;line-height:1.7}
+.company-sales-card .chart-empty{padding:18px;text-align:center;background:var(--panel);font-size:14px}
+.company-sales-card .chart-empty:empty{display:none}
+.company-sales-card button:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+@media(max-width:600px){.company-sales-card{padding:12px}.company-sales-chart{height:320px}.company-sales-summary strong{font-size:18px}}
+
 </style>
 </head>
 <body>
@@ -437,6 +461,26 @@ footer{color:var(--muted);font-size:11px;padding:24px 4px 12px}
       <div class="company-search-hint">例：9948 / アークス / ARCS / ジョイス / 8267 / イオン / 薬王堂HD　｜　PCは↑↓＋Enter、iPad・スマホは候補をタップ</div>
     </div>
     <select id="industryFilter"><option value="">全業種</option></select>
+  </div>
+  <div class="chart-card company-sales-card" id="companySalesCandles">
+    <div class="company-sales-heading"><h3>売上高推移・ローソク形</h3><span class="badge" id="companySalesScope">通期・実績</span></div>
+    <div class="company-sales-company" id="companySalesCompany"></div>
+    <div class="company-sales-controls" aria-label="売上高の表示期間">
+      <button type="button" class="btn active" data-company-scope-btn="annual">通期</button>
+      <button type="button" class="btn" data-company-scope-btn="quarterly">四半期</button>
+      <span class="company-sales-controls hidden" id="companySalesComparison" role="group" aria-label="ローソク形の比較対象">
+        <span class="candle-period-label">比較</span>
+        <button type="button" class="btn active" data-sales-comparison="previous" aria-pressed="true">前四半期</button>
+        <button type="button" class="btn" data-sales-comparison="yearAgo" aria-pressed="false">前年同期</button>
+      </span>
+      <button type="button" class="btn" id="companySalesUpdate">売上高を更新</button>
+    </div>
+    <div class="company-sales-summary" id="companySalesSummary" aria-live="polite"></div>
+    <div class="company-detail-status" id="companySalesExplanation"></div>
+    <div class="chart-box company-sales-chart"><canvas id="companySalesCandleChart" role="img" aria-label="売上高実績を前期または前年同期と比較するローソク形グラフ" aria-describedby="companySalesExplanation">下の「売上高の数値を確認」に各期の売上高と増減率を掲載しています。</canvas><div class="chart-empty" id="companySalesCandleEmpty"></div></div>
+    <div class="company-sales-legend" aria-label="凡例"><span class="up"><i></i>増収</span><span class="down"><i></i>減収</span><span class="flat"><i></i>同額</span><span class="sales-point"><i></i>比較値なし・当期の金額のみ</span></div>
+    <div class="company-detail-status" id="companySalesSource" style="margin-top:10px" aria-live="polite"></div>
+    <details><summary>売上高の数値を確認</summary><div class="table-wrap"><table id="companySalesTable"></table></div></details>
   </div>
   <div class="company-layout">
     <div class="panel">
@@ -1211,6 +1255,163 @@ let companyAutocompleteIndex = -1;
 let companyAutocompleteResults = [];
 let companyPeriodScope = "annual";
 
+// Sales candles compare two reported period totals. They have no intraperiod OHLC or wicks.
+let companySalesComparison = 'previous';
+
+function companyQuarterPeriod(value){
+  const raw=String(value||'').normalize('NFKC').replace(/\s/g,'');
+  const match=raw.match(/^(?:予)?(\d{4}|\d{2})[./-](\d{1,2})[-~〜～－–](?:(\d{4}|\d{2})[./-])?(\d{1,2})$/);
+  if(!match)return null;
+  const year=v=>Number(v)+(String(v).length===2?2000:0);
+  const startYear=year(match[1]),startMonth=Number(match[2]),endMonth=Number(match[4]);
+  const endYear=match[3]?year(match[3]):startYear+(endMonth<startMonth?1:0);
+  if(startMonth<1||startMonth>12||endMonth<1||endMonth>12)return null;
+  const start=startYear*12+startMonth-1,end=endYear*12+endMonth-1;
+  if(end-start!==2)return null;
+  const pad=v=>String(v).padStart(2,'0');
+  return {start,end,periodMonths:3,period:`${startYear}.${pad(startMonth)}-${endYear!==startYear?endYear+'.':''}${pad(endMonth)}`,periodEnd:`${endYear}-${pad(endMonth)}`};
+}
+
+function companySalesPeriod(row,scope){
+  if(!row||row.forecast||/予|予想|forecast/i.test(String(row.period||'')))return null;
+  if(row.cumulative||/累計|cumulative|ytd/i.test(String(row.basis||'')+' '+String(row.period||'')))return null;
+  const months=scope==='quarterly'?3:12;
+  if(row.periodMonths!=null&&row.periodMonths!==months)return null;
+  const raw=String(row.period||'').normalize('NFKC').replace(/\s/g,'');
+  const range=companyQuarterPeriod(raw);
+  if(range)return scope==='quarterly'?range:null;
+  // Only a real period end is accepted. Annual totals misread as "2026.02-02" are rejected.
+  const match=raw.match(/^((?:19|20|21)\d{2})[./-](\d{1,2})(?:実績)?$/);
+  if(!match)return null;
+  const month=Number(match[2]);
+  if(month<1||month>12)return null;
+  const end=Number(match[1])*12+month-1;
+  return {end,start:end-months+1,periodMonths:months,period:raw};
+}
+
+function buildCompanySalesCandles(input,scope,comparison='previous'){
+  const periods=new Map();
+  for(const row of Array.isArray(input)?input:[]){
+    const period=companySalesPeriod(row,scope);
+    if(!period)continue;
+    const record={...row,...period,sales:isNum(row.sales)?row.sales:null};
+    // A repeated value with a known amount may fill a missing amount, but zero remains valid.
+    if(!periods.has(period.end)||isNum(record.sales))periods.set(period.end,record);
+  }
+  const rows=[...periods.values()].sort((a,b)=>a.end-b.end);
+  const delta=(now,before)=>isNum(now)&&isNum(before)?now-before:null;
+  const rate=(now,before)=>isNum(now)&&isNum(before)&&before!==0?(now-before)/Math.abs(before)*100:null;
+  const comparable=(row,before)=>before&&(!row.accounting||!before.accounting||row.accounting===before.accounting);
+  return rows.map(row=>{
+    const preceding=periods.get(row.end-(scope==='quarterly'?3:12));
+    const yearAgo=periods.get(row.end-12);
+    const ref=comparison==='yearAgo'?yearAgo:preceding;
+    const previousSales=comparable(row,preceding)?preceding.sales:null;
+    const yearAgoSales=comparable(row,yearAgo)?yearAgo.sales:null;
+    const referenceSales=comparable(row,ref)?ref.sales:null;
+    const change=delta(row.sales,referenceSales);
+    return {...row,referencePeriod:ref?.period||'',referenceSales,change,
+      previousRate:rate(row.sales,previousSales),yearAgoRate:rate(row.sales,yearAgoSales),
+      changeRate:rate(row.sales,referenceSales),
+      comparisonUnavailable:!!ref&&!comparable(row,ref),
+      body:isNum(row.sales)&&isNum(referenceSales)?[referenceSales,row.sales]:null,
+      direction:change==null?'missing':change>0?'up':change<0?'down':'flat'};
+  });
+}
+
+function companySalesCandleLabels(rows){
+  return {id:'companySalesCandleLabels',afterDatasetsDraw(chart){
+    const ctx=chart.ctx,{x,y}=chart.scales,area=chart.chartArea;
+    if(!area||!x||!y)return;
+    const css=getComputedStyle(document.documentElement);
+    const textColor=css.getPropertyValue('--text').trim(),muted=css.getPropertyValue('--muted').trim();
+    ctx.save();ctx.textAlign='center';ctx.textBaseline='bottom';
+    let nextLeft=Infinity;
+    for(let i=rows.length-1;i>=0;i--){
+      const row=rows[i];if(!isNum(row.sales))continue;
+      const amount=fmt(row.sales,0),growth=isNum(row.yearAgoRate)?`前年比 ${row.yearAgoRate>0?'+':''}${fmt(row.yearAgoRate,1)}%`:'';
+      ctx.font='600 12px sans-serif';
+      const width=Math.max(ctx.measureText(amount).width,ctx.measureText(growth).width)+12;
+      if(width>area.right-area.left)continue;
+      const px=Math.min(area.right-width/2,Math.max(area.left+width/2,x.getPixelForValue(i)));
+      if(px+width/2>nextLeft-8)continue;
+      nextLeft=px-width/2;
+      const top=y.getPixelForValue(Math.max(row.sales,isNum(row.referenceSales)?row.referenceSales:row.sales));
+      const py=Math.max(31,top-8);
+      ctx.fillStyle=textColor;ctx.fillText(amount,px,py-(growth?14:0));
+      if(growth){ctx.font='12px sans-serif';ctx.fillStyle=css.getPropertyValue(row.yearAgoRate>0?'--up':row.yearAgoRate<0?'--down':'--flat').trim()||muted;ctx.fillText(growth,px,py);}
+    }
+    ctx.restore();
+  }};
+}
+
+function renderCompanySalesCandles(){
+  const canvas=$('companySalesCandleChart');if(!canvas)return;
+  if(charts.companySalesCandleChart){charts.companySalesCandleChart.destroy();delete charts.companySalesCandleChart;}
+  const c=(dashboardState.companyData||[]).find(x=>String(x.code)===String(selectedCompanyCode));
+  const scope=companyPeriodScope==='quarterly'?'quarterly':'annual',quarterly=scope==='quarterly';
+  const comparison=quarterly?companySalesComparison:'previous';
+  const refLabel=quarterly?(comparison==='yearAgo'?'前年同期':'前四半期'):'前期';
+  const scopeLabel=quarterly?'四半期':'通期';
+  document.querySelectorAll('[data-sales-comparison]').forEach(btn=>{
+    btn.classList.toggle('active',btn.dataset.salesComparison===comparison);
+    btn.setAttribute('aria-pressed',String(btn.dataset.salesComparison===comparison));
+  });
+  $('companySalesComparison').classList.toggle('hidden',!quarterly);
+  $('companySalesScope').textContent=scopeLabel+'・実績';
+  $('companySalesCompany').textContent=c?`${c.code} ${c.name}`:'企業を選択してください';
+  const update=$('companySalesUpdate');update.disabled=!c||!!c.detailLoading;
+  update.textContent=c?.detailLoading?'取得中…':'売上高を更新';
+  const detail=c?.fullDetail||{};
+  const input=quarterly?(detail.quarterlyPerformance||[]):(c?.performance?.length?c.performance:(detail.annualPerformance||[]));
+  const all=buildCompanySalesCandles(input,scope,comparison),rows=all.slice(-20);
+  $('companySalesExplanation').textContent=`四角の両端は「${refLabel}の売上高」と「当期の売上高」です。実際の高値・安値を示すヒゲはありません。比較値がない期は当期の金額を点で表示します。単位：百万円。`;
+  const hasSales=rows.some(r=>isNum(r.sales));
+  const empty=$('companySalesCandleEmpty');
+  empty.textContent=!c?'企業を選択してください。':!hasSales?(c.detailLoading?'売上高を取得中…':`${scopeLabel}の売上高実績がありません。「売上高を更新」で取得できます。`):'';
+  const latest=rows.filter(r=>isNum(r.sales)).at(-1);
+  $('companySalesSummary').innerHTML=latest?`<strong>${esc(latest.period)}　${esc(companyFmtMoney(latest.sales))}</strong><span>${esc(refLabel)}比 ${companyPctHtml(latest.changeRate)}</span>${quarterly&&comparison!=='yearAgo'?`<span>前年同期比 ${companyPctHtml(latest.yearAgoRate)}</span>`:''}`:'';
+  $('companySalesSummary').classList.toggle('hidden',!latest);
+  const notes=[c?.detailError?`取得状況：${c.detailError}`:'',c?.detailLoading&&hasSales?'更新中は前回取得した値を表示しています。':'',
+    all.length>20?'直近20期を表示。':'',hasSales&&!rows.some(r=>r.body)?'比較できる2期がそろうとローソク形で表示します。':''];
+  if(all.some(r=>r.comparisonUnavailable))notes.push('会計基準が異なる期は増減比較を省いています。');
+  const source=quarterly?(detail.source||'出典情報なし'):(detail.source||c?.source||'出典情報なし');
+  if(c)notes.push(`出典：${source}${detail.fetchedAt?' ／ 取得 '+new Date(detail.fetchedAt).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'}):c.updated?' ／ 確認 '+c.updated:''}`);
+  $('companySalesSource').textContent=notes.filter(Boolean).join(' ');
+  $('companySalesTable').innerHTML=`<caption class="company-sales-caption">${esc(c?c.code+' '+c.name:'売上高')} ／ ${esc(scopeLabel)}売上高・実績 ／ 単位：百万円</caption><thead><tr><th>期間</th><th>当期売上高</th><th>${esc(refLabel)}売上高</th><th>増減額</th><th>${quarterly?'前四半期比':'前年比'}</th>${quarterly?'<th>前年同期比</th>':''}</tr></thead><tbody>${rows.length?rows.map(r=>`<tr><td>${esc(r.period)}</td><td>${isNum(r.sales)?esc(fmt(r.sales,0)):'未取得'}</td><td>${isNum(r.referenceSales)?esc(fmt(r.referenceSales,0)):'未取得'}</td><td class="${r.direction}">${isNum(r.change)?(r.change>0?'+':'')+esc(fmt(r.change,0)):'比較不可'}</td><td>${companyPctHtml(r.previousRate)}</td>${quarterly?`<td>${companyPctHtml(r.yearAgoRate)}</td>`:''}</tr>`).join(''):`<tr><td colspan="${quarterly?6:5}">売上高実績を取得できていません。</td></tr>`}</tbody>`;
+  if(!hasSales)return;
+  if(typeof Chart==='undefined'){empty.textContent='グラフを読み込めませんでした。下の「売上高の数値を確認」で数値をご覧いただけます。';return;}
+  const css=getComputedStyle(document.documentElement),color=name=>css.getPropertyValue(name).trim();
+  const colors=rows.map(r=>color(r.direction==='up'?'--up':r.direction==='down'?'--down':'--flat'));
+  const defaults=chartDefaults();
+  charts.companySalesCandleChart=new Chart(canvas,{
+    type:'bar',plugins:[companySalesCandleLabels(rows)],
+    data:{labels:rows.map(r=>r.period),datasets:[
+      {label:'売上高の増減',data:rows.map(r=>r.body),backgroundColor:colors,borderColor:colors,borderWidth:1,borderSkipped:false,barPercentage:.56,categoryPercentage:.85,maxBarThickness:32,minBarLength:2,order:1},
+      {type:'line',label:'当期売上高（比較値なし）',data:rows.map(r=>!r.body?r.sales:null),showLine:false,pointRadius:4,pointHoverRadius:6,pointBackgroundColor:color('--accent'),pointBorderColor:color('--panel'),pointBorderWidth:1,order:0}
+    ]},
+    options:{...defaults,animation:false,layout:{padding:{top:44}},interaction:{mode:'index',intersect:false},
+      plugins:{...defaults.plugins,legend:{display:false},tooltip:{filter:item=>item.datasetIndex===(rows[item.dataIndex].body?0:1),callbacks:{
+        title:items=>items.length?`${rows[items[0].dataIndex].period}（実績）`:'',
+        label:item=>{const r=rows[item.dataIndex];return [`当期売上高：${companyFmtMoney(r.sales)}`,`${refLabel}売上高：${companyFmtMoney(r.referenceSales)}`,
+          `${refLabel}比：${isNum(r.changeRate)?(r.changeRate>0?'+':'')+fmt(r.changeRate,1)+'%':'比較不可'}`,
+          ...(quarterly&&comparison!=='yearAgo'?[`前年同期比：${isNum(r.yearAgoRate)?(r.yearAgoRate>0?'+':'')+fmt(r.yearAgoRate,1)+'%':'比較不可'}`]:[])];}
+      }}},
+      scales:{x:{...defaults.scales.x,offset:true,ticks:{...defaults.scales.x.ticks,maxRotation:45,minRotation:0,autoSkip:true}},
+        y:{...defaults.scales.y,beginAtZero:false,grace:'12%',title:{display:true,text:'売上高（百万円）'},ticks:{...defaults.scales.y.ticks,callback:value=>Number(value).toLocaleString('ja-JP')}}}
+    }
+  });
+}
+
+document.addEventListener('click',async e=>{
+  const compare=e.target.closest('[data-sales-comparison]');
+  if(compare){companySalesComparison=compare.dataset.salesComparison==='yearAgo'?'yearAgo':'previous';renderCompanySalesCandles();return;}
+  if(!e.target.closest('#companySalesUpdate'))return;
+  try{await updateSelectedCompanyFullDetailExternal();}
+  catch(error){$('companySalesSource').textContent='更新できませんでした：'+(error.message||String(error));}
+});
+
+
 function companyFmtMoney(v){ return isNum(v) ? `${fmt(v,0)}百万円` : "データ未取得"; }
 function companyFmtMetric(v,suffix=""){ return isNum(v) ? `${fmt(v,2)}${suffix}` : "データ未取得"; }
 function companyPctHtml(v,d=1){ return isNum(v) ? `<span class="${cls(v)}">${v>=0?'+':''}${fmt(v,d)}%</span>` : '未取得'; }
@@ -1309,7 +1510,9 @@ function applyCompanyPeriodScope(){
   });
   document.querySelectorAll('[data-company-scope-btn]').forEach(btn=>{
     btn.classList.toggle('active',btn.dataset.companyScopeBtn===companyPeriodScope);
+    btn.setAttribute('aria-pressed',String(btn.dataset.companyScopeBtn===companyPeriodScope));
   });
+  renderCompanySalesCandles();
 }
 
 document.addEventListener('click',e=>{
@@ -2510,7 +2713,12 @@ function chartDefaults(){
   };
 }
 
-function destroyCharts(){Object.values(charts).forEach(c=>c?.destroy());charts={};}
+function destroyCharts(keepCompany=false){
+  for(const [id,chart] of Object.entries(charts)){
+    if(keepCompany&&id.startsWith('company'))continue;
+    chart?.destroy();delete charts[id];
+  }
+}
 
 function filterHistory(arr){
   if(!Array.isArray(arr))return[];
@@ -2533,7 +2741,7 @@ function lineChart(canvasId,emptyId,label,arr,valueKey="value"){
 }
 
 function renderCharts(){
-  destroyCharts();
+  destroyCharts(true);
   const h=dashboardState.historyData;
   lineChart("fxChart","fxEmpty","ドル円",h.fxUSDJPY);
   lineChart("nikkeiChart","nikkeiEmpty","日経平均",h.nikkei);
@@ -3025,18 +3233,18 @@ function parseKabutanFinanceHTML(html,code){
   }).filter(Boolean).sort((a,b)=>a.period.localeCompare(b.period));
   const quarterly=table=>!table?[]:table.rows.map(cells=>{
     const raw=cells[0]?.replace(/\s/g,'');
-    const m=raw&&raw.match(/^(?:予)?((?:20)?\d{2})[./-](\d{2})(?:[-~〜－](\d{2}))?(?:Q([1-4]))?$/i);
-    if(!m||cells.length!==table.headers.length)return null;
-    const y=String(m[1]).length===2?`20${m[1]}`:m[1];
-    const startMonth=Number(m[2]);
-    const endMonth=Number(m[3]||m[2]);
+    const period=companyQuarterPeriod(raw);
+    if(!period||cells.length!==table.headers.length)return null;
     const get=re=>{const i=table.headers.findIndex(h=>re.test(h));return i<0?null:parseJapaneseNumber(cells[i]);};
     const txt=re=>{const i=table.headers.findIndex(h=>re.test(h));return i<0?'':cells[i];};
-    return {period:`${y}.${String(startMonth).padStart(2,'0')}-${String(endMonth).padStart(2,'0')}`,forecast:/^予/.test(raw),sales:get(/^売上高|^売上収益|^営業収益/),operatingProfit:get(/^営業益/),ordinaryProfit:get(/^経常益/),netIncome:get(/^最終益|^純利益/),eps:get(/^修正1株益|^1株益/),dividend:get(/^修正1株配|^1株配/),announced:txt(/^発表日/),accounting:txt(/^会計基準/)};
-  }).filter(x=>x&&(isNum(x.sales)||isNum(x.operatingProfit)||isNum(x.netIncome))).sort((a,b)=>a.period.localeCompare(b.period));
+    return {...period,basis:'standalone',forecast:/^予/.test(raw),sales:get(/^売上高|^売上収益|^営業収益/),operatingProfit:get(/^営業益/),ordinaryProfit:get(/^経常益/),netIncome:get(/^最終益|^純利益/),eps:get(/^修正1株益|^1株益/),dividend:get(/^修正1株配|^1株配/),announced:txt(/^発表日/),accounting:txt(/^会計基準/)};
+  }).filter(x=>x&&(isNum(x.sales)||isNum(x.operatingProfit)||isNum(x.netIncome))).sort((a,b)=>a.end-b.end);
   const incomeRows=annual(choose([/^売上高|^売上収益|^営業収益/,/^最終益|^純利益/,/^修正1株配|^1株配/]));
   const performance=incomeRows.map(r=>({period:r.period+(r.forecast?'予':''),forecast:r.forecast,sales:r.get(/^売上高|^売上収益|^営業収益/),operatingProfit:r.get(/^営業益/),ordinaryProfit:r.get(/^経常益/),netIncome:r.get(/^最終益|^純利益/),eps:r.get(/^修正1株益|^1株益/),dividend:r.get(/^修正1株配|^1株配/),announced:r.txt(/^発表日/),accounting:r.txt(/^会計基準/)}));
-  const quarterTable=choose([/^売上高|^売上収益|^営業収益/,/^営業益|^経常益|^最終益|^純利益/]);
+  // A quarterly table must contain explicit three-month periods. Annual and YTD tables cannot supply quarter totals.
+  const quarterCandidates=tables.filter(t=>[/^売上高|^売上収益|^営業収益/,/^営業益|^経常益/,/^最終益|^純利益/].every(re=>t.headers.some(h=>re.test(h)))&&t.rows.some(cells=>companyQuarterPeriod(cells[0])));
+  // The first-quarter YTD table also spans three months; prefer the consecutive three-month results table.
+  const quarterTable=quarterCandidates.find(t=>t.headers.some(h=>/^売上営業損益率/.test(h)))||quarterCandidates.slice().sort((a,b)=>quarterly(b).length-quarterly(a).length)[0];
   const quarterlyPerformance=quarterly(quarterTable);
   const actual=performance.filter(r=>!r.forecast),latest=actual.at(-1),previous=actual.at(-2),forecast=performance.filter(r=>r.forecast).at(-1);
   const latestActual=t=>annual(t).filter(r=>!r.forecast).at(-1);
