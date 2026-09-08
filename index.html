@@ -382,7 +382,7 @@ footer{color:var(--muted);font-size:11px;padding:24px 4px 12px}
   </div>
   <div class="grid-2" style="margin-top:12px">
     <div class="chart-card"><h3>業績推移</h3><div class="chart-box"><canvas id="companyPerformanceChart"></canvas><div class="chart-empty" id="companyChartEmpty"></div></div></div>
-    <div class="panel"><div class="panel-head"><h3>役員</h3></div><div class="table-wrap"><table id="officerTable"></table></div></div>
+    <div class="panel"><div class="panel-head"><h3>役員・執行役</h3></div><div class="note" id="officerSourceStatus" style="margin:10px"></div><div class="table-wrap"><table id="officerTable"></table></div></div>
   </div>
   <div class="note">会社情報はEDINET、有価証券報告書、決算短信、適時開示、各社IR等の公開情報を整理する欄です。アークスを含む主要上場会社の検索マスターを内蔵し、詳細未取得の企業も候補表示します。役員は「役職・氏名・就任年・担当」を保持できます。確認できない項目は未取得のままにしてください。</div>
 </section>
@@ -646,7 +646,7 @@ const companyData = [
 
 
 /* 検索用企業マスター：詳細未取得の会社は基本情報だけ候補表示 */
-const companyMasterSeed = [["3382","セブン＆アイ・ホールディングス","小売業",["セブンアンドアイ","7&i","SEVEN & I","セブンイレブン"]],["7532","パン・パシフィック・インターナショナルホールディングス","小売業",["PPIH","ドンキ","ドン・キホーテ","DON QUIJOTE"]],["7453","良品計画","小売業",["無印良品","MUJI"]],["9843","ニトリホールディングス","小売業",["ニトリ","NITORI","ニトリHD"]],["8194","ライフコーポレーション","小売業",["ライフ","LIFE"]],["8279","ヤオコー","小売業",["YAOKO"]],["9974","ベルク","小売業",["BELC"]],["8278","フジ","小売業",["FUJI","フジグラン"]],["8276","平和堂","小売業",["HEIWADO"]],["8167","リテールパートナーズ","小売業",["丸久","マルキョウ","RETAL PARTNERS"]],["3222","ユナイテッド・スーパーマーケット・ホールディングス","小売業",["USMH","マルエツ","カスミ"]],["2791","大黒天物産","小売業",["ラ・ムー","ディオ","DAIKOKUTEN"]],["3038","神戸物産","卸売業",["業務スーパー","KOBE BUSSAN"]],["8255","アクシアル リテイリング","小売業",["アクシアル","原信","ナルス","AXIAL"]],["3539","ＪＭホールディングス","小売業",["JMHD","ジャパンミート","肉のハナマサ"]],["8198","マックスバリュ東海","小売業",["MV東海","MAXVALU TOKAI"]],["2653","イオン九州","小売業",["AEON KYUSHU"]],["7512","イオン北海道","小売業",["AEON HOKKAIDO"]],["2742","ハローズ","小売業",["HALOWS"]],["9956","バローホールディングス","小売業",["バロー","VALOR","バローHD"]],["9993","ヤマザワ","小売業",["YAMAZAWA"]],["9946","ミニストップ","小売業",["MINISTOP"]],["8282","ケーズホールディングス","小売業",["ケーズデンキ","KS HOLDINGS","ケーズHD"]],["9831","ヤマダホールディングス","小売業",["ヤマダデンキ","YAMADA","ヤマダHD"]],["2730","エディオン","小売業",["EDION"]],["3048","ビックカメラ","小売業",["BIC CAMERA"]],["3050","ＤＣＭホールディングス","小売業",["DCM","DCM HD"]],["2664","カワチ薬品","小売業",["CAWACHI"]],["3391","ツルハホールディングス","小売業",["ツルハ","TSURUHA","ツルハHD"]],["3349","コスモス薬品","小売業",["ドラッグストアコスモス","COSMOS"]],["3549","クスリのアオキホールディングス","小売業",["クスリのアオキ","AOKI HD","クスリのアオキHD"]],["3088","マツキヨココカラ＆カンパニー","小売業",["マツモトキヨシ","ココカラファイン","マツキヨココカラ"]],["9989","サンドラッグ","小売業",["SUNDRUG"]],["7649","スギホールディングス","小売業",["スギ薬局","SUGI","スギHD"]],["9267","Ｇｅｎｋｙ ＤｒｕｇＳｔｏｒｅｓ","小売業",["ゲンキー","GENKY"]],["3099","三越伊勢丹ホールディングス","小売業",["三越伊勢丹","ISETAN MITSUKOSHI"]],["8233","高島屋","小売業",["髙島屋","TAKASHIMAYA"]],["8242","エイチ・ツー・オー リテイリング","小売業",["H2O","阪急阪神百貨店"]],["3086","Ｊ．フロント リテイリング","小売業",["JFR","大丸松坂屋"]],["8237","松屋","小売業",["MATSUYA","銀座松屋"]],["8227","しまむら","小売業",["SHIMAMURA"]],["2670","エービーシー・マート","小売業",["ABC-MART","ABCマート"]],["2685","アダストリア","小売業",["ADASTRIA","グローバルワーク"]],["7606","ユナイテッドアローズ","小売業",["UNITED ARROWS"]],["2726","パルグループホールディングス","小売業",["PAL GROUP","3COINS","パルグループHD"]],["2780","コメ兵ホールディングス","小売業",["KOMEHYO","コメ兵HD"]],["3092","ＺＯＺＯ","小売業",["ZOZO","ZOZOTOWN"]],["8345","岩手銀行","銀行業",["いわぎん","BANK OF IWATE"]],["8551","北日本銀行","銀行業",["きたぎん","KITA-NIPPON BANK"]],["8349","東北銀行","銀行業",["とうぎん","THE TOHOKU BANK"]],["8306","三菱ＵＦＪフィナンシャル・グループ","銀行業",["MUFG","三菱UFJ","三菱UFJFG"]],["8316","三井住友フィナンシャルグループ","銀行業",["SMFG","三井住友FG"]],["8411","みずほフィナンシャルグループ","銀行業",["みずほFG","MIZUHO"]],["8591","オリックス","その他金融業",["ORIX"]],["8604","野村ホールディングス","証券・商品先物取引業",["野村證券","NOMURA","野村HD"]],["8766","東京海上ホールディングス","保険業",["東京海上","TOKIO MARINE","東京海上HD"]],["8750","第一生命ホールディングス","保険業",["第一生命","DAI-ICHI LIFE","第一生命HD"]],["8725","ＭＳ＆ＡＤインシュアランスグループホールディングス","保険業",["MS&AD","三井住友海上"]],["8630","ＳＯＭＰＯホールディングス","保険業",["SOMPO","損保ジャパン"]],["7203","トヨタ自動車","輸送用機器",["TOYOTA","トヨタ"]],["7267","本田技研工業","輸送用機器",["HONDA","ホンダ"]],["7270","ＳＵＢＡＲＵ","輸送用機器",["SUBARU","スバル"]],["6758","ソニーグループ","電気機器",["SONY","ソニー","ソニーG"]],["7974","任天堂","その他製品",["NINTENDO"]],["6861","キーエンス","電気機器",["KEYENCE"]],["6501","日立製作所","電気機器",["HITACHI","日立"]],["6503","三菱電機","電気機器",["MITSUBISHI ELECTRIC"]],["6702","富士通","電気機器",["FUJITSU"]],["6701","日本電気","電気機器",["NEC","日本電気NEC"]],["6981","村田製作所","電気機器",["MURATA"]],["6954","ファナック","電気機器",["FANUC"]],["8035","東京エレクトロン","電気機器",["TEL","TOKYO ELECTRON"]],["6857","アドバンテスト","電気機器",["ADVANTEST"]],["7735","ＳＣＲＥＥＮホールディングス","電気機器",["SCREEN","SCREEN HD"]],["6920","レーザーテック","電気機器",["LASERTEC"]],["6146","ディスコ","機械",["DISCO"]],["9432","ＮＴＴ","情報・通信業",["日本電信電話","NTT"]],["9433","ＫＤＤＩ","情報・通信業",["KDDI","AU"]],["9434","ソフトバンク","情報・通信業",["SOFTBANK","SBKK"]],["9984","ソフトバンクグループ","情報・通信業",["SBG","SOFTBANK GROUP","ソフトバンクG"]],["4755","楽天グループ","サービス業",["楽天","RAKUTEN","楽天G"]],["4689","ＬＹ Ｃｏｒｐｏｒａｔｉｏｎ","情報・通信業",["LY","LINEヤフー","LINE Yahoo","ヤフー"]],["6098","リクルートホールディングス","サービス業",["RECRUIT","リクルート","リクルートHD"]],["4661","オリエンタルランド","サービス業",["OLC","東京ディズニーリゾート","ディズニーランド"]],["7832","バンダイナムコホールディングス","その他製品",["BANDAI NAMCO","バンナム","バンダイナムコHD"]],["9697","カプコン","情報・通信業",["CAPCOM"]],["9766","コナミグループ","情報・通信業",["KONAMI","コナミ"]],["2914","日本たばこ産業","食料品",["JT","JAPAN TOBACCO"]],["2502","アサヒグループホールディングス","食料品",["アサヒ","ASAHI","アサヒGHD"]],["2503","キリンホールディングス","食料品",["キリン","KIRIN","キリンHD"]],["2802","味の素","食料品",["AJINOMOTO"]],["2269","明治ホールディングス","食料品",["MEIJI","明治HD"]],["2282","日本ハム","食料品",["NIPPON HAM","ニッポンハム"]],["1332","ニッスイ","水産・農林業",["NISSUI","日本水産"]],["9101","日本郵船","海運業",["NYK","NIPPON YUSEN"]],["9104","商船三井","海運業",["MOL","MITSUI OSK LINES"]],["9107","川崎汽船","海運業",["K LINE","KLINE"]],["9020","東日本旅客鉄道","陸運業",["JR東日本","JR EAST"]],["9021","西日本旅客鉄道","陸運業",["JR西日本","JR WEST"]],["9022","東海旅客鉄道","陸運業",["JR東海","JR CENTRAL"]],["9142","九州旅客鉄道","陸運業",["JR九州","JR KYUSHU"]],["9501","東京電力ホールディングス","電気・ガス業",["東京電力","TEPCO","東電"]],["9506","東北電力","電気・ガス業",["TOHOKU ELECTRIC"]],["9531","東京ガス","電気・ガス業",["TOKYO GAS"]],["9532","大阪ガス","電気・ガス業",["OSAKA GAS","DAIGAS"]],["1801","大成建設","建設業",["TAISEI"]],["1802","大林組","建設業",["OBAYASHI"]],["1803","清水建設","建設業",["SHIMIZU"]],["1812","鹿島建設","建設業",["KAJIMA","鹿島"]],["1925","大和ハウス工業","建設業",["DAIWA HOUSE","大和ハウス"]],["1928","積水ハウス","建設業",["SEKISUI HOUSE"]],["8801","三井不動産","不動産業",["MITSUI FUDOSAN"]],["8802","三菱地所","不動産業",["MITSUBISHI ESTATE"]],["8804","東京建物","不動産業",["TOKYO TATEMONO"]],["8830","住友不動産","不動産業",["SUMITOMO REALTY"]],["1605","ＩＮＰＥＸ","鉱業",["INPEX"]],["5020","ＥＮＥＯＳホールディングス","石油・石炭製品",["ENEOS","エネオス","ENEOS HD"]],["5401","日本製鉄","鉄鋼",["NIPPON STEEL"]],["5411","ＪＦＥホールディングス","鉄鋼",["JFE","JFE HD"]],["5713","住友金属鉱山","非鉄金属",["SUMITOMO METAL MINING"]],["5802","住友電気工業","非鉄金属",["SUMITOMO ELECTRIC","住友電工"]],["4063","信越化学工業","化学",["SHIN-ETSU","信越化学"]],["4452","花王","化学",["KAO"]],["4502","武田薬品工業","医薬品",["TAKEDA","武田薬品"]],["4503","アステラス製薬","医薬品",["ASTELLAS"]],["4519","中外製薬","医薬品",["CHUGAI"]],["4568","第一三共","医薬品",["DAIICHI SANKYO"]],["4523","エーザイ","医薬品",["EISAI"]],["4911","資生堂","化学",["SHISEIDO"]],["4901","富士フイルムホールディングス","化学",["FUJIFILM","富士フイルムHD"]],["6178","日本郵政","サービス業",["JAPAN POST HOLDINGS","日本郵政G"]],["7182","ゆうちょ銀行","銀行業",["JAPAN POST BANK","ゆうちょ"]],["7181","かんぽ生命保険","保険業",["JAPAN POST INSURANCE","かんぽ"]]];
+const companyMasterSeed = [["3382","セブン＆アイ・ホールディングス","小売業",["セブンアンドアイ","7&i","SEVEN & I","セブンイレブン"]],["7532","パン・パシフィック・インターナショナルホールディングス","小売業",["PPIH","ドンキ","ドン・キホーテ","DON QUIJOTE"]],["7453","良品計画","小売業",["無印良品","MUJI"]],["9843","ニトリホールディングス","小売業",["ニトリ","NITORI","ニトリHD"]],["8194","ライフコーポレーション","小売業",["ライフ","LIFE"]],["417A","ブルーゾーンホールディングス","小売業",["ヤオコー","YAOKO","8279","BLUE ZONES HOLDINGS","ブルーゾーンHD"]],["9974","ベルク","小売業",["BELC"]],["8278","フジ","小売業",["FUJI","フジグラン"]],["8276","平和堂","小売業",["HEIWADO"]],["8167","リテールパートナーズ","小売業",["丸久","マルキョウ","RETAL PARTNERS"]],["3222","ユナイテッド・スーパーマーケット・ホールディングス","小売業",["USMH","マルエツ","カスミ"]],["2791","大黒天物産","小売業",["ラ・ムー","ディオ","DAIKOKUTEN"]],["3038","神戸物産","卸売業",["業務スーパー","KOBE BUSSAN"]],["8255","アクシアル リテイリング","小売業",["アクシアル","原信","ナルス","AXIAL"]],["3539","ＪＭホールディングス","小売業",["JMHD","ジャパンミート","肉のハナマサ"]],["8198","マックスバリュ東海","小売業",["MV東海","MAXVALU TOKAI"]],["2653","イオン九州","小売業",["AEON KYUSHU"]],["7512","イオン北海道","小売業",["AEON HOKKAIDO"]],["2742","ハローズ","小売業",["HALOWS"]],["9956","バローホールディングス","小売業",["バロー","VALOR","バローHD"]],["9993","ヤマザワ","小売業",["YAMAZAWA"]],["9946","ミニストップ","小売業",["MINISTOP"]],["8282","ケーズホールディングス","小売業",["ケーズデンキ","KS HOLDINGS","ケーズHD"]],["9831","ヤマダホールディングス","小売業",["ヤマダデンキ","YAMADA","ヤマダHD"]],["2730","エディオン","小売業",["EDION"]],["3048","ビックカメラ","小売業",["BIC CAMERA"]],["3050","ＤＣＭホールディングス","小売業",["DCM","DCM HD"]],["2664","カワチ薬品","小売業",["CAWACHI"]],["3391","ツルハホールディングス","小売業",["ツルハ","TSURUHA","ツルハHD"]],["3349","コスモス薬品","小売業",["ドラッグストアコスモス","COSMOS"]],["3549","クスリのアオキホールディングス","小売業",["クスリのアオキ","AOKI HD","クスリのアオキHD"]],["3088","マツキヨココカラ＆カンパニー","小売業",["マツモトキヨシ","ココカラファイン","マツキヨココカラ"]],["9989","サンドラッグ","小売業",["SUNDRUG"]],["7649","スギホールディングス","小売業",["スギ薬局","SUGI","スギHD"]],["9267","Ｇｅｎｋｙ ＤｒｕｇＳｔｏｒｅｓ","小売業",["ゲンキー","GENKY"]],["3099","三越伊勢丹ホールディングス","小売業",["三越伊勢丹","ISETAN MITSUKOSHI"]],["8233","高島屋","小売業",["髙島屋","TAKASHIMAYA"]],["8242","エイチ・ツー・オー リテイリング","小売業",["H2O","阪急阪神百貨店"]],["3086","Ｊ．フロント リテイリング","小売業",["JFR","大丸松坂屋"]],["8237","松屋","小売業",["MATSUYA","銀座松屋"]],["8227","しまむら","小売業",["SHIMAMURA"]],["2670","エービーシー・マート","小売業",["ABC-MART","ABCマート"]],["2685","アダストリア","小売業",["ADASTRIA","グローバルワーク"]],["7606","ユナイテッドアローズ","小売業",["UNITED ARROWS"]],["2726","パルグループホールディングス","小売業",["PAL GROUP","3COINS","パルグループHD"]],["2780","コメ兵ホールディングス","小売業",["KOMEHYO","コメ兵HD"]],["3092","ＺＯＺＯ","小売業",["ZOZO","ZOZOTOWN"]],["8345","岩手銀行","銀行業",["いわぎん","BANK OF IWATE"]],["8551","北日本銀行","銀行業",["きたぎん","KITA-NIPPON BANK"]],["8349","東北銀行","銀行業",["とうぎん","THE TOHOKU BANK"]],["8306","三菱ＵＦＪフィナンシャル・グループ","銀行業",["MUFG","三菱UFJ","三菱UFJFG"]],["8316","三井住友フィナンシャルグループ","銀行業",["SMFG","三井住友FG"]],["8411","みずほフィナンシャルグループ","銀行業",["みずほFG","MIZUHO"]],["8591","オリックス","その他金融業",["ORIX"]],["8604","野村ホールディングス","証券・商品先物取引業",["野村證券","NOMURA","野村HD"]],["8766","東京海上ホールディングス","保険業",["東京海上","TOKIO MARINE","東京海上HD"]],["8750","第一生命ホールディングス","保険業",["第一生命","DAI-ICHI LIFE","第一生命HD"]],["8725","ＭＳ＆ＡＤインシュアランスグループホールディングス","保険業",["MS&AD","三井住友海上"]],["8630","ＳＯＭＰＯホールディングス","保険業",["SOMPO","損保ジャパン"]],["7203","トヨタ自動車","輸送用機器",["TOYOTA","トヨタ"]],["7267","本田技研工業","輸送用機器",["HONDA","ホンダ"]],["7270","ＳＵＢＡＲＵ","輸送用機器",["SUBARU","スバル"]],["6758","ソニーグループ","電気機器",["SONY","ソニー","ソニーG"]],["7974","任天堂","その他製品",["NINTENDO"]],["6861","キーエンス","電気機器",["KEYENCE"]],["6501","日立製作所","電気機器",["HITACHI","日立"]],["6503","三菱電機","電気機器",["MITSUBISHI ELECTRIC"]],["6702","富士通","電気機器",["FUJITSU"]],["6701","日本電気","電気機器",["NEC","日本電気NEC"]],["6981","村田製作所","電気機器",["MURATA"]],["6954","ファナック","電気機器",["FANUC"]],["8035","東京エレクトロン","電気機器",["TEL","TOKYO ELECTRON"]],["6857","アドバンテスト","電気機器",["ADVANTEST"]],["7735","ＳＣＲＥＥＮホールディングス","電気機器",["SCREEN","SCREEN HD"]],["6920","レーザーテック","電気機器",["LASERTEC"]],["6146","ディスコ","機械",["DISCO"]],["9432","ＮＴＴ","情報・通信業",["日本電信電話","NTT"]],["9433","ＫＤＤＩ","情報・通信業",["KDDI","AU"]],["9434","ソフトバンク","情報・通信業",["SOFTBANK","SBKK"]],["9984","ソフトバンクグループ","情報・通信業",["SBG","SOFTBANK GROUP","ソフトバンクG"]],["4755","楽天グループ","サービス業",["楽天","RAKUTEN","楽天G"]],["4689","ＬＹ Ｃｏｒｐｏｒａｔｉｏｎ","情報・通信業",["LY","LINEヤフー","LINE Yahoo","ヤフー"]],["6098","リクルートホールディングス","サービス業",["RECRUIT","リクルート","リクルートHD"]],["4661","オリエンタルランド","サービス業",["OLC","東京ディズニーリゾート","ディズニーランド"]],["7832","バンダイナムコホールディングス","その他製品",["BANDAI NAMCO","バンナム","バンダイナムコHD"]],["9697","カプコン","情報・通信業",["CAPCOM"]],["9766","コナミグループ","情報・通信業",["KONAMI","コナミ"]],["2914","日本たばこ産業","食料品",["JT","JAPAN TOBACCO"]],["2502","アサヒグループホールディングス","食料品",["アサヒ","ASAHI","アサヒGHD"]],["2503","キリンホールディングス","食料品",["キリン","KIRIN","キリンHD"]],["2802","味の素","食料品",["AJINOMOTO"]],["2269","明治ホールディングス","食料品",["MEIJI","明治HD"]],["2282","日本ハム","食料品",["NIPPON HAM","ニッポンハム"]],["1332","ニッスイ","水産・農林業",["NISSUI","日本水産"]],["9101","日本郵船","海運業",["NYK","NIPPON YUSEN"]],["9104","商船三井","海運業",["MOL","MITSUI OSK LINES"]],["9107","川崎汽船","海運業",["K LINE","KLINE"]],["9020","東日本旅客鉄道","陸運業",["JR東日本","JR EAST"]],["9021","西日本旅客鉄道","陸運業",["JR西日本","JR WEST"]],["9022","東海旅客鉄道","陸運業",["JR東海","JR CENTRAL"]],["9142","九州旅客鉄道","陸運業",["JR九州","JR KYUSHU"]],["9501","東京電力ホールディングス","電気・ガス業",["東京電力","TEPCO","東電"]],["9506","東北電力","電気・ガス業",["TOHOKU ELECTRIC"]],["9531","東京ガス","電気・ガス業",["TOKYO GAS"]],["9532","大阪ガス","電気・ガス業",["OSAKA GAS","DAIGAS"]],["1801","大成建設","建設業",["TAISEI"]],["1802","大林組","建設業",["OBAYASHI"]],["1803","清水建設","建設業",["SHIMIZU"]],["1812","鹿島建設","建設業",["KAJIMA","鹿島"]],["1925","大和ハウス工業","建設業",["DAIWA HOUSE","大和ハウス"]],["1928","積水ハウス","建設業",["SEKISUI HOUSE"]],["8801","三井不動産","不動産業",["MITSUI FUDOSAN"]],["8802","三菱地所","不動産業",["MITSUBISHI ESTATE"]],["8804","東京建物","不動産業",["TOKYO TATEMONO"]],["8830","住友不動産","不動産業",["SUMITOMO REALTY"]],["1605","ＩＮＰＥＸ","鉱業",["INPEX"]],["5020","ＥＮＥＯＳホールディングス","石油・石炭製品",["ENEOS","エネオス","ENEOS HD"]],["5401","日本製鉄","鉄鋼",["NIPPON STEEL"]],["5411","ＪＦＥホールディングス","鉄鋼",["JFE","JFE HD"]],["5713","住友金属鉱山","非鉄金属",["SUMITOMO METAL MINING"]],["5802","住友電気工業","非鉄金属",["SUMITOMO ELECTRIC","住友電工"]],["4063","信越化学工業","化学",["SHIN-ETSU","信越化学"]],["4452","花王","化学",["KAO"]],["4502","武田薬品工業","医薬品",["TAKEDA","武田薬品"]],["4503","アステラス製薬","医薬品",["ASTELLAS"]],["4519","中外製薬","医薬品",["CHUGAI"]],["4568","第一三共","医薬品",["DAIICHI SANKYO"]],["4523","エーザイ","医薬品",["EISAI"]],["4911","資生堂","化学",["SHISEIDO"]],["4901","富士フイルムホールディングス","化学",["FUJIFILM","富士フイルムHD"]],["6178","日本郵政","サービス業",["JAPAN POST HOLDINGS","日本郵政G"]],["7182","ゆうちょ銀行","銀行業",["JAPAN POST BANK","ゆうちょ"]],["7181","かんぽ生命保険","保険業",["JAPAN POST INSURANCE","かんぽ"]]];
 
 function mergeCompanyMasterSeed(){
   const known=new Set(companyData.map(c=>String(c.code)));
@@ -1171,12 +1171,16 @@ function renderCompanyDetail(){
   const fmtBig=(v)=>isNum(v)?`${Math.round(v).toLocaleString('ja-JP')}円`:'未取得';
   const fmtOku=(v)=>isNum(v)?`${fmt(v/1e8,1)}億円`:'未取得';
   const fmtMan=(v)=>isNum(v)?`${fmt(v/1e4,0)}万円`:'未取得';
-  const card=(k,v)=>`<div class="company-detail-card"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`;
+  const noSource=new Set(['企業価値 EV','PEG','EV/売上高','EV/EBITDA','β（ベータ）','粗利益率','EBITDA率','権利落ち日','浮動株数','内部者保有比率','機関保有比率','粗利益','EBITDA','有利子負債等','1株当たり現金','流動比率','当座比率','1株売上高']);
+  const card=(k,v)=>{
+    const unavailable=d.schemaVersion===COMPANY_DATA_VERSION&&v==='未取得'&&noSource.has(k);
+    return `<div class="company-detail-card"><div class="k">${esc(k)}</div><div class="v ${unavailable?'status-missing':''}">${esc(unavailable?'取得元に項目なし':v)}</div></div>`;
+  };
   const kvRows=(rows)=>`<div class="company-detail-kv">${rows.map(([k,v])=>`<div class="k">${esc(k)}</div><div class="v">${v}</div>`).join('')}</div>`;
-  const statusText=c.detailLoading?'企業詳細を取得中…':c.detailError?`詳細取得エラー: ${c.detailError}`:d.fetchedAt?`外部詳細取得 ${d.fetchedAt}`:'企業マスター情報';
+  const statusText=c.detailLoading?'企業詳細を取得中…':c.detailError?`詳細取得エラー: ${c.detailError}`:d.fetchedAt?`${d.warnings?.length?'一部取得':'取得完了'} ${new Date(d.fetchedAt).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'})}`:'企業マスター情報';
   const website=corp.website?`<a class="company-detail-link" href="${esc(corp.website)}" target="_blank" rel="noopener">${esc(corp.website)} ↗</a>`:'未取得';
   const address=corp.headquarters||'';
-  const jpxUrl=basic.jpx?.sourceUrl||`https://www2.jpx.co.jp/tseHpFront/StockSearch.do?topSearchStr=${encodeURIComponent(c.code)}`;
+  const jpxUrl=basic.jpx?.sourceUrl||`https://www2.jpx.co.jp/tseHpFront/StockSearch.do?method=topsearch&topSearchStr=${encodeURIComponent(c.code)}`;
   const jpxLink=`<a class="company-detail-link" href="${esc(jpxUrl)}" target="_blank" rel="noopener">JPXで確認 ↗</a>`;
   const wikidataLink=basic.wikidata?.entityUrl?`<a class="company-detail-link" href="${esc(basic.wikidata.entityUrl)}" target="_blank" rel="noopener">Wikidataで確認 ↗</a>`:'未取得';
 
@@ -1192,8 +1196,11 @@ function renderCompanyDetail(){
       </div>
       <button type="button" class="btn small" id="companyDetailRefreshBtn" ${c.detailLoading?'disabled':''}>${c.detailLoading?'取得中…':'企業詳細を更新'}</button>
     </div>
-    <div class="company-detail-status">${esc(statusText)}</div>
-    ${c.detailError?`<div class="company-detail-error">取得できた項目だけ表示します。会社基本情報はJPX・Wikidata、株価・市場指標はYahoo Financeから取得します。</div>`:''}
+    <div class="company-detail-status">${esc(statusText)}｜企業データ v3</div>
+    ${d.schemaVersion===COMPANY_DATA_VERSION?`<div class="company-detail-status">株価 ${esc(price.asOf||'時点未取得')} ／ 通期決算 ${esc(d.periods?.income||'未取得')} ／ CF ${esc(d.periods?.cashflow||'未取得')} ／ B/S ${esc(d.periods?.balance||'未取得')} ／ 平均株価 ${esc(price.maAsOf||'履歴未取得')}</div>`:''}
+    ${Array.isArray(d.sourceRecords)&&d.sourceRecords.length?`<div class="company-detail-status">出典：${d.sourceRecords.map(x=>`<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.label)}</a>`).join(' ／ ')}</div>`:''}
+    ${d.schemaVersion===COMPANY_DATA_VERSION?`<details class="company-detail-status"><summary>計算方法と未取得の理由</summary><p>${esc(d.calculationNotes||'')}</p><p>「取得元に項目なし」は対応する公開データに項目がないものです。「未取得」は取得・読み取りの失敗、履歴不足、または計算に必要な数値がないものです。元データのない比率を0%にはしません。</p></details>`:''}
+    ${c.detailError?`<div class="company-detail-error">取得できた項目だけ表示します。会社基本情報はJPX・Wikidata、株価・市場指標は株探・株予報Proから取得します。</div>`:''}${Array.isArray(d.warnings)&&d.warnings.length?`<div class="company-detail-status">補助取得: ${esc(d.warnings.join(' / '))}</div>`:''}
 
     <div class="company-desc">${esc(corp.description||c.profile||'会社概要未取得')}</div>
 
@@ -1220,14 +1227,14 @@ function renderCompanyDetail(){
       <div class="company-detail-grid">
         ${card('時価総額',isNum(val.marketCap)?fmtOku(val.marketCap):(isNum(m.marketCapBillion)?`${fmt(m.marketCapBillion,1)}億円`:'未取得'))}
         ${card('企業価値 EV',fmtOku(val.enterpriseValue))}
-        ${card('PER（実績）',fmtN(m.per??val.trailingPE,2,'倍'))}
+        ${card('PER（実績・直近通期）',fmtN(m.per??val.trailingPE,2,'倍'))}
         ${card('PER（予想）',fmtN(val.forwardPE,2,'倍'))}
         ${card('PBR',fmtN(m.pbr??val.priceToBook,2,'倍'))}
         ${card('PEG',fmtN(val.pegRatio,2,'倍'))}
         ${card('EV/売上高',fmtN(val.enterpriseToRevenue,2,'倍'))}
         ${card('EV/EBITDA',fmtN(val.enterpriseToEbitda,2,'倍'))}
-        ${card('EPS（実績）',fmtN(m.eps??val.trailingEps,2,'円'))}
-        ${card('EPS（予想）',fmtN(val.forwardEps,2,'円'))}
+        ${card('EPS（実績・修正済）',fmtN(m.eps??val.trailingEps,2,'円'))}
+        ${card('EPS（予想・修正済）',fmtN(val.forwardEps,2,'円'))}
         ${card('BPS',fmtN(m.bps??val.bookValue,2,'円'))}
         ${card('β（ベータ）',fmtN(val.beta,2,''))}
       </div>
@@ -1251,8 +1258,8 @@ function renderCompanyDetail(){
       <h4>配当・株式</h4>
       <div class="company-detail-grid">
         ${card('配当利回り',fmtPctN(m.dividendYield??dividend.yield,2))}
-        ${card('1株配当',fmtN(dividend.rate,2,'円'))}
-        ${card('配当性向',fmtPctN(dividend.payoutRatio,2))}
+        ${card('1株配当（予想・修正済）',fmtN(dividend.rate,2,'円'))}
+        ${card('配当性向（通期実績）',fmtPctN(dividend.payoutRatio,2))}
         ${card('権利落ち日',dividend.exDate||'未取得')}
         ${card('発行済株式数',isNum(val.sharesOutstanding)?fmt(val.sharesOutstanding,0):'未取得')}
         ${card('浮動株数',isNum(val.floatShares)?fmt(val.floatShares,0):'未取得')}
@@ -1268,14 +1275,17 @@ function renderCompanyDetail(){
         ${card('粗利益',fmtOku(fin.grossProfit))}
         ${card('EBITDA',fmtOku(fin.ebitda))}
         ${card('営業CF',fmtOku(fin.operatingCashflow))}
-        ${card('フリーCF',fmtOku(fin.freeCashflow))}
+        ${card('フリーCF（営業＋投資）',fmtOku(fin.freeCashflow))}
         ${card('現金・現金同等物',fmtOku(fin.totalCash))}
         ${card('有利子負債等',fmtOku(fin.totalDebt))}
         ${card('1株当たり現金',fmtN(fin.cashPerShare,2,'円'))}
         ${card('流動比率',fmtN(fin.currentRatio,2,'倍'))}
         ${card('当座比率',fmtN(fin.quickRatio,2,'倍'))}
         ${card('D/Eレシオ',fmtN(fin.debtToEquity,2,''))}
+        ${card('自己資本比率',fmtPctN(prof.equityRatio??fin.equityRatio,2))}
         ${card('1株売上高',fmtN(fin.revenuePerShare,2,'円'))}
+        ${card('総資産',fmtOku(fin.totalAssets))}
+        ${card('自己資本',fmtOku(fin.totalEquity))}
       </div>
     </div>
 
@@ -1285,6 +1295,7 @@ function renderCompanyDetail(){
         ['売上高予想',esc(companyFmtMoney(f.sales))],
         ['営業利益予想',esc(companyFmtMoney(f.operatingProfit))],
         ['経常利益予想',esc(companyFmtMoney(f.ordinaryProfit))],
+        ['経常利益コンセンサス',esc(companyFmtMoney(analyst.consensusOrdinary))],
         ['純利益予想',esc(companyFmtMoney(f.netIncome))],
         ['目標株価（平均）',esc(fmtN(analyst.targetMean,0,'円'))],
         ['目標株価（高値）',esc(fmtN(analyst.targetHigh,0,'円'))],
@@ -1311,24 +1322,26 @@ function renderCompanyDetail(){
         ['Webサイト',website],
         ['JPX',jpxLink],
         ['Wikidata',wikidataLink],
-        ['基本情報出典',esc(d.basicSource||basic.source||'JPX / Wikidata（補助）')],
+        ['基本情報出典',esc(d.basicSource||basic.source||'JPX / Wikidata / 株探 / 株予報Pro（補助）')],
         ['データ更新',esc(basic.fetchedAt||d.fetchedAt||c.updated||'未取得')]
       ])}
     </div>
   `;
 
-  $('companyDetailRefreshBtn')?.addEventListener('click',()=>requestCompanyFullDetail(c.code,true));
+  $('companyDetailRefreshBtn')?.addEventListener('click',()=>requestCompanyFullDetail(c.code,true).catch(()=>{}));
 
-  const dynamicOfficers=Array.isArray(d.officers)?d.officers:[];
-  const staticOfficers=Array.isArray(c.officers)?c.officers:[];
-  const officerRows=(dynamicOfficers.length?dynamicOfficers:staticOfficers).map(o=>[
-    `<span class="officer-role">${esc(o.role||o.title||'未取得')}</span>`,
-    esc(o.name||'未取得'),
-    esc(isNum(o.age)?`${o.age}歳`:(o.since||o.yearBorn?String(o.since||`生年 ${o.yearBorn}`):'未取得')),
-    esc(isNum(o.totalPay)?fmtBig(o.totalPay):'未取得'),
-    esc(o.responsibility||o.note||'未取得')
+  const snapshot=OFFICER_REFERENCE_SNAPSHOTS[String(c.code)],official=OFFICIAL_OFFICER_SOURCES[String(c.code)];
+  const info=d.officerInfo|| (snapshot?{...snapshot,status:'saved',sourceUrl:official.url,sourceLabel:official.label,note:'保存済み公式情報。確認日 '+snapshot.checkedAt+'。更新ボタンで再取得できます。'}:null);
+  const officerData=info?.officers?.length?info.officers:Array.isArray(d.officers)&&d.officers.length?d.officers:!info&&Array.isArray(c.officers)?c.officers:[];
+  const sourceStatus=$('officerSourceStatus');
+  if(sourceStatus)sourceStatus.innerHTML=info?`${info.sourceUrl?`<a href="${esc(info.sourceUrl)}" target="_blank" rel="noopener">${esc(info.sourceLabel||'出典')}</a>`:''} ${esc(info.asOf||'適用日の記載なし')}<br>${esc(info.note||'')}`:officerData.length?'登録済みの参考情報です。現在の役員構成は更新して確認してください。':'役員情報は企業詳細の更新時に取得します。';
+  const officerRows=officerData.map(o=>[
+    `<span class="officer-role">${esc(o.role||o.title||'未取得')}</span>`,esc(o.name||'未取得'),
+    esc(o.birthDate||o.since||'掲載なし'),esc(isNum(o.totalPay)?fmtBig(o.totalPay):'掲載なし'),
+    esc([o.responsibility||o.note||'',o.effectiveDate?'掲載時点 '+o.effectiveDate:''].filter(Boolean).join(' ／ ')||'掲載なし')
   ]);
-  makeTable('officerTable',['役職','氏名','年齢/就任','報酬','担当・備考'],officerRows);
+  makeTable('officerTable',['役職','氏名','生年月日／就任','個別報酬','担当・掲載時点'],officerRows);
+  if(!officerRows.length)$('officerTable').insertAdjacentHTML('beforeend','<tbody><tr><td colspan="5">役員一覧を取得できていません。</td></tr></tbody>');
 
   if(charts.companyPerformanceChart) charts.companyPerformanceChart.destroy();
   const perf=Array.isArray(c.performance)?c.performance:[];
@@ -1775,9 +1788,9 @@ async function fetchExternalJSON(target,{direct=true}={}){
 
    会社基本情報：JPX（日本取引所グループ）を主情報源、
                  Wikidataを補助情報源として取得。
-   株価・市場指標：Yahoo FinanceをCloudflare Worker経由で取得。
+   株価・市場指標：株探・株予報ProをCloudflare Worker経由で取得。
 
-   会社基本情報にはYahoo FinanceのassetProfileを使用しない。
+   会社基本情報にはYahoo Financeを使用しない。
 ============================================================ */
 const companyDetailInflight=new Map();
 const COMPANY_DETAIL_TTL_MS=10*60*1000;
@@ -1791,9 +1804,8 @@ function yahooText(v){
   return v??null;
 }
 function ratioPct(v){
-  const n=Number(yahooRaw(v));
-  if(!Number.isFinite(n))return null;
-  return Math.abs(n)<=2 ? n*100 : n;
+  const n=parseJapaneseNumber(yahooRaw(v));
+  return isNum(n)?n*100:null;
 }
 function unixToDate(v){
   const n=Number(yahooRaw(v));
@@ -1851,7 +1863,7 @@ function parseJPXSearchHTML(html,code){
       market:cells[2]||'',
       industry:cells[3]||'',
       fiscalYearEnd:cells[4]||'',
-      sourceUrl:`https://www2.jpx.co.jp/tseHpFront/StockSearch.do?topSearchStr=${encodeURIComponent(target)}`
+      sourceUrl:`https://www2.jpx.co.jp/tseHpFront/StockSearch.do?method=topsearch&topSearchStr=${encodeURIComponent(target)}`
     };
   }
 
@@ -1863,14 +1875,14 @@ function parseJPXSearchHTML(html,code){
     const part=text.slice(idx,idx+500);
     const markets=['プライム','スタンダード','グロース','TOKYO PRO Market'];
     const market=markets.find(x=>part.includes(x))||'';
-    return {code:target,name:'',market,industry:'',fiscalYearEnd:'',sourceUrl:`https://www2.jpx.co.jp/tseHpFront/StockSearch.do?topSearchStr=${encodeURIComponent(target)}`};
+    return {code:target,name:'',market,industry:'',fiscalYearEnd:'',sourceUrl:`https://www2.jpx.co.jp/tseHpFront/StockSearch.do?method=topsearch&topSearchStr=${encodeURIComponent(target)}`};
   }
   throw new Error('JPX検索結果から該当企業を判定できませんでした');
 }
 
 async function fetchJPXBasicInfo(company){
   const code=String(company.code);
-  const target=`https://www2.jpx.co.jp/tseHpFront/StockSearch.do?topSearchStr=${encodeURIComponent(code)}`;
+  const target=`https://www2.jpx.co.jp/tseHpFront/StockSearch.do?method=topsearch&topSearchStr=${encodeURIComponent(code)}`;
   const {text}=await fetchExternalText(target,{direct:false});
   return parseJPXSearchHTML(text,code);
 }
@@ -1951,28 +1963,208 @@ async function fetchWikidataBasicInfo(company){
   };
 }
 
-async function fetchCompanyBasicInfoExternal(company){
+
+/* Company data v3: public tables only; missing values stay null. */
+const COMPANY_DATA_VERSION=3;
+function parseJapaneseNumber(value){
+  if(value==null || typeof value==='boolean')return null;
+  if(typeof value==='object')return Object.hasOwn(value,'raw')?parseJapaneseNumber(value.raw):null;
+  if(typeof value==='number')return Number.isFinite(value)?value:null;
+  let s=String(value).normalize('NFKC').trim().replace(/[−﹣]/g,'-').replace(/^[△▲]/,'-').replace(/,/g,'').replace(/\s+/g,'');
+  if(!s || /^(?:[-ー―—–]+|N\/?A|null|undefined|未取得|非開示|未定)$/i.test(s))return null;
+  s=s.replace(/(?:百万円|億円|万円|円|株|倍|%)$/,'');
+  if(!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(s))return null;
+  const n=Number(s);return Number.isFinite(n)?n:null;
+}
+function firstNumberByRegex(text,re){const m=String(text||'').match(re);return m?parseJapaneseNumber(m[1]):null;}
+function companyHTMLText(html){
+  return String(html||'').replace(/<!--[\s\S]*?-->/g,'').replace(/<(script|style|noscript)\b[^>]*>[\s\S]*?<\/\1\s*>/gi,'')
+    .replace(/<(?:br|\/p|\/div|\/li|\/tr|\/h[1-6]|\/d[dt])\b[^>]*>/gi,'\n').replace(/<[^>]*>/g,'')
+    .replace(/&#(x[0-9a-f]+|\d+);/gi,(_,s)=>{const n=s[0].toLowerCase()==='x'?parseInt(s.slice(1),16):Number(s);return n>0&&n<=0x10ffff?String.fromCodePoint(n):'';})
+    .replace(/&(nbsp|amp|lt|gt|quot|apos);/g,(_,s)=>({nbsp:' ',amp:'&',lt:'<',gt:'>',quot:'"',apos:"'"}[s]))
+    .normalize('NFKC').replace(/[ \t\r]+/g,' ').replace(/ *\n */g,'\n').replace(/\n{3,}/g,'\n\n').trim();
+}
+function companyHTMLTables(html){
+  const source=String(html).replace(/<!--[\s\S]*?-->/g,'').replace(/<(script|style|noscript)\b[^>]*>[\s\S]*?<\/\1\s*>/gi,'');
+  const stack=[],tables=[];
+  for(const match of source.matchAll(/<\/?(?:table|thead|tbody|tr|th|td)\b[^>]*>/gi)){
+    const tag=match[0],name=tag.match(/^<\/?([a-z]+)/i)[1].toLowerCase(),closing=tag[1]==='/';
+    if(name==='table'){
+      if(!closing)stack.push({start:match.index,headers:[],rows:[],inHead:false,row:null,cell:null});
+      else if(stack.length)tables.push(stack.pop());
+      continue;
+    }
+    const frame=stack.at(-1);if(!frame)continue;
+    if(name==='thead'){frame.inHead=!closing;continue;}
+    if(name==='tr'){
+      if(!closing){frame.row=[];frame.rowStart=match.index;}
+      else if(frame.row){
+        const raw=source.slice(frame.rowStart,match.index);
+        if(!/(?:leadPremium|限定コンテンツ|blur-|class=["'][^"']*blur)/i.test(raw)){
+          frame.rows.push(frame.row);
+          if(frame.inHead)frame.headers=frame.row.map(x=>x.replace(/\s+/g,''));
+        }
+        frame.row=null;frame.cell=null;
+      }
+      continue;
+    }
+    if((name==='td'||name==='th')&&frame.row){
+      if(!closing)frame.cell=match.index+tag.length;
+      else if(frame.cell!=null){frame.row.push(companyHTMLText(source.slice(frame.cell,match.index)));frame.cell=null;}
+    }
+  }
+  return tables.sort((a,b)=>a.start-b.start).map(({headers,rows})=>({headers,rows}));
+}
+
+function companyDefinitionValues(html){
+  const result={};
+  for(const m of String(html).matchAll(/<dl\b[^>]*>([\s\S]*?)<\/dl\s*>/gi)){
+    const k=m[1].match(/<dt\b[^>]*>([\s\S]*?)<\/dt>/i),v=m[1].match(/<dd\b[^>]*>([\s\S]*?)<\/dd>/i);
+    if(k&&v)result[companyHTMLText(k[1]).replace(/\s+/g,'')]=companyHTMLText(v[1]);
+  }
+  return result;
+}
+function companyYen(text){
+  const s=String(text||'').normalize('NFKC').replace(/,/g,'').replace(/\s/g,'');
+  const m=s.match(/^([\d.]+)兆(?:([\d.]+)億)?(?:([\d.]+)万)?円?$/);
+  if(m)return Number(m[1])*1e12+Number(m[2]||0)*1e8+Number(m[3]||0)*1e4;
+  const b=s.match(/^([\d.]+)億(?:([\d.]+)万)?円?$/);
+  if(b)return Number(b[1])*1e8+Number(b[2]||0)*1e4;
+  const n=parseJapaneseNumber(s);if(n==null)return null;
+  return n*(s.endsWith('百万円')?1e6:s.endsWith('万円')?1e4:1);
+}
+function parseKabutanCompanyHTML(html,code){
+  const body=companyHTMLText(html),tables=companyHTMLTables(html),pairs=companyDefinitionValues(html);
+  for(const t of tables){
+    for(const row of t.rows){if(row.length===2)pairs[row[0].replace(/\s/g,'')]=row[1];}
+    if(t.headers.length&&t.rows.length){const r=t.rows.find(r=>r.length===t.headers.length&&r.some(v=>/\d/.test(v)));if(r)t.headers.forEach((h,i)=>{pairs[h]??=r[i];});}
+  }
+  const rawLabel=label=>pairs[label]??body.match(new RegExp(label+'\\s*([^\\n]+)'))?.[1]??'';
+  const val=label=>parseJapaneseNumber(rawLabel(label).replace(/\s*\([^)]*\)\s*$/,''));
+  const cap=companyYen(rawLabel('時価総額'));
+  const price={current:val('現在値'),previousClose:val('前日終値'),open:val('始値'),dayHigh:val('高値'),dayLow:val('安値'),volume:val('出来高')};
+  if(isNum(price.current)&&isNum(price.previousClose)&&price.previousClose>0){price.change=price.current-price.previousClose;price.changePct=price.change/price.previousClose*100;}
+  const link=String(html).match(/href=["'](https?:\/\/[^"']+)["'][^>]*>\s*(?:会社サイト|[^<]*公式)/i);
+  return {sourceUrl:`https://s.kabutan.jp/stocks/${encodeURIComponent(code)}/`,price,
+    valuation:{marketCap:cap,forwardPE:val('PER'),priceToBook:val('PBR'),sharesOutstanding:val('発行済株式数')},
+    dividend:{yield:val('利回り')},corporate:{website:link?.[1]||'',description:''}};
+}
+async function fetchKabutanCompanyInfo(company){const u=`https://s.kabutan.jp/stocks/${encodeURIComponent(company.code)}/`;return parseKabutanCompanyHTML((await fetchExternalText(u)).text,company.code);}
+function parseKabuyohoCompanyHTML(html,code){
+  const pairs=companyDefinitionValues(html),body=companyHTMLText(html);
+  const value=k=>firstNumberByRegex(pairs[k],/^\s*([+\-−△▲]?[\d,]+(?:\.\d+)?)/);
+  // A public delayed quote is embedded as JSON. Never evaluate remote JavaScript.
+  let q={};const match=String(html).match(/\bdelayDailyJsonObj\s*=\s*JSON\.parse\(\s*'([^'\n]*)'\s*\)/);
+  if(match){try{q=JSON.parse(match[1]);}catch(_){}}
+  const n=k=>parseJapaneseNumber(q[k]);
+  const current=n('CLOSE_PRICE')??firstNumberByRegex(String(html).match(/class=["'][^"']*current_stock_price[^"']*["'][^>]*>([\s\S]*?)<\/span>/i)?.[1],/^\s*([\d,.]+)/);
+  const previousClose=n('BEFORE_1D_PRICE');
+  const change=isNum(current)&&isNum(previousClose)?current-previousClose:n('DIFF_PRICE_N_1D');
+  const description=(String(html).match(/<h[1-6][^>]*>\s*事業内容\s*<\/h[1-6]>([\s\S]*?)(?=<h[1-6]|$)/i)?.[1])||'';
+  if(!isNum(current)&&!isNum(value('PER(予)'))&&!isNum(value('ROE(実)')))throw new Error('銘柄の数値を読み取れませんでした');
+  return {sourceUrl:`https://kabuyoho.jp/reportTop?bcode=${encodeURIComponent(code)}`,
+    price:{current,previousClose,change,changePct:isNum(change)&&previousClose>0?change/previousClose*100:n('DIFF_PRICE_1D'),open:n('OPEN_PRICE'),dayHigh:n('HIGH_PRICE'),dayLow:n('LOW_PRICE'),volume:n('VOLUME'),week52High:n('STOCK_PRICE_52W_HIGH'),week52Low:n('STOCK_PRICE_52W_LOW'),asOf:typeof q.BASE_DATETIME==='string'?q.BASE_DATETIME:''},
+    valuation:{marketCap:n('MARKET_CAP')??(isNum(value('時価総額'))?value('時価総額')*1e8:null),forwardPE:n('PER')??value('PER(予)'),priceToBook:n('PBR')??value('PBR(実)')},
+    profitability:{roa:value('ROA(実)'),roe:value('ROE(実)'),equityRatio:value('自己資本比率')},
+    dividend:{yield:n('DPS_YEALD_EST')??value('配当利回り(予)')},
+    analyst:{targetMean:n('TARGET_PRICE')??value('目標株価(コ)'),consensusOrdinary:value('予想経常利益(コ)増益率')??value('予想経常利益(コ)')},
+    forecasts:{ordinaryProfit:value('予想経常利益(予)増益率')??value('予想経常利益(予)')},
+    corporate:{description:companyHTMLText(description).slice(0,700)},dataAsOf:body.match(/財務データ[:：]\s*(\d{4}\/\d{2}\/\d{2})/)?.[1]||''};
+}
+async function fetchKabuyohoCompanyInfo(company){const u=`https://kabuyoho.jp/reportTop?bcode=${encodeURIComponent(company.code)}`;return parseKabuyohoCompanyHTML((await fetchExternalText(u)).text,company.code);}
+function parseKabutanFinanceHTML(html,code){
+  const tables=companyHTMLTables(html);
+  const choose=required=>tables.find(t=>required.every(re=>t.headers.some(h=>re.test(h))));
+  const annual=table=>!table?[]:table.rows.map(cells=>{
+    const m=cells[0]?.replace(/\s/g,'').match(/^(予)?(20\d{2})[./](\d{2})$/);
+    if(!m||cells.length!==table.headers.length)return null;
+    const get=re=>{const i=table.headers.findIndex(h=>re.test(h));return i<0?null:parseJapaneseNumber(cells[i]);};
+    const txt=re=>{const i=table.headers.findIndex(h=>re.test(h));return i<0?'':cells[i];};
+    return {period:`${m[2]}.${m[3]}`,forecast:!!m[1],get,txt};
+  }).filter(Boolean).sort((a,b)=>a.period.localeCompare(b.period));
+  const incomeRows=annual(choose([/^売上高|^売上収益|^営業収益/,/^最終益|^純利益/,/^修正1株配|^1株配/]));
+  const performance=incomeRows.map(r=>({period:r.period+(r.forecast?'予':''),forecast:r.forecast,sales:r.get(/^売上高|^売上収益|^営業収益/),operatingProfit:r.get(/^営業益/),ordinaryProfit:r.get(/^経常益/),netIncome:r.get(/^最終益|^純利益/),eps:r.get(/^修正1株益|^1株益/),dividend:r.get(/^修正1株配|^1株配/),announced:r.txt(/^発表日/),accounting:r.txt(/^会計基準/)}));
+  const actual=performance.filter(r=>!r.forecast),latest=actual.at(-1),previous=actual.at(-2),forecast=performance.filter(r=>r.forecast).at(-1);
+  const latestActual=t=>annual(t).filter(r=>!r.forecast).at(-1);
+  const profitability=latestActual(choose([/^ROE/,/^ROA/,/^売上営業利益率/]));
+  const cf=latestActual(choose([/^営業CF/,/^投資CF/,/^現金等残高/]));
+  const balance=latestActual(choose([/^1株純資産/,/^自己資本比率/,/^総資産/]));
+  if(!latest&&!cf&&!balance)throw new Error('公開決算表を読み取れませんでした');
+  const money=(r,re)=>{const n=r?.get(re);return isNum(n)?n*1e6:null;};
+  return {sourceUrl:`https://s.kabutan.jp/stocks/${encodeURIComponent(code)}/finance/`,performance,latest,previous,forecast,
+    valuation:{trailingEps:latest?.eps??null,forwardEps:forecast?.eps??null,bookValue:balance?.get(/^1株純資産/)??null},
+    profitability:{roe:profitability?.get(/^ROE/)??null,roa:profitability?.get(/^ROA/)??null,operatingMargin:profitability?.get(/^売上営業利益率/)??null,equityRatio:balance?.get(/^自己資本比率/)??null},
+    financials:{revenue:isNum(latest?.sales)?latest.sales*1e6:null,operatingCashflow:money(cf,/^営業CF/),freeCashflow:money(cf,/^フリーCF/),investingCashflow:money(cf,/^投資CF/),financingCashflow:money(cf,/^財務CF/),totalCash:money(cf,/^現金等残高/),totalAssets:money(balance,/^総資産/),totalEquity:money(balance,/^自己資本\(/),debtToEquity:balance?.get(/^有利子負債倍率/)??null},
+    periods:{income:latest?.period||'',cashflow:cf?.period||'',balance:balance?.period||'',profitability:profitability?.period||'',forecast:forecast?.period||''}};
+}
+async function fetchKabutanFinance(company){const u=`https://s.kabutan.jp/stocks/${encodeURIComponent(company.code)}/finance/`;return parseKabutanFinanceHTML((await fetchExternalText(u)).text,company.code);}
+function companyRatio(a,b,multiplier=1){return isNum(a)&&isNum(b)&&b>0?a/b*multiplier:null;}
+function companyMovingAverage(bars,count){const tail=bars.slice(-count);return tail.length===count&&tail.every(b=>isNum(b.close))?tail.reduce((s,b)=>s+b.close,0)/count:null;}
+function mergeCompanyExternalDetail(company,kabutan,kabuyoho,errors=[],finance=null,chart=null){
+  const kp=kabutan?.price||{},yp=kabuyoho?.price||{},bars=chart?.bars||[],last=bars.at(-1),prev=bars.at(-2);
+  const cp=last?{current:last.close,previousClose:prev?.close??null,open:last.open,dayHigh:last.high,dayLow:last.low,volume:last.volume,asOf:last.date}:{};
+  if(isNum(cp.current)&&cp.previousClose>0){cp.change=cp.current-cp.previousClose;cp.changePct=cp.change/cp.previousClose*100;}
+  const primary=isNum(yp.current)&&(!cp.asOf||yp.asOf?.slice(0,10)>=cp.asOf)?yp:isNum(cp.current)?cp:kp;
+  const price={...primary,currency:'JPY',exchange:'東証',week52High:yp.week52High??chart?.meta?.fiftyTwoWeekHigh??null,week52Low:yp.week52Low??chart?.meta?.fiftyTwoWeekLow??null};
+  let completeBars=bars;
+  const sessionEnd=chart?.meta?.currentTradingPeriod?.regular?.end;
+  if(sessionEnd&&Date.now()<sessionEnd*1000&&last?.date===isoDateInTimeZone(sessionEnd,'Asia/Tokyo'))completeBars=bars.slice(0,-1);
+  price.ma50=companyMovingAverage(completeBars,50);price.ma200=companyMovingAverage(completeBars,200);price.maAsOf=completeBars.at(-1)?.date||'';
+  const valuation={...(kabutan?.valuation||{}),...(kabuyoho?.valuation||{}),...(finance?.valuation||{})};
+  valuation.marketCap=kabuyoho?.valuation?.marketCap??kabutan?.valuation?.marketCap??null;
+  valuation.sharesOutstanding=kabutan?.valuation?.sharesOutstanding??null;
+  // PER shown as actual is calculated from the most recent full-year EPS, never forecast PER.
+  valuation.trailingPE=companyRatio(price.current,valuation.trailingEps);
+  valuation.forwardPE=kabuyoho?.valuation?.forwardPE??kabutan?.valuation?.forwardPE??companyRatio(price.current,valuation.forwardEps);
+  const profitability={...(kabuyoho?.profitability||{}),...(finance?.profitability||{})},financials={...(finance?.financials||{})};
+  const latest=finance?.latest,previous=finance?.previous,forecast=finance?.forecast;
+  profitability.profitMargin=companyRatio(latest?.netIncome,latest?.sales,100);
+  profitability.operatingMargin??=companyRatio(latest?.operatingProfit,latest?.sales,100);
+  const comparable=latest&&previous&&latest.accounting===previous.accounting&&Number(latest.period.slice(0,4))-Number(previous.period.slice(0,4))===1&&latest.period.slice(5)===previous.period.slice(5);
+  const growth={revenueGrowth:comparable&&previous.sales>0?companyRatio(latest.sales-previous.sales,previous.sales,100):null,earningsGrowth:comparable&&previous.netIncome>0?companyRatio(latest.netIncome-previous.netIncome,previous.netIncome,100):null};
+  const dividend={yield:kabuyoho?.dividend?.yield??kabutan?.dividend?.yield??null,rate:forecast?.dividend??null,actualRate:latest?.dividend??null,payoutRatio:companyRatio(latest?.dividend,latest?.eps,100),exDate:''};
+  const sourceRecords=[kabuyoho&&{label:'株予報Pro・株価／予想指標',url:kabuyoho.sourceUrl,period:yp.asOf||kabuyoho.dataAsOf},finance&&{label:'株探・公開決算表',url:finance.sourceUrl,period:finance.periods.income},kabutan&&{label:'株探・株式情報',url:kabutan.sourceUrl,period:''},chart&&{label:'Yahoo Finance・日足終値',url:`https://finance.yahoo.com/quote/${encodeURIComponent(company.code)}.T/history/`,period:price.maAsOf}].filter(Boolean);
+  return {schemaVersion:COMPANY_DATA_VERSION,fetchedAt:new Date().toISOString(),source:sourceRecords.map(s=>s.label).join(' / '),sourceRecords,errors,price,valuation,profitability,growth,dividend,financials,analyst:kabuyoho?.analyst||{},corporate:{},officers:[],annualPerformance:finance?.performance||[],periods:finance?.periods||{},
+    forecasts:forecast?{sales:forecast.sales,operatingProfit:forecast.operatingProfit,ordinaryProfit:forecast.ordinaryProfit,netIncome:forecast.netIncome}:kabuyoho?.forecasts||{},
+    calculationNotes:'実績PER＝株価÷直近通期の修正EPS。配当性向＝同じ決算期の修正1株配当÷修正EPS。成長率は同じ決算月・会計基準の前年通期と比較（前年利益がゼロ以下の場合は算出しません）。フリーCFは営業CF＋投資CF。平均株価は日足終値50本／200本がそろった場合のみ計算します。'};
+}
+
+
+async function fetchCompanyBasicInfoExternal(company,supplement={}){
   let jpx=null,wikidata=null;
   const errors=[];
-  try{jpx=await fetchJPXBasicInfo(company);}catch(e){errors.push(`JPX: ${e.message}`);}
-  try{wikidata=await fetchWikidataBasicInfo(company);}catch(e){errors.push(`Wikidata: ${e.message}`);}
-  if(!jpx&&!wikidata)throw new Error(errors.join(' / ')||'会社基本情報を取得できませんでした');
+  const basicResults=await Promise.allSettled([fetchJPXBasicInfo(company),fetchWikidataBasicInfo(company)]);
+  if(basicResults[0].status==='fulfilled')jpx=basicResults[0].value;else errors.push('JPX: '+basicResults[0].reason.message);
+  if(basicResults[1].status==='fulfilled')wikidata=basicResults[1].value;else errors.push('Wikidata: '+basicResults[1].reason.message);
+
+  const kabutan=supplement.kabutan||null;
+  const kabuyoho=supplement.kabuyoho||null;
+  if(!jpx&&!wikidata&&!kabutan&&!kabuyoho){
+    throw new Error(errors.join(' / ')||'会社基本情報を取得できませんでした');
+  }
+
   const corporate={
-    englishName:wikidata?.englishName||company.englishName||'',
-    industry:jpx?.industry||company.industry||wikidata?.industry||'',
+    englishName:wikidata?.englishName||kabutan?.corporate?.englishName||company.englishName||'',
+    industry:jpx?.industry||company.industry||wikidata?.industry||kabuyoho?.corporate?.industry||'',
     market:jpx?.market||company.market||'',
     fiscalYearEnd:jpx?.fiscalYearEnd||company.fiscalYearEnd||'',
-    website:wikidata?.website||'',
+    website:wikidata?.website||kabutan?.corporate?.website||'',
     headquarters:wikidata?.headquarters||'',
     inception:wikidata?.inception||'',
     employees:wikidata?.employees??null,
     representative:wikidata?.representative||'',
-    description:wikidata?.description||company.profile||''
+    description:wikidata?.description||kabuyoho?.corporate?.description||kabutan?.corporate?.description||company.profile||''
   };
+
   return {
     fetchedAt:new Date().toISOString(),
     jpx,wikidata,corporate,errors,
-    source:[jpx?'JPX 東証上場会社情報サービス':'',wikidata?'Wikidata（補助）':''].filter(Boolean).join(' + ')
+    source:[
+      jpx?'JPX 東証上場会社情報サービス':'',
+      wikidata?'Wikidata（補助）':'',
+      kabutan?'株探（補助）':'',
+      kabuyoho?'株予報Pro（補助）':''
+    ].filter(Boolean).join(' + ')
   };
 }
 
@@ -1980,14 +2172,10 @@ function applyCompanyDetail(company,detail){
   company.fullDetail=detail;
   company.metrics ||= {};
   const m=company.metrics, p=detail.price||{}, v=detail.valuation||{}, pr=detail.profitability||{}, div=detail.dividend||{};
-  if(isNum(p.current))m.sharePrice=p.current;
-  if(isNum(v.marketCap))m.marketCapBillion=v.marketCap/1e8;
-  if(isNum(v.trailingPE))m.per=v.trailingPE;
-  if(isNum(v.priceToBook))m.pbr=v.priceToBook;
-  if(isNum(pr.roe))m.roe=pr.roe;
-  if(isNum(div.yield))m.dividendYield=div.yield;
-  if(isNum(v.trailingEps))m.eps=v.trailingEps;
-  if(isNum(v.bookValue))m.bps=v.bookValue;
+  const mirror={sharePrice:p.current,marketCapBillion:isNum(v.marketCap)?v.marketCap/1e8:null,per:v.trailingPE,pbr:v.priceToBook,roe:pr.roe,dividendYield:div.yield,eps:v.trailingEps,bps:v.bookValue};
+  for(const [key,value] of Object.entries(mirror))m[key]=isNum(value)?value:null;
+  m.sharePriceDate=p.asOf||'';
+  company.forecasts={sales:null,operatingProfit:null,ordinaryProfit:null,netIncome:null,...(detail.forecasts||{})};
 
   const basic=detail.basicInfo||{};
   const corp=basic.corporate||{};
@@ -2002,7 +2190,7 @@ function applyCompanyDetail(company,detail){
   const annual=Array.isArray(detail.annualPerformance)?detail.annualPerformance.filter(x=>isNum(x.sales)||isNum(x.netIncome)):[];
   if(annual.length){
     const existingForecast=(company.performance||[]).filter(x=>String(x.period||'').includes('予'));
-    company.performance=[...annual,...existingForecast].slice(-6);
+    company.performance=annual.slice(-6);
   }
 }
 
@@ -2030,10 +2218,10 @@ function buildCompanyDetailFromYahoo({company,symbol,chart,summary,quote,errors=
     const end=unixToDate(row.endDate);
     return {
       period:end?end.slice(0,7):String(yahooText(row.endDate)||'実績'),
-      sales:yahooRaw(row.totalRevenue)/1e6,
-      operatingProfit:yahooRaw(row.operatingIncome)/1e6,
-      ordinaryProfit:yahooRaw(row.incomeBeforeTax)/1e6,
-      netIncome:yahooRaw(row.netIncome)/1e6
+      sales:isNum(yahooRaw(row.totalRevenue))?yahooRaw(row.totalRevenue)/1e6:null,
+      operatingProfit:isNum(yahooRaw(row.operatingIncome))?yahooRaw(row.operatingIncome)/1e6:null,
+      ordinaryProfit:isNum(yahooRaw(row.incomeBeforeTax))?yahooRaw(row.incomeBeforeTax)/1e6:null,
+      netIncome:isNum(yahooRaw(row.netIncome))?yahooRaw(row.netIncome)/1e6:null
     };
   }).filter(x=>Object.values(x).some(v=>isNum(v))).sort((a,b)=>String(a.period).localeCompare(String(b.period)));
 
@@ -2103,45 +2291,135 @@ function buildCompanyDetailFromYahoo({company,symbol,chart,summary,quote,errors=
   };
 }
 
+const OFFICER_REFERENCE_SNAPSHOTS={"9948": {"officers": [{"role": "代表取締役会長・CEO", "name": "横山 清"}, {"role": "取締役副会長・CFO", "name": "古川 公一"}, {"role": "代表取締役社長・COO", "name": "猫宮 一久"}, {"role": "取締役執行役員", "name": "三浦 建彦"}, {"role": "取締役執行役員", "name": "福原 郁治"}, {"role": "取締役", "name": "佐々木 亮子"}, {"role": "取締役", "name": "富樫 豊子"}, {"role": "取締役", "name": "小池 明夫"}, {"role": "常勤監査役", "name": "田守 隆行"}, {"role": "監査役", "name": "大畑 忠生"}, {"role": "監査役", "name": "髙嶋 智"}, {"role": "監査役", "name": "伊東 和範"}, {"role": "執行役員", "name": "小苅米 秀樹"}, {"role": "執行役員", "name": "澤田 司"}, {"role": "執行役員", "name": "廣崎 裕司"}, {"role": "執行役員", "name": "河関 俊明"}], "asOf": "", "checkedAt": "2026-09-08"}, "7679": {"officers": [{"role": "代表取締役社長", "name": "西郷 孝一"}, {"role": "取締役副社長 兼 経営企画部長", "name": "西郷 泰広"}, {"role": "常務取締役", "name": "小笠原 康浩"}, {"role": "社外取締役", "name": "小原 公一"}, {"role": "社外取締役", "name": "齋藤 毅文"}, {"role": "取締役(常勤監査等委員)", "name": "坂本 篤"}, {"role": "社外取締役(監査等委員)", "name": "鎌田 英樹"}, {"role": "社外取締役(監査等委員)", "name": "片野 圭二"}, {"role": "社外取締役(監査等委員)", "name": "滝浦 のぞみ"}], "asOf": "", "checkedAt": "2026-09-08"}, "8267": {"checkedAt": "2026-09-08", "asOf": "取締役 2026年5月27日 / 執行役 2026年5月12日", "officers": [{"name": "岡田 元也", "role": "取締役", "responsibility": "取締役会議長・指名委員・報酬委員", "effectiveDate": "2026年5月27日"}, {"name": "吉田 昭夫", "role": "取締役", "responsibility": "", "effectiveDate": "2026年5月27日"}, {"name": "土谷 美津子", "role": "取締役", "responsibility": "", "effectiveDate": "2026年5月27日"}, {"name": "塚本 隆史", "role": "社外取締役", "responsibility": "指名委員会議長・報酬委員会議長・監査委員", "effectiveDate": "2026年5月27日"}, {"name": "ピーター チャイルド", "role": "社外取締役", "responsibility": "指名委員・報酬委員", "effectiveDate": "2026年5月27日"}, {"name": "キャリー ユー", "role": "社外取締役", "responsibility": "監査委員", "effectiveDate": "2026年5月27日"}, {"name": "林 眞琴", "role": "社外取締役", "responsibility": "監査委員会議長", "effectiveDate": "2026年5月27日"}, {"name": "リシャール コラス", "role": "社外取締役", "responsibility": "監査委員", "effectiveDate": "2026年5月27日"}, {"name": "岡田 元也", "role": "代表執行役会長", "responsibility": "", "effectiveDate": "2026年5月12日"}, {"name": "吉田 昭夫", "role": "代表執行役社長", "responsibility": "", "effectiveDate": "2026年5月12日"}, {"name": "土谷 美津子", "role": "執行役副社長", "responsibility": "商品・物流担当", "effectiveDate": "2026年5月12日"}, {"name": "羽生 有希", "role": "執行役副社長", "responsibility": "中国事業担当", "effectiveDate": "2026年5月12日"}, {"name": "四方 基之", "role": "執行役副社長", "responsibility": "事業・財務戦略担当", "effectiveDate": "2026年5月12日"}, {"name": "井出 武美", "role": "執行役", "responsibility": "スーパーマーケット事業 兼 首都圏担当", "effectiveDate": "2026年5月12日"}, {"name": "大野 惠司", "role": "執行役", "responsibility": "ディベロッパー事業担当", "effectiveDate": "2026年5月12日"}, {"name": "古澤 康之", "role": "執行役", "responsibility": "GMS事業担当", "effectiveDate": "2026年5月12日"}, {"name": "岡田 尚也", "role": "執行役", "responsibility": "人事・サステナビリティ担当", "effectiveDate": "2026年5月12日"}, {"name": "江川 敬明", "role": "執行役", "responsibility": "財経担当", "effectiveDate": "2026年5月12日"}, {"name": "手塚 大輔", "role": "執行役", "responsibility": "ベトナム事業担当", "effectiveDate": "2026年5月12日"}, {"name": "太田 卓也", "role": "執行役", "responsibility": "デジタル担当", "effectiveDate": "2026年5月12日"}, {"name": "濵田 和成", "role": "執行役", "responsibility": "サービス・専門店事業担当", "effectiveDate": "2026年5月12日"}, {"name": "世古 継敏", "role": "執行役", "responsibility": "マレーシア事業担当", "effectiveDate": "2026年5月12日"}]}};
+const OFFICIAL_OFFICER_SOURCES={
+  '9948':{url:'https://www.arcs-g.co.jp/about/company/index.html',label:'アークス公式・会社概要',parser:'arcs'},
+  '7679':{url:'https://www.yakuodo-hd.co.jp/company/member/',label:'薬王堂HD公式・役員一覧',parser:'yakuodo'},
+  '8267':{url:'https://www.aeon.info/ir/policy/executives/',label:'イオン公式・取締役／執行役',parser:'aeon'}
+};
+function uniqueCompanyOfficers(rows){
+  const seen=new Set();return rows.filter(o=>{
+    o.role=cleanBasicText(o.role);o.name=cleanBasicText(o.name);
+    if(!o.name||o.name.length>60||!/(取締役|監査役|執行役|理事)/.test(o.role))return false;
+    const k=o.role+'|'+o.name.replace(/\s/g,'');if(seen.has(k))return false;seen.add(k);return true;
+  });
+}
+function parseOfficialCompanyOfficers(html,parser){
+  let rows=[],asOf='';
+  if(parser==='arcs'){
+    for(const m of String(html).matchAll(/<dl\b[^>]*>([\s\S]*?)<\/dl>/gi)){
+      const role=companyHTMLText(m[1].match(/<dt\b[^>]*>([\s\S]*?)<\/dt>/i)?.[1]);
+      const name=companyHTMLText(m[1].match(/<dd\b[^>]*>([\s\S]*?)<\/dd>/i)?.[1]);
+      rows.push({role,name});
+    }
+    // A PDF filename is not proof of the HTML roster's effective date.
+  }else if(parser==='yakuodo'){
+    for(const m of String(html).matchAll(/<figcaption\b[^>]*>([\s\S]*?)<\/figcaption>/gi)){
+      const role=companyHTMLText(m[1].match(/<span\b[^>]*class=["']role["'][^>]*>([\s\S]*?)<\/span>/i)?.[1]);
+      const name=companyHTMLText(m[1].match(/<span\b[^>]*class=["']name["'][^>]*>([\s\S]*?)<\/span>/i)?.[1]);
+      rows.push({role,name});
+    }
+  }else if(parser==='aeon'){
+    const segments=[...String(html).matchAll(/<h[23]\b[^>]*>([\s\S]*?)<\/h[23]>([\s\S]*?)(?=<h[23]\b|$)/gi)];
+    for(const m of segments){
+      const section=companyHTMLText(m[1]);if(!['取締役','社外取締役','執行役'].includes(section))continue;
+      const effective=companyHTMLText(m[2]).match(/(20\d{2}年\d{1,2}月\d{1,2}日)現在/)?.[1]||'';
+      for(const t of companyHTMLTables(m[2])){
+        const header=t.rows.find(r=>r[0]?.replace(/\s/g,'')==='氏名');if(!header)continue;
+        for(const r of t.rows){if(r.length<2||r[0].replace(/\s/g,'')==='氏名')continue;
+          rows.push({name:r[0],role:section==='執行役'?r[1]:section,responsibility:section==='執行役'?(r[2]||''):r[1],effectiveDate:effective});
+        }
+      }
+    }
+    asOf=[...new Set(rows.map(r=>r.effectiveDate).filter(Boolean))].join(' / ');
+  }
+  rows=uniqueCompanyOfficers(rows);
+  if(!rows.length)throw new Error('公式ページから役員一覧を読み取れませんでした');
+  return {officers:rows,asOf};
+}
+function parseFiledCompanyOfficers(html,code){
+  const text=companyHTMLText(html),period=text.match(/(20\d{2}年\d{1,2}月期)\s*有価証券報告書より/)?.[1]||'';
+  // Fail if the page does not identify the requested issuer or reporting period.
+  const title=companyHTMLText(String(html).match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]);
+  if(!title.includes(String(code))||!period)throw new Error('役員情報の銘柄・報告書の決算期を確認できませんでした');
+  const rows=[];
+  for(const t of companyHTMLTables(html)){
+    const hi=t.rows.findIndex(r=>r.some(x=>x.replace(/\s/g,'')==='役職名')&&r.some(x=>x.replace(/\s/g,'')==='氏名'));
+    if(hi<0)continue;const headers=t.rows[hi].map(x=>x.replace(/\s/g,''));
+    for(const r of t.rows.slice(hi+1)){
+      if(r.length!==headers.length)continue;
+      const at=k=>r[headers.indexOf(k)]||'';
+      const name=at('氏名'),role=at('役職名');
+      rows.push({role,name,birthDate:at('生年月日'),effectiveDate:period+'有報記載',responsibility:''});
+    }
+  }
+  const officers=uniqueCompanyOfficers(rows);if(!officers.length)throw new Error('有報の役員表を読み取れませんでした');
+  return {officers,asOf:period+'有価証券報告書',status:'filing',note:'有価証券報告書の転載情報です。現在の役員構成と異なる場合があります。'};
+}
+async function fetchCompanyOfficers(company){
+  const code=String(company.code),official=OFFICIAL_OFFICER_SOURCES[code];let error='';
+  if(official){
+    try{const parsed=parseOfficialCompanyOfficers((await fetchExternalText(official.url)).text,official.parser);return {...parsed,sourceUrl:official.url,sourceLabel:official.label,status:'official',fetchedAt:new Date().toISOString(),note:parsed.asOf?'公式ページ記載時点の一覧です。':'公式ページの現在の掲載内容です。就任日・個別報酬は掲載されていない場合があります。'};}catch(e){error=e.message;}
+    const lastRoster=company.fullDetail?.officerInfo;
+    const snapshot=lastRoster?.officers?.length&&['official','saved'].includes(lastRoster.status)?{...lastRoster,checkedAt:lastRoster.checkedAt||lastRoster.fetchedAt?.slice(0,10)||'確認日未取得'}:OFFICER_REFERENCE_SNAPSHOTS[code];
+    if(snapshot)return {...snapshot,sourceUrl:official.url,sourceLabel:official.label,status:'saved',note:'自動更新に失敗したため、保存済みの公式情報を表示しています。確認日 '+snapshot.checkedAt+'。'+(error?' '+error:'')};
+  }
+  const sourceUrl=`https://kitaishihon.com/company/${encodeURIComponent(code)}/board-of-director`;
+  const parsed=parseFiledCompanyOfficers((await fetchExternalText(sourceUrl)).text,code);
+  return {...parsed,sourceUrl,sourceLabel:'キタイシホン・有価証券報告書の役員表',fetchedAt:new Date().toISOString()};
+}
+
 async function fetchCompanyFullDetailExternal(code){
   const company=(dashboardState.companyData||[]).find(c=>String(c.code)===String(code));
-  if(!company)throw new Error('企業マスターにありません');
-  if(!/^\d{4}$/.test(String(code)))throw new Error('4桁証券コードではありません');
-  const symbol=`${code}.T`;
-  let chart=null,summary=null,quote=null,basicInfo=null;
-  const errors=[];
-
-  // 株価・財務指標はYahoo Finance。会社基本情報には使わない。
-  try{chart=await fetchYahooChart(symbol,'1y');}catch(e){errors.push(`Yahoo chart: ${e.message}`);}
-  try{summary=await fetchYahooQuoteSummary(symbol);}catch(e){errors.push(`Yahoo financials: ${e.message}`);}
-  try{quote=await fetchYahooQuote(symbol);}catch(e){errors.push(`Yahoo quote: ${e.message}`);}
-
-  // 会社基本情報はJPX + Wikidata。
-  try{basicInfo=await fetchCompanyBasicInfoExternal(company);}catch(e){errors.push(`基本情報: ${e.message}`);}
-
-  if(!chart&&!summary&&!quote&&!basicInfo)throw new Error(errors.join(' / ')||'企業詳細を取得できませんでした');
-
-  const detail=buildCompanyDetailFromYahoo({company,symbol,chart,summary,quote,errors});
-  detail.basicInfo=basicInfo||{};
-  detail.corporate=basicInfo?.corporate||{};
-  detail.basicSource=basicInfo?.source||'会社基本情報 未取得';
-  detail.source=[detail.source,basicInfo?.source].filter(Boolean).join(' / ');
-  if(Array.isArray(basicInfo?.errors) && basicInfo.errors.length)detail.errors.push(...basicInfo.errors);
-
-  applyCompanyDetail(company,detail);
-  if(chart?.bars?.length){
-    dashboardState.candlestickData.companies ||= {};
-    dashboardState.candlestickData.companies[String(code)]={label:company.name,code:String(code),unit:'円',status:'verified',source:`Yahoo Finance chart API（${symbol} / Cloudflare Worker経由）`,bars:chart.bars.slice(-90)};
+  if(!company||!/^[0-9A-Z]{4}$/i.test(String(code)))throw new Error('企業の証券コードを確認してください');
+  const warnings=[];
+  const jobs=[['株探・株式情報',()=>fetchKabutanCompanyInfo(company)],['株予報Pro',()=>fetchKabuyohoCompanyInfo(company)],['株探・決算表',()=>fetchKabutanFinance(company)],['日足終値',()=>fetchYahooChart(`${code}.T`,'2y')],['役員情報',()=>fetchCompanyOfficers(company)]];
+  const results=await Promise.allSettled(jobs.map(([,run])=>run()));
+  const data=results.map((r,i)=>{if(r.status==='fulfilled')return r.value;warnings.push(`${jobs[i][0]}: ${r.reason?.message||r.reason}`);return null;});
+  company.sourceDataCache ||= {schemaVersion:COMPANY_DATA_VERSION};
+  if(company.sourceDataCache.schemaVersion!==COMPANY_DATA_VERSION)company.sourceDataCache={schemaVersion:COMPANY_DATA_VERSION};
+  for(let i=0;i<4;i++){
+    const key=['stock','quote','finance','chart'][i];
+    if(data[i])company.sourceDataCache[key]={data:data[i],fetchedAt:new Date().toISOString()};
+    else if(company.sourceDataCache[key]){data[i]=company.sourceDataCache[key].data;warnings.push(jobs[i][0]+'は前回取得値を表示（取得 '+company.sourceDataCache[key].fetchedAt+'）');}
   }
+  const [kabutan,kabuyoho,finance,chart,officerInfo]=data;
+  let basicInfo=null;
+  try{basicInfo=await fetchCompanyBasicInfoExternal(company,{kabutan,kabuyoho});}catch(e){warnings.push(`基本情報: ${e.message}`);}
+  if(!kabutan&&!kabuyoho&&!finance&&!chart&&!basicInfo&&!officerInfo)throw new Error(warnings.join(' / '));
+  const detail=mergeCompanyExternalDetail(company,kabutan,kabuyoho,[],finance,chart);
+  detail.basicInfo=basicInfo||{};detail.corporate=basicInfo?.corporate||{};
+  detail.basicSource=basicInfo?.source||'';
+  detail.warnings=[...warnings,...(basicInfo?.errors||[])];
+  detail.officers=officerInfo?.officers||[];
+  detail.officerInfo=officerInfo||{status:OFFICIAL_OFFICER_SOURCES[String(code)]?'failed':'unavailable',note:'役員一覧を取得できませんでした。',officers:[]};
+  if(officerInfo?.sourceUrl)detail.sourceRecords.push({label:officerInfo.sourceLabel,url:officerInfo.sourceUrl,period:officerInfo.asOf||'確認日 '+new Date().toLocaleDateString('ja-JP',{timeZone:'Asia/Tokyo'})});
+  if(chart){dashboardState.candlestickData.companies ||= {};dashboardState.candlestickData.companies[code]={label:company.name,code,unit:'円',status:'verified',source:'Yahoo Finance 日足終値',bars:chart.bars};}
+  applyCompanyDetail(company,detail);
+  saveExternalCache();
   return detail;
 }
+
+function migrateCompanyDetailCache(){
+  for(const c of dashboardState.companyData||[]){
+    if(c.fullDetail&&c.fullDetail.schemaVersion!==COMPANY_DATA_VERSION){
+      // Earlier automatically fetched ratios may be false zeros. Preserve unrelated state.
+      c.previousDetailSnapshot=c.fullDetail;
+      delete c.fullDetail;
+      if(c.metrics)for(const k of ['marketCapBillion','per','pbr','roe','dividendYield','eps','bps'])c.metrics[k]=null;
+      c.detailError='旧版の企業詳細を再取得してください。';
+    }
+    c.detailLoading=false;
+  }
+}
+
 
 async function requestCompanyFullDetail(code,force=false){
   const key=String(code||'');
   const company=(dashboardState.companyData||[]).find(c=>String(c.code)===key);
-  if(!company||!/^\d{4}$/.test(key))return;
+  if(!company||!/^[0-9A-Z]{4}$/i.test(key))return;
   const fetched=Date.parse(company.fullDetail?.fetchedAt||'');
-  if(!force && Number.isFinite(fetched) && Date.now()-fetched<COMPANY_DETAIL_TTL_MS)return;
+  if(!force && company.fullDetail?.schemaVersion===COMPANY_DATA_VERSION && Number.isFinite(fetched) && Date.now()-fetched<COMPANY_DETAIL_TTL_MS)return;
   if(companyDetailInflight.has(key))return companyDetailInflight.get(key);
   company.detailLoading=true; company.detailError='';
   if(String(selectedCompanyCode)===key)renderCompanyDetail();
@@ -2166,7 +2444,7 @@ async function requestCompanyFullDetail(code,force=false){
 
 async function updateSelectedCompanyFullDetailExternal(){
   const code=String(selectedCompanyCode||'');
-  if(!/^\d{4}$/.test(code))throw new Error('企業を選択してください');
+  if(!/^[0-9A-Z]{4}$/i.test(code))throw new Error('企業を選択してください');
   const detail=await requestCompanyFullDetail(code,true);
   return `${code} ${detail?.fetchedAt?.slice(0,10)||'更新'}`;
 }
@@ -2308,7 +2586,7 @@ async function updateMarketPricesExternal(){
 }
 
 async function updateCompanyCandlesExternal(){
-  const codes=[...new Set(["9948","7679",String(selectedCompanyCode||"")].filter(x=>/^\d{4}$/.test(x)))];
+  const codes=[...new Set(["9948","7679",String(selectedCompanyCode||"")].filter(x=>/^[0-9A-Z]{4}$/i.test(x)))];
   const results=await mapLimit(codes,2,async code=>{
     const y=await fetchYahooChart(`${code}.T`,"1mo");
     const company=(dashboardState.companyData||[]).find(c=>String(c.code)===code);
@@ -2600,6 +2878,7 @@ let candleResizeTimer;
 window.addEventListener("resize",()=>{clearTimeout(candleResizeTimer);candleResizeTimer=setTimeout(renderCandlestick,120);});
 
 restoreExternalCache();
+migrateCompanyDetailCache();
 setupEvents();
 renderAll();
 </script>
