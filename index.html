@@ -759,7 +759,8 @@ const candlestickData = {
         {date:"2026-09-01",open:4137.12,high:4196.87,low:4132.24,close:4181.86,volume:null},
         {date:"2026-09-02",open:4128.97,high:4131.51,low:4078.61,close:4081.60,volume:null},
         {date:"2026-09-03",open:4109.67,high:4131.17,low:4089.89,close:4102.04,volume:null},
-        {date:"2026-09-04",open:4116.63,high:4116.63,low:4070.64,close:4103.23,volume:null}
+        {date:"2026-09-04",open:4116.63,high:4116.63,low:4070.64,close:4103.23,volume:null},
+        {date:"2026-09-07",open:4116.98,high:4140.93,low:4111.25,close:4125.80,volume:null}
       ]
     }
   }
@@ -1810,8 +1811,12 @@ async function loadCandlestickInterval(interval=candleInterval,{force=false}={})
       $("candleStatusBadge").textContent=`${cfg.label} 取得失敗`;
       $("candleStatusBadge").className="badge status-missing";
       $("candleSource").textContent=`${cfg.label}取得失敗：${e.message||e}`;
+      if(key==="topix")ensureTopixCandlestickFallback();
       const existing=getSelectedCandleData();
-      if(existing)renderCandlestick(); else {renderLatestOHLC(null,[]);drawCandlestick({unit:meta.unit||"",decimals:meta.decimals},[]);}
+      if(existing){
+        renderCandlestick();
+        if(key==="topix")$("candleSource").textContent += "｜オンライン取得失敗のため確認済み内蔵OHLCを表示";
+      }else {renderLatestOHLC(null,[]);drawCandlestick({unit:meta.unit||"",decimals:meta.decimals},[]);}
     }
   }finally{
     if(refresh)refresh.disabled=false;
@@ -3299,6 +3304,32 @@ async function updateFedExternal(){
   return `FRB ${lower.toFixed(2)}–${upper.toFixed(2)}%`;
 }
 
+function ensureTopixCandlestickFallback(){
+  try{
+    dashboardState.candlestickData ||= {};
+    dashboardState.candlestickData.assets ||= {};
+    const verified=(candlestickData?.assets?.topix?.bars||[]).filter(b=>[b.open,b.high,b.low,b.close].every(isNum));
+    const current=dashboardState.candlestickData.assets.topix;
+    const currentBars=(current?.bars||[]).filter(b=>[b.open,b.high,b.low,b.close].every(isNum));
+    const byDate=new Map();
+    // Keep any newer cached rows, but verified built-in rows win on the same date.
+    for(const b of currentBars)byDate.set(String(b.date),b);
+    for(const b of verified)byDate.set(String(b.date),b);
+    const bars=[...byDate.values()].sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+    if(!bars.length)return false;
+    dashboardState.candlestickData.assets.topix={
+      ...(current||{}),
+      label:"TOPIX", code:"998405.T", unit:"pt", decimals:2, status:"verified",
+      source:"Yahoo!ファイナンス TOPIX時系列（998405.T）＋確認済み内蔵OHLC",
+      bars
+    };
+    return true;
+  }catch(e){
+    console.warn("TOPIXフォールバック補正",e);
+    return false;
+  }
+}
+
 function saveExternalCache(){
   try{
     localStorage.setItem("marketDashboardExternalCache",JSON.stringify({savedAt:new Date().toISOString(),dashboardState}));
@@ -3310,7 +3341,12 @@ function restoreExternalCache(){
     const raw=localStorage.getItem("marketDashboardExternalCache");
     if(!raw)return false;
     const obj=JSON.parse(raw);
-    if(obj?.dashboardState){dashboardState=obj.dashboardState;setExternalUpdateStatus("前回更新値を復元","ok",obj.savedAt||"");return true;}
+    if(obj?.dashboardState){
+      dashboardState=obj.dashboardState;
+      ensureTopixCandlestickFallback();
+      setExternalUpdateStatus("前回更新値を復元","ok",obj.savedAt||"");
+      return true;
+    }
   }catch(e){}
   return false;
 }
@@ -3398,6 +3434,9 @@ async function autoUpdateExternal(){
   }finally{
     if(btn){btn.disabled=false;btn.textContent=oldText;}
   }
+
+  // 古いlocalStorageにTOPIXローソク足が無い場合も、確認済みOHLCを必ず復元。
+  ensureTopixCandlestickFallback();
 }
 
 function setupEvents(){
@@ -3446,6 +3485,8 @@ window.addEventListener("resize",()=>{clearTimeout(candleResizeTimer);candleResi
 
 restoreExternalCache();
 applyVerifiedSnapshotFallbacks();
+ensureTopixCandlestickFallback();
+saveExternalCache();
 migrateCompanyDetailCache();
 setupEvents();
 renderAll();
