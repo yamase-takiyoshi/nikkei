@@ -1171,10 +1171,14 @@ function renderCompanyDetail(){
   const fmtBig=(v)=>isNum(v)?`${Math.round(v).toLocaleString('ja-JP')}円`:'未取得';
   const fmtOku=(v)=>isNum(v)?`${fmt(v/1e8,1)}億円`:'未取得';
   const fmtMan=(v)=>isNum(v)?`${fmt(v/1e4,0)}万円`:'未取得';
+  const renderDerived=deriveCompanyMetrics(price,val,prof,growth,fin,dividend,c.performance||d.annualPerformance||[],d.schemaVersion||'');
+  if(renderDerived.length)d.derivedFields=[...new Set([...(d.derivedFields||[]),...renderDerived])];
   const noSource=new Set(['企業価値 EV','PEG','EV/売上高','EV/EBITDA','β（ベータ）','粗利益率','EBITDA率','権利落ち日','浮動株数','内部者保有比率','機関保有比率','粗利益','EBITDA','有利子負債等','1株当たり現金','流動比率','当座比率','1株売上高']);
+  const calculable=new Set(['企業価値 EV','PEG','EV/売上高','EV/EBITDA','粗利益率','EBITDA率','粗利益','EBITDA','有利子負債等','1株当たり現金','1株売上高']);
   const card=(k,v)=>{
     const unavailable=d.schemaVersion===COMPANY_DATA_VERSION&&v==='未取得'&&noSource.has(k);
-    return `<div class="company-detail-card"><div class="k">${esc(k)}</div><div class="v ${unavailable?'status-missing':''}">${esc(unavailable?'取得元に項目なし':v)}</div></div>`;
+    const missing=unavailable?(calculable.has(k)?'計算材料不足':'取得元に項目なし'):v;
+    return `<div class="company-detail-card"><div class="k">${esc(k)}</div><div class="v ${unavailable?'status-missing':''}">${esc(missing)}</div></div>`;
   };
   const kvRows=(rows)=>`<div class="company-detail-kv">${rows.map(([k,v])=>`<div class="k">${esc(k)}</div><div class="v">${v}</div>`).join('')}</div>`;
   const statusText=c.detailLoading?'企業詳細を取得中…':c.detailError?`詳細取得エラー: ${c.detailError}`:d.fetchedAt?`${d.warnings?.length?'一部取得':'取得完了'} ${new Date(d.fetchedAt).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'})}`:'企業マスター情報';
@@ -1199,7 +1203,8 @@ function renderCompanyDetail(){
     <div class="company-detail-status">${esc(statusText)}｜企業データ v3</div>
     ${d.schemaVersion===COMPANY_DATA_VERSION?`<div class="company-detail-status">株価 ${esc(price.asOf||'時点未取得')} ／ 通期決算 ${esc(d.periods?.income||'未取得')} ／ CF ${esc(d.periods?.cashflow||'未取得')} ／ B/S ${esc(d.periods?.balance||'未取得')} ／ 平均株価 ${esc(price.maAsOf||'履歴未取得')}</div>`:''}
     ${Array.isArray(d.sourceRecords)&&d.sourceRecords.length?`<div class="company-detail-status">出典：${d.sourceRecords.map(x=>`<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.label)}</a>`).join(' ／ ')}</div>`:''}
-    ${d.schemaVersion===COMPANY_DATA_VERSION?`<details class="company-detail-status"><summary>計算方法と未取得の理由</summary><p>${esc(d.calculationNotes||'')}</p><p>「取得元に項目なし」は対応する公開データに項目がないものです。「未取得」は取得・読み取りの失敗、履歴不足、または計算に必要な数値がないものです。元データのない比率を0%にはしません。</p></details>`:''}
+    ${Array.isArray(d.derivedFields)&&d.derivedFields.length?`<div class="company-detail-status">自動計算で補完：${esc(d.derivedFields.join(' ／ '))}</div>`:''}
+    ${d.schemaVersion===COMPANY_DATA_VERSION?`<details class="company-detail-status"><summary>計算方法と未取得の理由</summary><p>${esc(d.calculationNotes||'')}</p><p>「計算材料不足」は式は定義できるものの、必要な元数値の一部が取得できていない項目です。「取得元に項目なし」は、β・権利落ち日・浮動株・保有比率など、現在の取得データだけでは安全に算出できない項目です。元データのない比率を0%にはしません。</p></details>`:''}
     ${c.detailError?`<div class="company-detail-error">取得できた項目だけ表示します。会社基本情報はJPX・Wikidata、株価・市場指標は株探・株予報Proから取得します。</div>`:''}${Array.isArray(d.warnings)&&d.warnings.length?`<div class="company-detail-status">補助取得: ${esc(d.warnings.join(' / '))}</div>`:''}
 
     <div class="company-desc">${esc(corp.description||c.profile||'会社概要未取得')}</div>
@@ -2099,6 +2104,93 @@ function parseKabutanFinanceHTML(html,code){
 }
 async function fetchKabutanFinance(company){const u=`https://s.kabutan.jp/stocks/${encodeURIComponent(company.code)}/finance/`;return parseKabutanFinanceHTML((await fetchExternalText(u)).text,company.code);}
 function companyRatio(a,b,multiplier=1){return isNum(a)&&isNum(b)&&b>0?a/b*multiplier:null;}
+
+// 取得元に直接項目がなくても、取得済み数値から一意に算出できる指標を補完する。
+function deriveCompanyMetrics(price={},valuation={},profitability={},growth={},financials={},dividend={},performance=[],schemaVersion=''){
+  const derived=[];
+  const put=(obj,key,value,label)=>{
+    if(!isNum(obj[key])&&isNum(value)&&Number.isFinite(value)){obj[key]=value;derived.push(label);}
+    return obj[key];
+  };
+  const actual=(Array.isArray(performance)?performance:[]).filter(x=>x&&!x.forecast&&!String(x.period||'').includes('予'));
+  const latest=actual.at(-1)||{}, previous=actual.at(-2)||{};
+  const yen=v=>isNum(v)?v*1e6:null; // 株探の業績表は百万円単位
+
+  // 株数・時価総額・1株指標
+  put(valuation,'sharesOutstanding',companyRatio(valuation.marketCap,price.current),'発行済株式数');
+  put(valuation,'marketCap',isNum(price.current)&&isNum(valuation.sharesOutstanding)?price.current*valuation.sharesOutstanding:null,'時価総額');
+  put(valuation,'trailingEps',companyRatio(price.current,valuation.trailingPE),'EPS（実績）');
+  put(valuation,'forwardEps',companyRatio(price.current,valuation.forwardPE),'EPS（予想）');
+  put(valuation,'bookValue',companyRatio(price.current,valuation.priceToBook),'BPS');
+  put(valuation,'trailingPE',companyRatio(price.current,valuation.trailingEps),'PER（実績）');
+  put(valuation,'forwardPE',companyRatio(price.current,valuation.forwardEps),'PER（予想）');
+  put(valuation,'priceToBook',companyRatio(price.current,valuation.bookValue),'PBR');
+
+  // 財務規模。BPS×株数は自己資本の近似値として利用する。
+  put(financials,'revenue',yen(latest.sales),'売上高');
+  put(financials,'totalEquity',isNum(valuation.bookValue)&&isNum(valuation.sharesOutstanding)?valuation.bookValue*valuation.sharesOutstanding:null,'自己資本');
+  put(financials,'totalAssets',isNum(financials.totalEquity)&&isNum(profitability.equityRatio)&&profitability.equityRatio>0?financials.totalEquity/(profitability.equityRatio/100):null,'総資産');
+  put(financials,'totalCash',isNum(financials.cashPerShare)&&isNum(valuation.sharesOutstanding)?financials.cashPerShare*valuation.sharesOutstanding:null,'現金・現金同等物');
+  put(financials,'cashPerShare',companyRatio(financials.totalCash,valuation.sharesOutstanding),'1株当たり現金');
+  put(financials,'revenuePerShare',companyRatio(financials.revenue,valuation.sharesOutstanding),'1株売上高');
+  put(financials,'freeCashflow',isNum(financials.operatingCashflow)&&isNum(financials.investingCashflow)?financials.operatingCashflow+financials.investingCashflow:null,'フリーCF');
+
+  // D/Eから有利子負債を逆算。v3の株探「有利子負債倍率」は倍、旧Yahoo値は%として扱う。
+  let deMultiple=null;
+  if(isNum(financials.debtToEquity)){
+    deMultiple=schemaVersion===COMPANY_DATA_VERSION?financials.debtToEquity:financials.debtToEquity/100;
+    if(deMultiple<0)deMultiple=null;
+  }
+  put(financials,'totalDebt',isNum(deMultiple)&&isNum(financials.totalEquity)?deMultiple*financials.totalEquity:null,'有利子負債等');
+
+  // EVは「時価総額＋有利子負債－現金」。他のEV倍率が取得済みなら逆算も許容する。
+  let ev=isNum(valuation.marketCap)&&isNum(financials.totalDebt)&&isNum(financials.totalCash)?valuation.marketCap+financials.totalDebt-financials.totalCash:null;
+  if(!isNum(ev)&&isNum(valuation.enterpriseToRevenue)&&isNum(financials.revenue))ev=valuation.enterpriseToRevenue*financials.revenue;
+  if(!isNum(ev)&&isNum(valuation.enterpriseToEbitda)&&isNum(financials.ebitda))ev=valuation.enterpriseToEbitda*financials.ebitda;
+  put(valuation,'enterpriseValue',ev,'企業価値 EV');
+  if(!isNum(financials.totalDebt)&&isNum(valuation.enterpriseValue)&&isNum(valuation.marketCap)&&isNum(financials.totalCash)){
+    const debt=valuation.enterpriseValue-valuation.marketCap+financials.totalCash;
+    if(debt>=0)put(financials,'totalDebt',debt,'有利子負債等');
+  }
+
+  // 粗利益・EBITDAは、金額と率のどちらか一方があれば相互補完する。
+  put(financials,'grossProfit',isNum(profitability.grossMargin)&&isNum(financials.revenue)?financials.revenue*profitability.grossMargin/100:null,'粗利益');
+  put(profitability,'grossMargin',companyRatio(financials.grossProfit,financials.revenue,100),'粗利益率');
+  put(financials,'ebitda',isNum(profitability.ebitdaMargin)&&isNum(financials.revenue)?financials.revenue*profitability.ebitdaMargin/100:null,'EBITDA');
+  put(profitability,'ebitdaMargin',companyRatio(financials.ebitda,financials.revenue,100),'EBITDA率');
+
+  // 直近通期の損益から利益率を補完。
+  put(profitability,'profitMargin',companyRatio(yen(latest.netIncome),financials.revenue,100),'売上高利益率');
+  put(profitability,'operatingMargin',companyRatio(yen(latest.operatingProfit),financials.revenue,100),'営業利益率');
+  put(profitability,'roa',companyRatio(yen(latest.netIncome),financials.totalAssets,100),'ROA');
+  put(profitability,'roe',companyRatio(valuation.trailingEps,valuation.bookValue,100),'ROE');
+  put(profitability,'equityRatio',companyRatio(financials.totalEquity,financials.totalAssets,100),'自己資本比率');
+  put(financials,'debtToEquity',companyRatio(financials.totalDebt,financials.totalEquity),'D/Eレシオ');
+
+  // 前年同月の通期実績が並んでいる場合だけ成長率を補完。
+  const pm=s=>String(s||'').match(/^(20\d{2})[.\/-](\d{2})/);
+  const a=pm(latest.period),b=pm(previous.period);
+  const comparable=!!(a&&b&&Number(a[1])-Number(b[1])===1&&a[2]===b[2]);
+  if(comparable){
+    put(growth,'revenueGrowth',isNum(previous.sales)&&previous.sales>0&&isNum(latest.sales)?(latest.sales-previous.sales)/previous.sales*100:null,'売上成長率');
+    put(growth,'earningsGrowth',isNum(previous.netIncome)&&previous.netIncome>0&&isNum(latest.netIncome)?(latest.netIncome-previous.netIncome)/previous.netIncome*100:null,'利益成長率');
+  }
+
+  // PEG = PER ÷ 利益成長率(%)。成長率が0以下の場合は算出しない。
+  const pegPE=isNum(valuation.forwardPE)?valuation.forwardPE:valuation.trailingPE;
+  put(valuation,'pegRatio',isNum(pegPE)&&isNum(growth.earningsGrowth)&&growth.earningsGrowth>0?pegPE/growth.earningsGrowth:null,'PEG');
+
+  put(valuation,'enterpriseToRevenue',companyRatio(valuation.enterpriseValue,financials.revenue),'EV/売上高');
+  put(valuation,'enterpriseToEbitda',companyRatio(valuation.enterpriseValue,financials.ebitda),'EV/EBITDA');
+
+  // 配当は予想1株配当と現在株価、実績1株配当と実績EPSから算出できる。
+  put(dividend,'yield',isNum(dividend.rate)&&isNum(price.current)&&price.current>0?dividend.rate/price.current*100:null,'配当利回り');
+  const actualDividend=isNum(dividend.actualRate)?dividend.actualRate:(isNum(latest.dividend)?latest.dividend:null);
+  put(dividend,'payoutRatio',isNum(actualDividend)&&isNum(valuation.trailingEps)&&valuation.trailingEps>0?actualDividend/valuation.trailingEps*100:null,'配当性向');
+
+  return [...new Set(derived)];
+}
+
 function companyMovingAverage(bars,count){const tail=bars.slice(-count);return tail.length===count&&tail.every(b=>isNum(b.close))?tail.reduce((s,b)=>s+b.close,0)/count:null;}
 function mergeCompanyExternalDetail(company,kabutan,kabuyoho,errors=[],finance=null,chart=null){
   const kp=kabutan?.price||{},yp=kabuyoho?.price||{},bars=chart?.bars||[],last=bars.at(-1),prev=bars.at(-2);
@@ -2123,10 +2215,11 @@ function mergeCompanyExternalDetail(company,kabutan,kabuyoho,errors=[],finance=n
   const comparable=latest&&previous&&latest.accounting===previous.accounting&&Number(latest.period.slice(0,4))-Number(previous.period.slice(0,4))===1&&latest.period.slice(5)===previous.period.slice(5);
   const growth={revenueGrowth:comparable&&previous.sales>0?companyRatio(latest.sales-previous.sales,previous.sales,100):null,earningsGrowth:comparable&&previous.netIncome>0?companyRatio(latest.netIncome-previous.netIncome,previous.netIncome,100):null};
   const dividend={yield:kabuyoho?.dividend?.yield??kabutan?.dividend?.yield??null,rate:forecast?.dividend??null,actualRate:latest?.dividend??null,payoutRatio:companyRatio(latest?.dividend,latest?.eps,100),exDate:''};
+  const derivedFields=deriveCompanyMetrics(price,valuation,profitability,growth,financials,dividend,finance?.performance||[],COMPANY_DATA_VERSION);
   const sourceRecords=[kabuyoho&&{label:'株予報Pro・株価／予想指標',url:kabuyoho.sourceUrl,period:yp.asOf||kabuyoho.dataAsOf},finance&&{label:'株探・公開決算表',url:finance.sourceUrl,period:finance.periods.income},kabutan&&{label:'株探・株式情報',url:kabutan.sourceUrl,period:''},chart&&{label:'Yahoo Finance・日足終値',url:`https://finance.yahoo.com/quote/${encodeURIComponent(company.code)}.T/history/`,period:price.maAsOf}].filter(Boolean);
-  return {schemaVersion:COMPANY_DATA_VERSION,fetchedAt:new Date().toISOString(),source:sourceRecords.map(s=>s.label).join(' / '),sourceRecords,errors,price,valuation,profitability,growth,dividend,financials,analyst:kabuyoho?.analyst||{},corporate:{},officers:[],annualPerformance:finance?.performance||[],periods:finance?.periods||{},
+  return {schemaVersion:COMPANY_DATA_VERSION,fetchedAt:new Date().toISOString(),source:sourceRecords.map(s=>s.label).join(' / '),sourceRecords,errors,price,valuation,profitability,growth,dividend,financials,analyst:kabuyoho?.analyst||{},corporate:{},officers:[],annualPerformance:finance?.performance||[],periods:finance?.periods||{},derivedFields,
     forecasts:forecast?{sales:forecast.sales,operatingProfit:forecast.operatingProfit,ordinaryProfit:forecast.ordinaryProfit,netIncome:forecast.netIncome}:kabuyoho?.forecasts||{},
-    calculationNotes:'実績PER＝株価÷直近通期の修正EPS。配当性向＝同じ決算期の修正1株配当÷修正EPS。成長率は同じ決算月・会計基準の前年通期と比較（前年利益がゼロ以下の場合は算出しません）。フリーCFは営業CF＋投資CF。平均株価は日足終値50本／200本がそろった場合のみ計算します。'};
+    calculationNotes:'取得元に直接項目がなくても、取得済み数値から一意に算出できるものは自動計算して表示します。EV＝時価総額＋有利子負債－現金、PEG＝PER÷利益成長率(%)、EV/売上高＝EV÷売上高、EV/EBITDA＝EV÷EBITDA、粗利益率＝粗利益÷売上高、EBITDA率＝EBITDA÷売上高、1株当たり現金＝現金÷発行済株式数、1株売上高＝売上高÷発行済株式数。実績PER＝株価÷直近通期の修正EPS。配当性向＝同じ決算期の修正1株配当÷修正EPS。成長率は同じ決算月の前年通期と比較（前年利益がゼロ以下の場合は算出しません）。フリーCFは営業CF＋投資CF。平均株価は日足終値50本／200本がそろった場合のみ計算します。'};
 }
 
 
