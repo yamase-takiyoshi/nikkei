@@ -256,6 +256,12 @@ footer{color:var(--muted);font-size:11px;padding:24px 4px 12px}
 .company-detail-link{overflow-wrap:anywhere}
 @media(max-width:1100px){.company-detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.company-detail-kv{grid-template-columns:minmax(110px,.8fr) minmax(0,1.5fr)}}
 @media(max-width:600px){.company-detail-grid{grid-template-columns:1fr 1fr}.company-detail-kv{grid-template-columns:1fr}.company-detail-kv .v{margin-bottom:4px}}
+.company-ownership-layout{display:grid;grid-template-columns:minmax(260px,.75fr) minmax(0,1.5fr);gap:12px;align-items:start}
+.company-ownership-chart{height:300px;position:relative;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px}
+.company-ownership-note{font-size:11px;color:var(--muted);margin:8px 0 0;line-height:1.6}
+.company-ownership-table th:first-child,.company-ownership-table td:first-child{width:48px;text-align:center}
+.company-ownership-table th:nth-child(3),.company-ownership-table td:nth-child(3),.company-ownership-table th:nth-child(4),.company-ownership-table td:nth-child(4){white-space:nowrap;text-align:right}
+@media(max-width:900px){.company-ownership-layout{grid-template-columns:1fr}.company-ownership-chart{height:280px}}
 
 
 /* 売上高のローソク形：前期と当期の金額を比較。実際の高値・安値は作らない。 */
@@ -1870,6 +1876,7 @@ function renderCompanyDetail(){
     if(charts.companyQuarterlyPerformanceChart){charts.companyQuarterlyPerformanceChart.destroy();delete charts.companyQuarterlyPerformanceChart;}
     if(charts.companyMarginChart){charts.companyMarginChart.destroy();delete charts.companyMarginChart;}
     if(charts.companyQuarterlyMarginChart){charts.companyQuarterlyMarginChart.destroy();delete charts.companyQuarterlyMarginChart;}
+    if(charts.companyOwnershipChart){charts.companyOwnershipChart.destroy();delete charts.companyOwnershipChart;}
     $('companyChartEmpty').textContent='企業データ未登録';
     $('companyQuarterlyChartEmpty').textContent='企業データ未登録';
     $('companyMarginChartEmpty').textContent='企業データ未登録';
@@ -1880,6 +1887,10 @@ function renderCompanyDetail(){
 
   const m=c.metrics||{}, f=c.forecasts||{}, d=c.fullDetail||{};
   const price=d.price||{}, val=d.valuation||{}, prof=d.profitability||{}, growth=d.growth||{}, fin=d.financials||{}, corp=d.corporate||{}, basic=d.basicInfo||{}, analyst=d.analyst||{}, dividend=d.dividend||{};
+  const ownership=d.ownership||{};
+  const ownershipRows=(Array.isArray(ownership.holders)?ownership.holders:[]).filter(x=>x&&x.name&&(isNum(x.percent)||isNum(x.shares))).slice(0,10);
+  const ownershipTotal=ownershipRows.reduce((sum,x)=>sum+(isNum(x.percent)?x.percent:0),0);
+  const ownershipOther=Math.max(0,100-ownershipTotal);
   const fmtN=(v,digits=2,suffix='')=>isNum(v)?`${fmt(v,digits)}${suffix}`:'未取得';
   const fmtPctN=(v,digits=2)=>isNum(v)?`${fmt(v,digits)}%`:'未取得';
   const fmtBig=(v)=>isNum(v)?`${Math.round(v).toLocaleString('ja-JP')}円`:'未取得';
@@ -1972,7 +1983,7 @@ function renderCompanyDetail(){
       </div>
       <button type="button" class="btn small" id="companyDetailRefreshBtn" ${c.detailLoading?'disabled':''}>${c.detailLoading?'取得中…':'企業詳細を更新'}</button>
     </div>
-    <div class="company-detail-status">${esc(statusText)}｜企業データ v11 / 未取得の自動計算補完・B/S比率計算・予想利益率対応</div>
+    <div class="company-detail-status">${esc(statusText)}｜企業データ v12 / 株主構成・大株主ランキング・未取得の自動計算補完・B/S比率計算・予想利益率対応</div>
     ${d.schemaVersion===COMPANY_DATA_VERSION?`<div class="company-detail-status">株価 ${esc(price.asOf||'時点未取得')} ／ 通期決算 ${esc(d.periods?.income||'未取得')} ／ CF ${esc(d.periods?.cashflow||'未取得')} ／ B/S ${esc(d.periods?.balance||'未取得')} ／ 平均株価 ${esc(price.maAsOf||'履歴未取得')}</div>`:''}
     ${Array.isArray(d.sourceRecords)&&d.sourceRecords.length?`<div class="company-detail-status">出典：${d.sourceRecords.map(x=>`<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.label)}</a>`).join(' ／ ')}</div>`:''}
     ${Array.isArray(d.derivedFields)&&d.derivedFields.length?`<div class="company-detail-status">自動計算で補完：${esc(d.derivedFields.join(' ／ '))}</div>`:''}
@@ -2255,6 +2266,28 @@ function renderCompanyDetail(){
     </div>
 
     <div class="company-detail-section">
+      <h4>株主構成比・大株主ランキング</h4>
+      <div class="company-detail-status">
+        ${ownership.sourceUrl?`<a class="company-detail-link" href="${esc(ownership.sourceUrl)}" target="_blank" rel="noopener">${esc(ownership.sourceLabel||'大株主情報の出典')} ↗</a>`:'大株主情報を取得できていません'}
+        ${ownership.asOf?` ／ 基準 ${esc(ownership.asOf)}`:''}${ownershipTotal>0?` ／ 上位${ownershipRows.length}名合計 ${esc(fmt(ownershipTotal,2))}%`:''}
+      </div>
+      <div class="company-ownership-layout" style="margin-top:8px">
+        <div>
+          <div class="company-ownership-chart"><canvas id="companyOwnershipChart"></canvas><div class="chart-empty" id="companyOwnershipChartEmpty"></div></div>
+          <div class="company-ownership-note">上位株主の持株比率を円グラフ化し、上位株主の合計に含まれない部分は「その他株主」として表示します。大株主ページが取得できない場合は、Yahoo Financeの機関・ファンド保有データを補助表示します。</div>
+        </div>
+        <div class="table-wrap">
+          <table class="company-ownership-table">
+            <thead><tr><th>順位</th><th>株主名</th><th>持株比率</th><th>株式数</th></tr></thead>
+            <tbody>
+              ${ownershipRows.length?ownershipRows.map((h,i)=>`<tr><td>${i+1}</td><td>${esc(h.name)}</td><td>${isNum(h.percent)?esc(fmt(h.percent,2)+'%'):'未取得'}</td><td>${isNum(h.shares)?esc(fmt(h.shares,0)+'株'):'未取得'}</td></tr>`).join(''):'<tr><td colspan="4">大株主ランキングを取得できていません。企業詳細を更新してください。</td></tr>'}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="company-detail-section">
       <h4>財務規模・安全性・キャッシュフロー</h4>
       <div class="company-detail-grid">
         ${card('売上高',fmtOku(fin.revenue))}
@@ -2327,6 +2360,22 @@ function renderCompanyDetail(){
   `;
 
   $('companyDetailRefreshBtn')?.addEventListener('click',()=>requestCompanyFullDetail(c.code,true).catch(()=>{}));
+
+  if(charts.companyOwnershipChart){charts.companyOwnershipChart.destroy();delete charts.companyOwnershipChart;}
+  const ownershipEmpty=$('companyOwnershipChartEmpty');
+  const pieRows=ownershipRows.slice(0,8).filter(x=>isNum(x.percent)&&x.percent>0);
+  if(ownershipEmpty)ownershipEmpty.textContent=pieRows.length?'':(ownershipRows.length?'持株比率を取得できていないため円グラフは表示できません。':'大株主データを取得できた場合に株主構成比を表示します。');
+  if(pieRows.length && $('companyOwnershipChart')){
+    const pieSum=pieRows.reduce((sum,x)=>sum+x.percent,0);
+    const pieLabels=pieRows.map(x=>x.name);
+    const pieData=pieRows.map(x=>x.percent);
+    if(pieSum<99.999){pieLabels.push('その他株主');pieData.push(Math.max(0,100-pieSum));}
+    charts.companyOwnershipChart=new Chart($('companyOwnershipChart'),{
+      type:'doughnut',
+      data:{labels:pieLabels,datasets:[{label:'持株比率',data:pieData,borderWidth:1}]},
+      options:{responsive:true,maintainAspectRatio:false,cutout:'46%',plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:10}}},tooltip:{callbacks:{label:(ctx)=>`${ctx.label}: ${fmt(ctx.raw,2)}%`}}}}
+    });
+  }
 
   const snapshot=OFFICER_REFERENCE_SNAPSHOTS[String(c.code)],official=OFFICIAL_OFFICER_SOURCES[String(c.code)];
   const info=d.officerInfo|| (snapshot?{...snapshot,status:'saved',sourceUrl:official.url,sourceLabel:official.label,note:'保存済み公式情報。確認日 '+snapshot.checkedAt+'。更新ボタンで再取得できます。'}:null);
@@ -3091,7 +3140,8 @@ async function fetchYahooQuoteSummary(symbol){
   const modules=[
     'price','summaryDetail','defaultKeyStatistics','financialData',
     'earningsTrend','incomeStatementHistory','incomeStatementHistoryQuarterly',
-    'balanceSheetHistory','balanceSheetHistoryQuarterly','cashflowStatementHistory','cashflowStatementHistoryQuarterly'
+    'balanceSheetHistory','balanceSheetHistoryQuarterly','cashflowStatementHistory','cashflowStatementHistoryQuarterly',
+    'majorHoldersBreakdown','majorDirectHolders','institutionOwnership','fundOwnership'
   ].join(',');
   const target=`https://query1.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(symbol)}?modules=${encodeURIComponent(modules)}&formatted=true&corsDomain=finance.yahoo.com`;
   const {data,via}=await fetchExternalJSON(target,{direct:false});
@@ -3240,7 +3290,7 @@ async function fetchWikidataBasicInfo(company){
 
 
 /* Company data v3: public tables only; missing values stay null. */
-const COMPANY_DATA_VERSION=11;
+const COMPANY_DATA_VERSION=12;
 function parseJapaneseNumber(value){
   if(value==null || typeof value==='boolean')return null;
   if(typeof value==='object')return Object.hasOwn(value,'raw')?parseJapaneseNumber(value.raw):null;
@@ -3325,6 +3375,30 @@ function parseKabutanCompanyHTML(html,code){
     dividend:{yield:val('利回り')},corporate:{website:link?.[1]||'',description:''}};
 }
 async function fetchKabutanCompanyInfo(company){const u=`https://s.kabutan.jp/stocks/${encodeURIComponent(company.code)}/`;return parseKabutanCompanyHTML((await fetchExternalText(u)).text,company.code);}
+function parseKabutanShareholdersHTML(html,code){
+  const tables=companyHTMLTables(html);
+  const table=tables.find(t=>{const head=[...(t.headers||[]),...((t.rows||[])[0]||[])].join(' ');return /株主名/.test(head)&&/持株比率|株式数/.test(head);});
+  if(!table)throw new Error('大株主表を読み取れませんでした');
+  const holders=[];
+  for(const cells of table.rows){
+    if(!cells?.length)continue;
+    let name=cleanBasicText(cells[0]).replace(/^New!\s*/i,'').trim();
+    if(!name||/株主名|限定コンテンツ|プレミアム/.test(name))continue;
+    const rest=cells.slice(1).join(' ').normalize('NFKC');
+    const pm=rest.match(/([0-9]+(?:\.[0-9]+)?)\s*%/);
+    const sm=rest.match(/([0-9][0-9,]*)\s*株/);
+    const percent=pm?Number(pm[1]):null;
+    const shares=sm?Number(sm[1].replace(/,/g,'')):null;
+    if(!isNum(percent)&&!isNum(shares))continue;
+    holders.push({name,percent:isNum(percent)?percent:null,shares:isNum(shares)?shares:null});
+    if(holders.length>=10)break;
+  }
+  if(!holders.length)throw new Error('大株主データが空です');
+  const body=companyHTMLText(html);
+  const asOf=(body.match(/(?:大株主|株主)[^\n]{0,40}?(20\d{2}[.\/-]\d{1,2}(?:[.\/-]\d{1,2})?)/)||[])[1]||'';
+  return {holders,asOf,sourceUrl:`https://s.kabutan.jp/stocks/${encodeURIComponent(code)}/stockholders/`,sourceLabel:'株探・大株主情報',sourceType:'kabutan'};
+}
+async function fetchKabutanShareholders(company){const u=`https://s.kabutan.jp/stocks/${encodeURIComponent(company.code)}/stockholders/`;return parseKabutanShareholdersHTML((await fetchExternalText(u)).text,company.code);}
 function parseKabuyohoCompanyHTML(html,code){
   const pairs=companyDefinitionValues(html),body=companyHTMLText(html);
   const value=k=>firstNumberByRegex(pairs[k],/^\s*([+\-−△▲]?[\d,]+(?:\.\d+)?)/);
@@ -3544,6 +3618,7 @@ function mergeCompanyExternalDetail(company,kabutan,kabuyoho,errors=[],finance=n
   let dividend={yield:kabuyoho?.dividend?.yield??kabutan?.dividend?.yield??null,rate:forecast?.dividend??null,actualRate:latest?.dividend??null,payoutRatio:companyRatio(latest?.dividend,latest?.eps,100),exDate:''};
   dividend=mergeCompanyMissing(dividend,yahooDetail?.dividend||{});
   const analyst=mergeCompanyMissing(kabuyoho?.analyst||{},yahooDetail?.analyst||{});
+  const ownership=(yahooDetail?.ownership&&Array.isArray(yahooDetail.ownership.holders))?{...yahooDetail.ownership}: {holders:[]};
 
   const annualPerformance=(finance?.performance?.length?finance.performance:(yahooDetail?.annualPerformance||[]));
   const quarterlyPerformance=(finance?.quarterlyPerformance?.length?finance.quarterlyPerformance:(yahooDetail?.quarterlyPerformance||[]));
@@ -3555,9 +3630,9 @@ function mergeCompanyExternalDetail(company,kabutan,kabuyoho,errors=[],finance=n
     chart&&{label:'Yahoo Finance・日足OHLC',url:`https://finance.yahoo.com/quote/${encodeURIComponent(company.code)}.T/history/`,period:price.maAsOf},
     yahooDetail&&{label:'Yahoo Finance・補完財務指標',url:`https://finance.yahoo.com/quote/${encodeURIComponent(company.code)}.T/`,period:price.asOf||''}
   ].filter(Boolean);
-  return {schemaVersion:COMPANY_DATA_VERSION,fetchedAt:new Date().toISOString(),source:sourceRecords.map(s=>s.label).join(' / '),sourceRecords,errors,price,valuation,profitability,growth,dividend,financials,analyst,corporate:{},officers:[],annualPerformance,quarterlyPerformance,periods:finance?.periods||{},derivedFields,
+  return {schemaVersion:COMPANY_DATA_VERSION,fetchedAt:new Date().toISOString(),source:sourceRecords.map(s=>s.label).join(' / '),sourceRecords,errors,price,valuation,profitability,growth,dividend,financials,analyst,ownership,corporate:{},officers:[],annualPerformance,quarterlyPerformance,periods:finance?.periods||{},derivedFields,
     forecasts:forecast?{sales:forecast.sales,operatingProfit:forecast.operatingProfit,ordinaryProfit:forecast.ordinaryProfit,netIncome:forecast.netIncome}:kabuyoho?.forecasts||{},
-    calculationNotes:'未取得補完 v5：日本の公開情報（株探・株予報Pro）を優先し、不足する市場・財務指標だけYahoo Financeで補完します。会社基本情報にはYahoo Financeを使いません。取得元に直接項目がなくても、取得済み数値から一意に算出できるものは自動計算します。流動比率＝流動資産÷流動負債、当座比率は直接値がなければ（流動資産－棚卸資産）÷流動負債の概算、自己資本比率＝自己資本÷総資産、D/E＝有利子負債÷自己資本、ROA＝純利益÷総資産、ROE＝純利益÷自己資本、経常利益率＝経常利益÷売上高、営業利益率＝営業利益÷売上高、純利益率＝純利益÷売上高。EV＝時価総額＋有利子負債－現金、PEG＝PER÷利益成長率(%)、EV/売上高＝EV÷売上高、EV/EBITDA＝EV÷EBITDA、1株当たり現金＝現金÷発行済株式数、1株売上高＝売上高÷発行済株式数、BPS＝自己資本÷発行済株式数、EPS＝純利益÷発行済株式数。会社予想は売上高・各利益がそろえば予想利益率と前期比を自動計算します。元数値が不足する場合だけ「計算材料不足」と表示します。'};
+    calculationNotes:'未取得補完 v6：日本の公開情報（株探・株予報Pro）を優先し、不足する市場・財務指標だけYahoo Financeで補完します。大株主ランキングは株探の大株主ページを優先し、取得できない場合のみYahoo Financeの機関・ファンド保有情報を補助表示します。会社基本情報にはYahoo Financeを使いません。取得元に直接項目がなくても、取得済み数値から一意に算出できるものは自動計算します。流動比率＝流動資産÷流動負債、当座比率は直接値がなければ（流動資産－棚卸資産）÷流動負債の概算、自己資本比率＝自己資本÷総資産、D/E＝有利子負債÷自己資本、ROA＝純利益÷総資産、ROE＝純利益÷自己資本、経常利益率＝経常利益÷売上高、営業利益率＝営業利益÷売上高、純利益率＝純利益÷売上高。EV＝時価総額＋有利子負債－現金、PEG＝PER÷利益成長率(%)、EV/売上高＝EV÷売上高、EV/EBITDA＝EV÷EBITDA、1株当たり現金＝現金÷発行済株式数、1株売上高＝売上高÷発行済株式数、BPS＝自己資本÷発行済株式数、EPS＝純利益÷発行済株式数。会社予想は売上高・各利益がそろえば予想利益率と前期比を自動計算します。元数値が不足する場合だけ「計算材料不足」と表示します。'};
 }
 
 async function fetchCompanyBasicInfoExternal(company,supplement={}){
@@ -3632,6 +3707,28 @@ function applyCompanyDetail(company,detail){
   }
 }
 
+function yahooOwnershipFallback(root,sharesOutstanding){
+  const lists=[
+    ...(Array.isArray(root.majorDirectHolders?.holders)?root.majorDirectHolders.holders:[]),
+    ...(Array.isArray(root.institutionOwnership?.ownershipList)?root.institutionOwnership.ownershipList:[]),
+    ...(Array.isArray(root.fundOwnership?.ownershipList)?root.fundOwnership.ownershipList:[])
+  ];
+  const byName=new Map();
+  for(const row of lists){
+    const name=cleanBasicText(yahooText(row.organization)||yahooText(row.name)||yahooText(row.holder)||'');
+    if(!name)continue;
+    const shares=yahooRaw(row.position)??yahooRaw(row.positionDirect)??null;
+    let percent=ratioPct(row.pctHeld);
+    if(!isNum(percent)&&isNum(shares)&&isNum(sharesOutstanding)&&sharesOutstanding>0)percent=shares/sharesOutstanding*100;
+    if(!isNum(percent)&&!isNum(shares))continue;
+    const reportDate=unixToDate(row.reportDate)||unixToDate(row.positionDirectDate)||'';
+    const cur=byName.get(name);
+    if(!cur||(isNum(percent)&&(!isNum(cur.percent)||percent>cur.percent)))byName.set(name,{name,percent:isNum(percent)?percent:null,shares:isNum(shares)?shares:null,reportDate});
+  }
+  const holders=[...byName.values()].sort((a,b)=>(b.percent??-1)-(a.percent??-1)||(b.shares??-1)-(a.shares??-1)).slice(0,10);
+  return {holders,asOf:holders.map(x=>x.reportDate).filter(Boolean).sort().at(-1)||'',sourceUrl:'',sourceLabel:'Yahoo Finance・機関／ファンド保有（補助）',sourceType:'yahoo-fallback'};
+}
+
 function buildCompanyDetailFromYahoo({company,symbol,chart,summary,quote,errors=[]}){
   const root=summary?.root||{};
   const price=root.price||{};
@@ -3683,6 +3780,7 @@ function buildCompanyDetailFromYahoo({company,symbol,chart,summary,quote,errors=
   }).filter(x=>Object.values(x).some(v=>isNum(v))).sort((a,b)=>String(a.period).localeCompare(String(b.period)));
 
   const officers=[]; // 役員情報はYahoo Financeから取得しない。公式登録データを優先。
+  const yahooOwnership=yahooOwnershipFallback(root,yahooRaw(ks.sharesOutstanding)??q.sharesOutstanding??null);
 
   return {
     fetchedAt:new Date().toISOString(),
@@ -3746,6 +3844,7 @@ function buildCompanyDetailFromYahoo({company,symbol,chart,summary,quote,errors=
       recommendationMean:yahooRaw(fd.recommendationMean), recommendation:yahooText(fd.recommendationKey)||'', count:yahooRaw(fd.numberOfAnalystOpinions)
     },
     corporate:{}, // 会社基本情報はJPX + Wikidata側で設定
+    ownership:yahooOwnership,
 
     officers,
     annualPerformance:annual,
@@ -3843,6 +3942,7 @@ async function fetchCompanyFullDetailExternal(code){
     ['日足終値',()=>fetchYahooChart(symbol,'2y','1d')],
     ['Yahoo補完指標',()=>fetchYahooQuoteSummary(symbol)],
     ['Yahooリアルタイム株価',()=>fetchYahooQuote(symbol)],
+    ['大株主',()=>fetchKabutanShareholders(company)],
     ['役員情報',()=>fetchCompanyOfficers(company)]
   ];
   const results=await Promise.allSettled(jobs.map(([,run])=>run()));
@@ -3850,7 +3950,7 @@ async function fetchCompanyFullDetailExternal(code){
 
   company.sourceDataCache ||= {schemaVersion:COMPANY_DATA_VERSION};
   if(company.sourceDataCache.schemaVersion!==COMPANY_DATA_VERSION)company.sourceDataCache={schemaVersion:COMPANY_DATA_VERSION};
-  const cacheKeys=['stock','kabuyoho','finance','chart','yahooSummary','yahooQuote'];
+  const cacheKeys=['stock','kabuyoho','finance','chart','yahooSummary','yahooQuote','shareholders'];
   for(let i=0;i<cacheKeys.length;i++){
     const key=cacheKeys[i];
     if(data[i])company.sourceDataCache[key]={data:data[i],fetchedAt:new Date().toISOString()};
@@ -3860,7 +3960,7 @@ async function fetchCompanyFullDetailExternal(code){
     }
   }
 
-  const [kabutan,kabuyoho,finance,chart,summary,quote,officerInfo]=data;
+  const [kabutan,kabuyoho,finance,chart,summary,quote,shareholderInfo,officerInfo]=data;
   let basicInfo=null;
   try{basicInfo=await fetchCompanyBasicInfoExternal(company,{kabutan,kabuyoho});}catch(e){warnings.push(`基本情報: ${e.message}`);}
   if(!kabutan&&!kabuyoho&&!finance&&!chart&&!summary&&!quote&&!basicInfo&&!officerInfo)throw new Error(warnings.join(' / '));
@@ -3876,6 +3976,12 @@ async function fetchCompanyFullDetailExternal(code){
   detail.corporate=basicInfo?.corporate||{};
   detail.basicSource=basicInfo?.source||'';
   detail.warnings=[...warnings,...(basicInfo?.errors||[])];
+  if(shareholderInfo?.holders?.length){
+    detail.ownership=shareholderInfo;
+    detail.sourceRecords.push({label:shareholderInfo.sourceLabel||'大株主情報',url:shareholderInfo.sourceUrl,period:shareholderInfo.asOf||''});
+  }else if(detail.ownership?.holders?.length){
+    detail.ownership.sourceUrl=`https://finance.yahoo.com/quote/${encodeURIComponent(code)}.T/holders/`;
+  }
   detail.officers=officerInfo?.officers||[];
   detail.officerInfo=officerInfo||{status:OFFICIAL_OFFICER_SOURCES[String(code)]?'failed':'unavailable',note:'役員一覧を取得できませんでした。',officers:[]};
   if(officerInfo?.sourceUrl)detail.sourceRecords.push({label:officerInfo.sourceLabel,url:officerInfo.sourceUrl,period:officerInfo.asOf||'確認日 '+new Date().toLocaleDateString('ja-JP',{timeZone:'Asia/Tokyo'})});
