@@ -231,7 +231,7 @@ footer{color:var(--muted);font-size:11px;padding:24px 4px 12px}
       <h1>市況・金融・経済ダッシュボード</h1>
       <div class="subtitle">日本・米国の市場、物価、金利、銀行預金を一画面で確認</div>
     </div>
-    <div class="badge" id="dataModeBadge">実データ専用</div>
+    <div class="badge" id="dataModeBadge">サンプル＋公式確認値</div>
   </div>
   <div class="meta">
     <div class="meta-card"><div class="meta-label">データ基準日</div><div class="meta-value" id="baseDateLabel">2026-09-04</div></div>
@@ -256,10 +256,11 @@ footer{color:var(--muted);font-size:11px;padding:24px 4px 12px}
 </div>
 
 <div class="note">
-  この版は<strong>実データ専用</strong>です。架空値・UI確認用サンプルは表示しません。
-  <span class="status-official">「確認済み」</span>は公表値または外部サイトから取得した実値、
-  <span class="status-missing">「データ未取得」</span>は取得できなかった項目です。推測値では補いません。
-  起動時と「Cloudflare経由で更新」押下時に、為替・主要株価指数・商品・日米国債利回り・日銀/FRB政策金利・CPI・選択企業の株価/ローソク足を取得します。取得失敗時は、前回取得済みの実値がある場合だけ保持します。
+  市場値はご指定の2026年9月4日サンプルと確認済み公表値を併用しています。
+  <span class="status-sample">「サンプル」</span>は入力値、
+  <span class="status-official">「確認済み」</span>は公表値、
+  <span class="status-missing">「データ未取得」</span>は推測せず空欄扱いです。
+  「外部サイトから更新」を押すと、為替・主要株価指数・商品・日米国債利回り・日銀/FRB政策金利・CPI・選択企業の株価/ローソク足を外部サイトから取得して再描画します。取得に失敗した項目は直前値を保持します。
 </div>
 
 <section class="section">
@@ -460,10 +461,10 @@ footer{color:var(--muted);font-size:11px;padding:24px 4px 12px}
 "use strict";
 
 /* ============================================================
-   データ層（実データ専用）
-   - verified: 公表資料または外部取得で確認した実値
+   データ層
+   - sample: ユーザー指定の2026-09-04初期値
+   - verified: 公表資料で確認した値
    - missing: 未取得。推測しない
-   - sample / 架空値は使用しない
    ============================================================ */
 
 const marketData = {
@@ -475,8 +476,8 @@ const marketData = {
     noteUS:"日本時間9月5日朝＝米国9月4日終値"
   },
   fx:[
-    {name:"ドル円〈東京17時〉",value:null,display:null,prev:null,change:null,unit:"円",time:"実データ未取得",source:"起動時にFrankfurter APIから取得",status:"missing"},
-    {name:"ユーロ円〈東京17時〉",value:null,display:null,prev:null,change:null,unit:"円",time:"実データ未取得",source:"起動時にFrankfurter APIから取得",status:"missing"},
+    {name:"ドル円〈東京17時〉",value:156.295,display:"156.29～156.30円",prev:157.045,change:-0.75,unit:"円",time:"17:00 JST",source:"日本銀行（ユーザー指定サンプル）",status:"sample"},
+    {name:"ユーロ円〈東京17時〉",value:181.67,display:"181.65～181.69円",prev:182.24,change:-0.57,unit:"円",time:"17:00 JST",source:"日本銀行（ユーザー指定サンプル）",status:"sample"},
     {name:"ユーロドル",value:null,display:null,prev:null,change:null,unit:"ドル",time:"データ未取得",source:"データ未取得",status:"missing"},
     {name:"英ポンド円",value:null,display:null,prev:null,change:null,unit:"円",time:"データ未取得",source:"データ未取得",status:"missing"},
     {name:"豪ドル円",value:null,display:null,prev:null,change:null,unit:"円",time:"データ未取得",source:"データ未取得",status:"missing"}
@@ -485,7 +486,7 @@ const marketData = {
 
 const bondYields = {
   japan:{
-    policy:{name:"日本銀行 政策金利",value:null,prev:null,time:"実データ未取得",source:"起動時に日本銀行公式から取得",status:"missing"},
+    policy:{name:"日本銀行 政策金利",value:1.00,prev:1.00,time:"政策決定会合",source:"日本銀行（ユーザー指定サンプル）",status:"sample"},
     overnight:{name:"無担保コール翌日物",value:null,prev:null,time:"データ未取得",source:"データ未取得",status:"missing"},
     yields:[
       {tenor:"2年",years:2,value:1.830,prev:1.835,source:"日本相互証券 JGB Rates",status:"verified"},
@@ -498,7 +499,7 @@ const bondYields = {
     time:"2026-09-04"
   },
   us:{
-    policy:{name:"FRB政策金利",lower:null,upper:null,prevLower:null,prevUpper:null,source:"起動時にFederal Reserve公式から取得",status:"missing"},
+    policy:{name:"FRB政策金利",lower:3.50,upper:3.75,prevLower:3.50,prevUpper:3.75,source:"FRB（ユーザー指定サンプル）",status:"sample"},
     yields:[
       {tenor:"2年",years:2,value:4.37,prev:4.34,source:"U.S. Department of the Treasury",status:"verified"},
       {tenor:"5年",years:5,value:4.54,prev:4.52,source:"U.S. Department of the Treasury",status:"verified"},
@@ -511,21 +512,21 @@ const bondYields = {
 
 const stockData = {
   japan:[
-    {name:"日経平均株価",value:null,prev:null,change:null,ytd:null,source:"起動時にYahoo Financeから取得",status:"missing"},
-    {name:"TOPIX",value:null,prev:null,change:null,ytd:null,source:"起動時にYahoo Financeから取得",status:"missing"},
+    {name:"日経平均株価",value:65020.94,prev:64214.48,change:806.46,ytd:null,source:"岩井コスモ証券（ユーザー指定サンプル）",status:"sample"},
+    {name:"TOPIX",value:4103.23,prev:4102.04,change:1.19,ytd:null,source:"岩井コスモ証券（ユーザー指定サンプル）",status:"sample"},
     {name:"東証グロース市場250指数",value:null,prev:null,change:null,ytd:null,source:"データ未取得",status:"missing"}
   ],
   us:[
-    {name:"NYダウ",value:null,changePct:null,source:"起動時にYahoo Financeから取得",status:"missing"},
-    {name:"S&P500",value:null,changePct:null,source:"起動時にYahoo Financeから取得",status:"missing"},
-    {name:"NASDAQ総合",value:null,changePct:null,source:"起動時にYahoo Financeから取得",status:"missing"}
+    {name:"NYダウ",value:53414.25,changePct:-0.51,source:"東海東京証券（ユーザー指定サンプル）",status:"sample"},
+    {name:"S&P500",value:7718.60,changePct:-0.38,source:"東海東京証券（ユーザー指定サンプル）",status:"sample"},
+    {name:"NASDAQ総合",value:26506.99,changePct:-0.29,source:"東海東京証券（ユーザー指定サンプル）",status:"sample"}
   ]
 };
 
 const commodityData = [
-  {name:"WTI原油",value:null,unit:"ドル/バレル",change:null,contract:"期近",time:"実データ未取得",source:"起動時にYahoo Financeから取得",status:"missing"},
+  {name:"WTI原油",value:91.48,unit:"ドル/バレル",change:0.18,contract:"10月限",time:"2026-09-04 清算値",source:"市場資料（ユーザー指定サンプル）",status:"sample"},
   {name:"Brent原油",value:null,unit:"ドル/バレル",change:null,contract:"データ未取得",time:"データ未取得",source:"データ未取得",status:"missing"},
-  {name:"NY金",value:null,unit:"ドル/トロイオンス",change:null,contract:"期近",time:"実データ未取得",source:"起動時にYahoo Financeから取得",status:"missing"},
+  {name:"NY金",value:4476.60,unit:"ドル/トロイオンス",change:-63.30,contract:"12月限",time:"2026-09-04 清算値",source:"市場資料（ユーザー指定サンプル）",status:"sample"},
   {name:"銀",value:null,unit:"ドル/トロイオンス",change:null,contract:"データ未取得",time:"データ未取得",source:"データ未取得",status:"missing"},
   {name:"銅",value:null,unit:"ドル/ポンド",change:null,contract:"データ未取得",time:"データ未取得",source:"データ未取得",status:"missing"}
 ];
@@ -554,7 +555,7 @@ const bankRates = [
   {group:"岩手県",bank:"東北銀行",ordinary:null,term1:null,term3:null,term5:null,shortPrime:null,effective:"データ未取得",checked:"2026-09-07",source:"データ未取得",status:"missing"}
 ];
 
-/* 企業情報：公開情報ベースの実在企業のみ */
+/* 企業情報：公開情報ベースの実在企業＋UI確認用サンプル */
 const companyData = [
   {
     code:"8267", name:"イオン株式会社", englishName:"AEON CO., LTD.", kana:"イオン",
@@ -633,6 +634,26 @@ const companyData = [
       {role:"社外取締役（監査等委員）",name:"滝浦 のぞみ",since:"未取得",responsibility:"監査等委員"}
     ]
   },
+  {
+    code:"9999", name:"サンプル産業株式会社", aliases:["サンプル産業"], industry:"機械", market:"東証プライム（架空）", fiscalYearEnd:"3月",
+    status:"sample", source:"架空データ（UI動作確認用）", updated:"2026-09-07",
+    profile:"産業機械と保守サービスを手掛ける架空企業。会社情報欄の動作確認用サンプルです。",
+    metrics:{sharePrice:2450,marketCapBillion:367.5,per:14.8,pbr:1.42,roe:10.1,dividendYield:2.65,eps:165.5,bps:1725.4},
+    forecasts:{sales:128000,operatingProfit:13500,ordinaryProfit:13900,netIncome:9300},
+    performance:[
+      {period:"2024/3",sales:109500,operatingProfit:9600,ordinaryProfit:9900,netIncome:6500},
+      {period:"2025/3",sales:118200,operatingProfit:11100,ordinaryProfit:11500,netIncome:7600},
+      {period:"2026/3",sales:124600,operatingProfit:12600,ordinaryProfit:13000,netIncome:8500},
+      {period:"2027/3予",sales:128000,operatingProfit:13500,ordinaryProfit:13900,netIncome:9300}
+    ],
+    officers:[
+      {role:"代表取締役社長",name:"山田 太郎",since:"2024",responsibility:"CEO・全社統括"},
+      {role:"代表取締役副社長",name:"佐藤 花子",since:"2025",responsibility:"事業・営業統括"},
+      {role:"取締役専務執行役員",name:"鈴木 一郎",since:"2023",responsibility:"財務・経営企画"},
+      {role:"社外取締役",name:"高橋 美咲",since:"2024",responsibility:"独立役員"},
+      {role:"常勤監査役",name:"伊藤 健",since:"2022",responsibility:"監査"}
+    ]
+  }
 ];
 
 
@@ -788,7 +809,7 @@ const fmtPct = (v,d=3) => isNum(v) ? `${v.toFixed(d)}%` : "データ未取得";
 const sign = v => !isNum(v)||v===0 ? "―" : v>0 ? "▲" : "▼";
 const cls = v => !isNum(v)||v===0 ? "flat" : v>0 ? "up" : "down";
 const direction = v => !isNum(v)||v===0 ? "横ばい" : v>0 ? "上昇" : "低下";
-const statusLabel = s => s==="verified" ? "確認済み" : s==="sample" ? "旧サンプル無効" : s==="master" ? "企業マスター" : "未取得";
+const statusLabel = s => s==="verified" ? "確認済み" : s==="sample" ? "サンプル" : s==="master" ? "企業マスター" : "未取得";
 const statusClass = s => s==="verified" ? "status-official" : s==="sample" ? "status-sample" : s==="master" ? "status-master" : "status-missing";
 const calcPct = (value,prev) => isNum(value)&&isNum(prev)&&prev!==0 ? (value-prev)/prev*100 : null;
 const bp = delta => isNum(delta) ? delta*100 : null;
@@ -814,13 +835,13 @@ function summaryItems(){
   const wti=dashboardState.commodityData.find(x=>x.name==="WTI原油");
   const gold=dashboardState.commodityData.find(x=>x.name==="NY金");
   return [
-    {name:"ドル円",value:fx.display||`${fmt(fx.value,3)}円`,delta:fx.change,deltaText:isNum(fx.change)?`${sign(fx.change)} ${fmt(Math.abs(fx.change),2)}円`:"データ未取得",foot:fx.status==="verified"?(fx.time||"外部取得"):"実データ未取得"},
-    {name:"日経平均",value:isNum(nikkei.value)?`${fmt(nikkei.value,2)}円`:"データ未取得",delta:nikkei.change,deltaText:isNum(nikkei.change)?`${sign(nikkei.change)} ${fmt(Math.abs(nikkei.change),2)}円 (${fmt(calcPct(nikkei.value,nikkei.prev),2)}%)`:"データ未取得",foot:nikkei.status==="verified"?"外部取得終値":"実データ未取得"},
-    {name:"TOPIX",value:fmt(topix.value,2),delta:topix.change,deltaText:isNum(topix.change)?`${sign(topix.change)} ${fmt(Math.abs(topix.change),2)} (${fmt(calcPct(topix.value,topix.prev),2)}%)`:"データ未取得",foot:topix.status==="verified"?"外部取得終値":"実データ未取得"},
+    {name:"ドル円",value:fx.display||`${fmt(fx.value,3)}円`,delta:fx.change,deltaText:isNum(fx.change)?`${sign(fx.change)} ${fmt(Math.abs(fx.change),2)}円`:"データ未取得",foot:"東京17時 / サンプル"},
+    {name:"日経平均",value:isNum(nikkei.value)?`${fmt(nikkei.value,2)}円`:"データ未取得",delta:nikkei.change,deltaText:isNum(nikkei.change)?`${sign(nikkei.change)} ${fmt(Math.abs(nikkei.change),2)}円 (${fmt(calcPct(nikkei.value,nikkei.prev),2)}%)`:"データ未取得",foot:"終値 / サンプル"},
+    {name:"TOPIX",value:fmt(topix.value,2),delta:topix.change,deltaText:isNum(topix.change)?`${sign(topix.change)} ${fmt(Math.abs(topix.change),2)} (${fmt(calcPct(topix.value,topix.prev),2)}%)`:"データ未取得",foot:"終値 / サンプル"},
     {name:"日本10年国債",value:fmtPct(jp10?.value,3),delta:isNum(jp10?.value)&&isNum(jp10?.prev)?jp10.value-jp10.prev:null,deltaText:isNum(jp10?.value)&&isNum(jp10?.prev)?`${sign(jp10.value-jp10.prev)} ${fmt(Math.abs(jp10.value-jp10.prev),3)}pt / ${fmt(Math.abs(bp(jp10.value-jp10.prev)),1)}bp`:"データ未取得",foot:"方向表示は価値判断なし"},
     {name:"米10年国債",value:fmtPct(us10?.value,2),delta:isNum(us10?.value)&&isNum(us10?.prev)?us10.value-us10.prev:null,deltaText:isNum(us10?.value)&&isNum(us10?.prev)?`${sign(us10.value-us10.prev)} ${fmt(Math.abs(us10.value-us10.prev),2)}pt`:"データ未取得",foot:"U.S. Treasury"},
-    {name:"日本政策金利",value:isNum(jpPol.value)?`${jpPol.value.toFixed(2)}%程度`:"データ未取得",delta:isNum(jpPol.value)&&isNum(jpPol.prev)?jpPol.value-jpPol.prev:null,deltaText:isNum(jpPol.value)&&isNum(jpPol.prev)?`${sign(jpPol.value-jpPol.prev)} ${fmt(Math.abs(jpPol.value-jpPol.prev),2)}pt`:"データ未取得",foot:jpPol.status==="verified"?"日本銀行公式":"実データ未取得"},
-    {name:"米政策金利",value:isNum(usPol.lower)&&isNum(usPol.upper)?`${usPol.lower.toFixed(2)}～${usPol.upper.toFixed(2)}%`:"データ未取得",delta:isNum(usPol.lower)&&isNum(usPol.prevLower)?usPol.lower-usPol.prevLower:null,deltaText:isNum(usPol.lower)&&isNum(usPol.prevLower)?`${sign(usPol.lower-usPol.prevLower)} ${fmt(Math.abs(usPol.lower-usPol.prevLower),2)}pt`:"データ未取得",foot:usPol.status==="verified"?"Federal Reserve公式":"実データ未取得"},
+    {name:"日本政策金利",value:isNum(jpPol.value)?`${jpPol.value.toFixed(2)}%程度`:"データ未取得",delta:isNum(jpPol.value)&&isNum(jpPol.prev)?jpPol.value-jpPol.prev:null,deltaText:"― 変更なし",foot:"ユーザー指定サンプル"},
+    {name:"米政策金利",value:isNum(usPol.lower)&&isNum(usPol.upper)?`${usPol.lower.toFixed(2)}～${usPol.upper.toFixed(2)}%`:"データ未取得",delta:0,deltaText:"― 変更なし",foot:"ユーザー指定サンプル"},
     {name:"日本CPI",value:isNum(cpi)?`${cpi.toFixed(1)}%`:"データ未取得",delta:null,deltaText:"前年同月比",foot:`${dashboardState.inflationData.period} / 確認済み`},
     {name:"WTI原油",value:isNum(wti?.value)?`$${fmt(wti.value,2)}`:"データ未取得",delta:wti?.change,deltaText:isNum(wti?.change)?`${sign(wti.change)} $${fmt(Math.abs(wti.change),2)}`:"データ未取得",foot:wti?.contract||""},
     {name:"NY金",value:isNum(gold?.value)?`$${fmt(gold.value,2)}`:"データ未取得",delta:gold?.change,deltaText:isNum(gold?.change)?`${sign(gold.change)} $${fmt(Math.abs(gold.change),2)}`:"データ未取得",foot:gold?.contract||""}
@@ -1174,11 +1195,10 @@ function renderCompanyDetail(){
   const fmtMan=(v)=>isNum(v)?`${fmt(v/1e4,0)}万円`:'未取得';
   const renderDerived=deriveCompanyMetrics(price,val,prof,growth,fin,dividend,c.performance||d.annualPerformance||[],d.schemaVersion||'');
   if(renderDerived.length)d.derivedFields=[...new Set([...(d.derivedFields||[]),...renderDerived])];
-  const noSource=new Set(['企業価値 EV','PEG','EV/売上高','EV/EBITDA','β（ベータ）','粗利益率','EBITDA率','権利落ち日','浮動株数','内部者保有比率','機関保有比率','粗利益','EBITDA','有利子負債等','1株当たり現金','流動比率','当座比率','1株売上高']);
-  const calculable=new Set(['企業価値 EV','PEG','EV/売上高','EV/EBITDA','粗利益率','EBITDA率','粗利益','EBITDA','有利子負債等','1株当たり現金','1株売上高']);
+  const calculable=new Set(['企業価値 EV','PEG','EV/売上高','EV/EBITDA','粗利益率','EBITDA率','粗利益','EBITDA','有利子負債等','1株当たり現金','1株売上高','PER（実績・直近通期）','PBR','配当利回り','配当性向（通期実績）']);
   const card=(k,v)=>{
-    const unavailable=d.schemaVersion===COMPANY_DATA_VERSION&&v==='未取得'&&noSource.has(k);
-    const missing=unavailable?(calculable.has(k)?'計算材料不足':'取得元に項目なし'):v;
+    const unavailable=d.schemaVersion===COMPANY_DATA_VERSION&&v==='未取得';
+    const missing=unavailable?(calculable.has(k)?'計算材料不足':'公開データで取得できず'):v;
     return `<div class="company-detail-card"><div class="k">${esc(k)}</div><div class="v ${unavailable?'status-missing':''}">${esc(missing)}</div></div>`;
   };
   const kvRows=(rows)=>`<div class="company-detail-kv">${rows.map(([k,v])=>`<div class="k">${esc(k)}</div><div class="v">${v}</div>`).join('')}</div>`;
@@ -1201,12 +1221,12 @@ function renderCompanyDetail(){
       </div>
       <button type="button" class="btn small" id="companyDetailRefreshBtn" ${c.detailLoading?'disabled':''}>${c.detailLoading?'取得中…':'企業詳細を更新'}</button>
     </div>
-    <div class="company-detail-status">${esc(statusText)}｜企業データ v3 / ロウソク足5周期対応</div>
+    <div class="company-detail-status">${esc(statusText)}｜企業データ v4 / 未取得補完強化 / ロウソク足5周期対応</div>
     ${d.schemaVersion===COMPANY_DATA_VERSION?`<div class="company-detail-status">株価 ${esc(price.asOf||'時点未取得')} ／ 通期決算 ${esc(d.periods?.income||'未取得')} ／ CF ${esc(d.periods?.cashflow||'未取得')} ／ B/S ${esc(d.periods?.balance||'未取得')} ／ 平均株価 ${esc(price.maAsOf||'履歴未取得')}</div>`:''}
     ${Array.isArray(d.sourceRecords)&&d.sourceRecords.length?`<div class="company-detail-status">出典：${d.sourceRecords.map(x=>`<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.label)}</a>`).join(' ／ ')}</div>`:''}
     ${Array.isArray(d.derivedFields)&&d.derivedFields.length?`<div class="company-detail-status">自動計算で補完：${esc(d.derivedFields.join(' ／ '))}</div>`:''}
-    ${d.schemaVersion===COMPANY_DATA_VERSION?`<details class="company-detail-status"><summary>計算方法と未取得の理由</summary><p>${esc(d.calculationNotes||'')}</p><p>「計算材料不足」は式は定義できるものの、必要な元数値の一部が取得できていない項目です。「取得元に項目なし」は、β・権利落ち日・浮動株・保有比率など、現在の取得データだけでは安全に算出できない項目です。元データのない比率を0%にはしません。</p></details>`:''}
-    ${c.detailError?`<div class="company-detail-error">取得できた項目だけ表示します。会社基本情報はJPX・Wikidata、株価・市場指標は株探・株予報Proから取得します。</div>`:''}${Array.isArray(d.warnings)&&d.warnings.length?`<div class="company-detail-status">補助取得: ${esc(d.warnings.join(' / '))}</div>`:''}
+    ${d.schemaVersion===COMPANY_DATA_VERSION?`<details class="company-detail-status"><summary>計算方法と未取得の理由</summary><p>${esc(d.calculationNotes||'')}</p><p>「計算材料不足」は式は定義できるものの、必要な元数値の一部が取得できていない項目です。「公開データで取得できず」は、公開元が値を掲載していない、または取得先が一時的に応答しなかった項目です。β・権利落ち日・浮動株・保有比率などはYahoo Financeの補完取得も試します。元データのない比率を0%にはしません。</p></details>`:''}
+    ${c.detailError?`<div class="company-detail-error">取得できた項目だけ表示します。会社基本情報はJPX・Wikidata、株価・市場指標は株探・株予報Proを優先し、未取得分のみYahoo Financeで補完します。</div>`:''}${Array.isArray(d.warnings)&&d.warnings.length?`<div class="company-detail-status">補助取得: ${esc(d.warnings.join(' / '))}</div>`:''}
 
     <div class="company-desc">${esc(corp.description||c.profile||'会社概要未取得')}</div>
 
@@ -1662,10 +1682,9 @@ function renderSources(){
     {name:"りそな銀行",detail:"円預金金利 / 2026-09-07現在",status:"verified"},
     {name:"三菱UFJ銀行",detail:"普通預金 0.400% / 2026-08-03改定",status:"verified"},
     {name:"みずほ銀行",detail:"短期プライムレート 2.375% / 2026-08-03適用",status:"verified"},
-    {name:"Frankfurter API",detail:"為替レートを起動時・更新時に取得",status:(dashboardState.marketData.fx||[]).some(x=>x.status==="verified")?"verified":"missing"},
-    {name:"Yahoo Finance chart API",detail:"株価指数・商品・ローソク足を起動時・更新時に取得",status:[...(dashboardState.stockData.japan||[]),...(dashboardState.stockData.us||[]),...(dashboardState.commodityData||[])].some(x=>x.status==="verified")?"verified":"missing"},
-    {name:"日本銀行 / Federal Reserve",detail:"政策金利を公式ページから起動時・更新時に取得",status:(dashboardState.bondYields.japan.policy.status==="verified"&&dashboardState.bondYields.us.policy.status==="verified")?"verified":"missing"},
+    {name:"ユーザー指定初期値",detail:"為替・株価・政策金利・WTI・NY金",status:"sample"},
     {name:"薬王堂ホールディングス",detail:"公式会社概要・役員一覧・財務ハイライト・2027年2月期1Q決算短信（7679）",status:"verified"},
+    {name:"企業情報サンプル",detail:"サンプル産業はUI動作確認用の架空データ",status:"sample"},
     {name:"東北銀行ほか未確認項目",detail:"推測せず「データ未取得」と表示",status:"missing"}
   ];
   $("sourceList").innerHTML=sources.map(s=>`
@@ -2079,7 +2098,7 @@ async function fetchWikidataBasicInfo(company){
 
 
 /* Company data v3: public tables only; missing values stay null. */
-const COMPANY_DATA_VERSION=3;
+const COMPANY_DATA_VERSION=4;
 function parseJapaneseNumber(value){
   if(value==null || typeof value==='boolean')return null;
   if(typeof value==='object')return Object.hasOwn(value,'raw')?parseJapaneseNumber(value.raw):null;
@@ -2301,36 +2320,66 @@ function deriveCompanyMetrics(price={},valuation={},profitability={},growth={},f
 }
 
 function companyMovingAverage(bars,count){const tail=bars.slice(-count);return tail.length===count&&tail.every(b=>isNum(b.close))?tail.reduce((s,b)=>s+b.close,0)/count:null;}
-function mergeCompanyExternalDetail(company,kabutan,kabuyoho,errors=[],finance=null,chart=null){
+function mergeCompanyMissing(primary={},fallback={}){
+  const out={...(primary||{})};
+  for(const [k,v] of Object.entries(fallback||{})){
+    const missing=out[k]===null||out[k]===undefined||out[k]==='';
+    if(missing && v!==null && v!==undefined && v!=='')out[k]=v;
+  }
+  return out;
+}
+
+function mergeCompanyExternalDetail(company,kabutan,kabuyoho,errors=[],finance=null,chart=null,yahooDetail=null){
   const kp=kabutan?.price||{},yp=kabuyoho?.price||{},bars=chart?.bars||[],last=bars.at(-1),prev=bars.at(-2);
   const cp=last?{current:last.close,previousClose:prev?.close??null,open:last.open,dayHigh:last.high,dayLow:last.low,volume:last.volume,asOf:last.date}:{};
   if(isNum(cp.current)&&cp.previousClose>0){cp.change=cp.current-cp.previousClose;cp.changePct=cp.change/cp.previousClose*100;}
   const primary=isNum(yp.current)&&(!cp.asOf||yp.asOf?.slice(0,10)>=cp.asOf)?yp:isNum(cp.current)?cp:kp;
-  const price={...primary,currency:'JPY',exchange:'東証',week52High:yp.week52High??chart?.meta?.fiftyTwoWeekHigh??null,week52Low:yp.week52Low??chart?.meta?.fiftyTwoWeekLow??null};
+  let price={...primary,currency:'JPY',exchange:'東証',week52High:yp.week52High??chart?.meta?.fiftyTwoWeekHigh??null,week52Low:yp.week52Low??chart?.meta?.fiftyTwoWeekLow??null};
+  price=mergeCompanyMissing(price,yahooDetail?.price||{});
   let completeBars=bars;
   const sessionEnd=chart?.meta?.currentTradingPeriod?.regular?.end;
   if(sessionEnd&&Date.now()<sessionEnd*1000&&last?.date===isoDateInTimeZone(sessionEnd,'Asia/Tokyo'))completeBars=bars.slice(0,-1);
-  price.ma50=companyMovingAverage(completeBars,50);price.ma200=companyMovingAverage(completeBars,200);price.maAsOf=completeBars.at(-1)?.date||'';
-  const valuation={...(kabutan?.valuation||{}),...(kabuyoho?.valuation||{}),...(finance?.valuation||{})};
-  valuation.marketCap=kabuyoho?.valuation?.marketCap??kabutan?.valuation?.marketCap??null;
-  valuation.sharesOutstanding=kabutan?.valuation?.sharesOutstanding??null;
-  // PER shown as actual is calculated from the most recent full-year EPS, never forecast PER.
-  valuation.trailingPE=companyRatio(price.current,valuation.trailingEps);
-  valuation.forwardPE=kabuyoho?.valuation?.forwardPE??kabutan?.valuation?.forwardPE??companyRatio(price.current,valuation.forwardEps);
-  const profitability={...(kabuyoho?.profitability||{}),...(finance?.profitability||{})},financials={...(finance?.financials||{})};
-  const latest=finance?.latest,previous=finance?.previous,forecast=finance?.forecast;
-  profitability.profitMargin=companyRatio(latest?.netIncome,latest?.sales,100);
-  profitability.operatingMargin??=companyRatio(latest?.operatingProfit,latest?.sales,100);
-  const comparable=latest&&previous&&latest.accounting===previous.accounting&&Number(latest.period.slice(0,4))-Number(previous.period.slice(0,4))===1&&latest.period.slice(5)===previous.period.slice(5);
-  const growth={revenueGrowth:comparable&&previous.sales>0?companyRatio(latest.sales-previous.sales,previous.sales,100):null,earningsGrowth:comparable&&previous.netIncome>0?companyRatio(latest.netIncome-previous.netIncome,previous.netIncome,100):null};
-  const dividend={yield:kabuyoho?.dividend?.yield??kabutan?.dividend?.yield??null,rate:forecast?.dividend??null,actualRate:latest?.dividend??null,payoutRatio:companyRatio(latest?.dividend,latest?.eps,100),exDate:''};
-  const derivedFields=deriveCompanyMetrics(price,valuation,profitability,growth,financials,dividend,finance?.performance||[],COMPANY_DATA_VERSION);
-  const sourceRecords=[kabuyoho&&{label:'株予報Pro・株価／予想指標',url:kabuyoho.sourceUrl,period:yp.asOf||kabuyoho.dataAsOf},finance&&{label:'株探・公開決算表',url:finance.sourceUrl,period:finance.periods.income},kabutan&&{label:'株探・株式情報',url:kabutan.sourceUrl,period:''},chart&&{label:'Yahoo Finance・日足終値',url:`https://finance.yahoo.com/quote/${encodeURIComponent(company.code)}.T/history/`,period:price.maAsOf}].filter(Boolean);
-  return {schemaVersion:COMPANY_DATA_VERSION,fetchedAt:new Date().toISOString(),source:sourceRecords.map(s=>s.label).join(' / '),sourceRecords,errors,price,valuation,profitability,growth,dividend,financials,analyst:kabuyoho?.analyst||{},corporate:{},officers:[],annualPerformance:finance?.performance||[],periods:finance?.periods||{},derivedFields,
-    forecasts:forecast?{sales:forecast.sales,operatingProfit:forecast.operatingProfit,ordinaryProfit:forecast.ordinaryProfit,netIncome:forecast.netIncome}:kabuyoho?.forecasts||{},
-    calculationNotes:'取得元に直接項目がなくても、取得済み数値から一意に算出できるものは自動計算して表示します。EV＝時価総額＋有利子負債－現金、PEG＝PER÷利益成長率(%)、EV/売上高＝EV÷売上高、EV/EBITDA＝EV÷EBITDA、粗利益率＝粗利益÷売上高、EBITDA率＝EBITDA÷売上高、1株当たり現金＝現金÷発行済株式数、1株売上高＝売上高÷発行済株式数。実績PER＝株価÷直近通期の修正EPS。配当性向＝同じ決算期の修正1株配当÷修正EPS。成長率は同じ決算月の前年通期と比較（前年利益がゼロ以下の場合は算出しません）。フリーCFは営業CF＋投資CF。平均株価は日足終値50本／200本がそろった場合のみ計算します。'};
-}
+  price.ma50=companyMovingAverage(completeBars,50)??price.ma50??null;
+  price.ma200=companyMovingAverage(completeBars,200)??price.ma200??null;
+  price.maAsOf=completeBars.at(-1)?.date||price.asOf||'';
 
+  let valuation={...(kabutan?.valuation||{}),...(kabuyoho?.valuation||{}),...(finance?.valuation||{})};
+  valuation.marketCap=kabuyoho?.valuation?.marketCap??kabutan?.valuation?.marketCap??valuation.marketCap??null;
+  valuation.sharesOutstanding=kabutan?.valuation?.sharesOutstanding??valuation.sharesOutstanding??null;
+  valuation=mergeCompanyMissing(valuation,yahooDetail?.valuation||{});
+  // 実績PERは直近通期EPSと現在株価から計算できる場合は、その値を優先する。
+  const calculatedTrailingPE=companyRatio(price.current,valuation.trailingEps);
+  if(isNum(calculatedTrailingPE))valuation.trailingPE=calculatedTrailingPE;
+  valuation.forwardPE=kabuyoho?.valuation?.forwardPE??kabutan?.valuation?.forwardPE??valuation.forwardPE??companyRatio(price.current,valuation.forwardEps);
+
+  let profitability={...(kabuyoho?.profitability||{}),...(finance?.profitability||{})};
+  profitability=mergeCompanyMissing(profitability,yahooDetail?.profitability||{});
+  let financials={...(finance?.financials||{})};
+  financials=mergeCompanyMissing(financials,yahooDetail?.financials||{});
+
+  const latest=finance?.latest,previous=finance?.previous,forecast=finance?.forecast;
+  if(!isNum(profitability.profitMargin))profitability.profitMargin=companyRatio(latest?.netIncome,latest?.sales,100);
+  if(!isNum(profitability.operatingMargin))profitability.operatingMargin=companyRatio(latest?.operatingProfit,latest?.sales,100);
+  const comparable=latest&&previous&&latest.accounting===previous.accounting&&Number(latest.period.slice(0,4))-Number(previous.period.slice(0,4))===1&&latest.period.slice(5)===previous.period.slice(5);
+  let growth={revenueGrowth:comparable&&previous.sales>0?companyRatio(latest.sales-previous.sales,previous.sales,100):null,earningsGrowth:comparable&&previous.netIncome>0?companyRatio(latest.netIncome-previous.netIncome,previous.netIncome,100):null};
+  growth=mergeCompanyMissing(growth,yahooDetail?.growth||{});
+  let dividend={yield:kabuyoho?.dividend?.yield??kabutan?.dividend?.yield??null,rate:forecast?.dividend??null,actualRate:latest?.dividend??null,payoutRatio:companyRatio(latest?.dividend,latest?.eps,100),exDate:''};
+  dividend=mergeCompanyMissing(dividend,yahooDetail?.dividend||{});
+  const analyst=mergeCompanyMissing(kabuyoho?.analyst||{},yahooDetail?.analyst||{});
+
+  const annualPerformance=(finance?.performance?.length?finance.performance:(yahooDetail?.annualPerformance||[]));
+  const derivedFields=deriveCompanyMetrics(price,valuation,profitability,growth,financials,dividend,annualPerformance,COMPANY_DATA_VERSION);
+  const sourceRecords=[
+    kabuyoho&&{label:'株予報Pro・株価／予想指標',url:kabuyoho.sourceUrl,period:yp.asOf||kabuyoho.dataAsOf},
+    finance&&{label:'株探・公開決算表',url:finance.sourceUrl,period:finance.periods.income},
+    kabutan&&{label:'株探・株式情報',url:kabutan.sourceUrl,period:''},
+    chart&&{label:'Yahoo Finance・日足OHLC',url:`https://finance.yahoo.com/quote/${encodeURIComponent(company.code)}.T/history/`,period:price.maAsOf},
+    yahooDetail&&{label:'Yahoo Finance・補完財務指標',url:`https://finance.yahoo.com/quote/${encodeURIComponent(company.code)}.T/`,period:price.asOf||''}
+  ].filter(Boolean);
+  return {schemaVersion:COMPANY_DATA_VERSION,fetchedAt:new Date().toISOString(),source:sourceRecords.map(s=>s.label).join(' / '),sourceRecords,errors,price,valuation,profitability,growth,dividend,financials,analyst,corporate:{},officers:[],annualPerformance,periods:finance?.periods||{},derivedFields,
+    forecasts:forecast?{sales:forecast.sales,operatingProfit:forecast.operatingProfit,ordinaryProfit:forecast.ordinaryProfit,netIncome:forecast.netIncome}:kabuyoho?.forecasts||{},
+    calculationNotes:'未取得補完 v4：日本の公開情報（株探・株予報Pro）を優先し、不足する市場・財務指標だけYahoo Financeで補完します。会社基本情報にはYahoo Financeを使いません。取得元に直接項目がなくても、取得済み数値から一意に算出できるものは自動計算します。EV＝時価総額＋有利子負債－現金、PEG＝PER÷利益成長率(%)、EV/売上高＝EV÷売上高、EV/EBITDA＝EV÷EBITDA、粗利益率＝粗利益÷売上高、EBITDA率＝EBITDA÷売上高、1株当たり現金＝現金÷発行済株式数、1株売上高＝売上高÷発行済株式数。実績PER＝株価÷直近通期の修正EPS。配当性向＝同じ決算期の修正1株配当÷修正EPS。成長率は同じ決算月の前年通期と比較（前年利益がゼロ以下の場合は算出しません）。フリーCFは営業CF＋投資CF。平均株価は日足終値50本／200本がそろった場合のみ計算します。'};
+}
 
 async function fetchCompanyBasicInfoExternal(company,supplement={}){
   let jpx=null,wikidata=null;
@@ -2480,7 +2529,7 @@ function buildCompanyDetailFromYahoo({company,symbol,chart,summary,quote,errors=
       revenue:yahooRaw(fd.totalRevenue), grossProfit:yahooRaw(fd.grossProfits), ebitda:yahooRaw(fd.ebitda),
       operatingCashflow:yahooRaw(fd.operatingCashflow), freeCashflow:yahooRaw(fd.freeCashflow), totalCash:yahooRaw(fd.totalCash),
       totalDebt:yahooRaw(fd.totalDebt), cashPerShare:yahooRaw(fd.totalCashPerShare), currentRatio:yahooRaw(fd.currentRatio),
-      quickRatio:yahooRaw(fd.quickRatio), debtToEquity:yahooRaw(fd.debtToEquity), revenuePerShare:yahooRaw(fd.revenuePerShare)
+      quickRatio:yahooRaw(fd.quickRatio), debtToEquity:isNum(yahooRaw(fd.debtToEquity))?yahooRaw(fd.debtToEquity)/100:null, revenuePerShare:yahooRaw(fd.revenuePerShare)
     },
     analyst:{
       targetHigh:yahooRaw(fd.targetHighPrice), targetLow:yahooRaw(fd.targetLowPrice), targetMean:yahooRaw(fd.targetMeanPrice),
@@ -2575,22 +2624,45 @@ async function fetchCompanyFullDetailExternal(code){
   const company=(dashboardState.companyData||[]).find(c=>String(c.code)===String(code));
   if(!company||!/^[0-9A-Z]{4}$/i.test(String(code)))throw new Error('企業の証券コードを確認してください');
   const warnings=[];
-  const jobs=[['株探・株式情報',()=>fetchKabutanCompanyInfo(company)],['株予報Pro',()=>fetchKabuyohoCompanyInfo(company)],['株探・決算表',()=>fetchKabutanFinance(company)],['日足終値',()=>fetchYahooChart(`${code}.T`,'2y','1d')],['役員情報',()=>fetchCompanyOfficers(company)]];
+  const symbol=`${code}.T`;
+  const jobs=[
+    ['株探・株式情報',()=>fetchKabutanCompanyInfo(company)],
+    ['株予報Pro',()=>fetchKabuyohoCompanyInfo(company)],
+    ['株探・決算表',()=>fetchKabutanFinance(company)],
+    ['日足終値',()=>fetchYahooChart(symbol,'2y','1d')],
+    ['Yahoo補完指標',()=>fetchYahooQuoteSummary(symbol)],
+    ['Yahooリアルタイム株価',()=>fetchYahooQuote(symbol)],
+    ['役員情報',()=>fetchCompanyOfficers(company)]
+  ];
   const results=await Promise.allSettled(jobs.map(([,run])=>run()));
   const data=results.map((r,i)=>{if(r.status==='fulfilled')return r.value;warnings.push(`${jobs[i][0]}: ${r.reason?.message||r.reason}`);return null;});
+
   company.sourceDataCache ||= {schemaVersion:COMPANY_DATA_VERSION};
   if(company.sourceDataCache.schemaVersion!==COMPANY_DATA_VERSION)company.sourceDataCache={schemaVersion:COMPANY_DATA_VERSION};
-  for(let i=0;i<4;i++){
-    const key=['stock','quote','finance','chart'][i];
+  const cacheKeys=['stock','kabuyoho','finance','chart','yahooSummary','yahooQuote'];
+  for(let i=0;i<cacheKeys.length;i++){
+    const key=cacheKeys[i];
     if(data[i])company.sourceDataCache[key]={data:data[i],fetchedAt:new Date().toISOString()};
-    else if(company.sourceDataCache[key]){data[i]=company.sourceDataCache[key].data;warnings.push(jobs[i][0]+'は前回取得値を表示（取得 '+company.sourceDataCache[key].fetchedAt+'）');}
+    else if(company.sourceDataCache[key]){
+      data[i]=company.sourceDataCache[key].data;
+      warnings.push(jobs[i][0]+'は前回成功値を表示（取得 '+company.sourceDataCache[key].fetchedAt+'）');
+    }
   }
-  const [kabutan,kabuyoho,finance,chart,officerInfo]=data;
+
+  const [kabutan,kabuyoho,finance,chart,summary,quote,officerInfo]=data;
   let basicInfo=null;
   try{basicInfo=await fetchCompanyBasicInfoExternal(company,{kabutan,kabuyoho});}catch(e){warnings.push(`基本情報: ${e.message}`);}
-  if(!kabutan&&!kabuyoho&&!finance&&!chart&&!basicInfo&&!officerInfo)throw new Error(warnings.join(' / '));
-  const detail=mergeCompanyExternalDetail(company,kabutan,kabuyoho,[],finance,chart);
-  detail.basicInfo=basicInfo||{};detail.corporate=basicInfo?.corporate||{};
+  if(!kabutan&&!kabuyoho&&!finance&&!chart&&!summary&&!quote&&!basicInfo&&!officerInfo)throw new Error(warnings.join(' / '));
+
+  let yahooDetail=null;
+  if(chart||summary||quote){
+    try{yahooDetail=buildCompanyDetailFromYahoo({company,symbol,chart,summary,quote,errors:[]});}
+    catch(e){warnings.push('Yahoo補完統合: '+e.message);}
+  }
+
+  const detail=mergeCompanyExternalDetail(company,kabutan,kabuyoho,[],finance,chart,yahooDetail);
+  detail.basicInfo=basicInfo||{};
+  detail.corporate=basicInfo?.corporate||{};
   detail.basicSource=basicInfo?.source||'';
   detail.warnings=[...warnings,...(basicInfo?.errors||[])];
   detail.officers=officerInfo?.officers||[];
@@ -2990,23 +3062,9 @@ function restoreExternalCache(){
     const raw=localStorage.getItem("marketDashboardExternalCache");
     if(!raw)return false;
     const obj=JSON.parse(raw);
-    if(obj?.dashboardState){dashboardState=obj.dashboardState;setExternalUpdateStatus("前回取得済み実値を復元","ok",obj.savedAt||"");return true;}
+    if(obj?.dashboardState){dashboardState=obj.dashboardState;setExternalUpdateStatus("前回更新値を復元","ok",obj.savedAt||"");return true;}
   }catch(e){}
   return false;
-}
-
-// 旧版キャッシュに残るサンプル・架空値を強制排除する。
-function sanitizeRealDataOnlyState(){
-  dashboardState.companyData=(dashboardState.companyData||[]).filter(c=>String(c.code)!=="9999"&&c.status!=="sample"&&!/架空|サンプル/.test(String(c.source||"")));
-  const clear=(obj,keys)=>{if(!obj||obj.status!=="sample")return;for(const k of keys)obj[k]=null;obj.status="missing";obj.source="実データ未取得（旧サンプル値を破棄）";if("time" in obj)obj.time="実データ未取得";};
-  for(const x of dashboardState.marketData?.fx||[])clear(x,["value","prev","change","display"]);
-  clear(dashboardState.bondYields?.japan?.policy,["value","prev"]);
-  clear(dashboardState.bondYields?.us?.policy,["lower","upper","prevLower","prevUpper"]);
-  for(const x of dashboardState.stockData?.japan||[])clear(x,["value","prev","change","ytd"]);
-  for(const x of dashboardState.stockData?.us||[])clear(x,["value","changePct"]);
-  for(const x of dashboardState.commodityData||[])clear(x,["value","change"]);
-  // sample status that may be nested in imported JSON is never considered verified.
-  const badge=$("dataModeBadge");if(badge)badge.textContent="実データ専用｜架空値なし";
 }
 
 async function autoUpdateExternal(){
@@ -3056,7 +3114,7 @@ async function autoUpdateExternal(){
     else if(success>0)setExternalUpdateStatus(`一部更新 ${success}/${jobs.length}`,"warn",details.join("\n"));
     else setExternalUpdateStatus("更新失敗","error",details.join("\n"));
     const badge=$("dataModeBadge");
-    if(badge)badge.textContent=`実データ専用｜Cloudflare更新 ${success}/${jobs.length}｜企業検索 ${dashboardState.companyData?.length||0}社`;
+    if(badge)badge.textContent=`Cloudflare自動更新 ${success}/${jobs.length}｜企業検索 ${dashboardState.companyData?.length||0}社`;
   }finally{
     if(btn){btn.disabled=false;btn.textContent=oldText;}
   }
@@ -3101,12 +3159,9 @@ let candleResizeTimer;
 window.addEventListener("resize",()=>{clearTimeout(candleResizeTimer);candleResizeTimer=setTimeout(renderCandlestick,120);});
 
 restoreExternalCache();
-sanitizeRealDataOnlyState();
 migrateCompanyDetailCache();
 setupEvents();
 renderAll();
-// 起動時に実データを自動取得。失敗項目は未取得のまま表示する。
-setTimeout(()=>autoUpdateExternal().catch(e=>console.warn("起動時実データ更新",e)),120);
 </script>
 </body>
 </html>
