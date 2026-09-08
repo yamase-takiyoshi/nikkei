@@ -825,7 +825,7 @@ const candleIntervalConfig = {
 
 const candleSeriesMaster = [
   {key:"nikkei",label:"日経平均株価",symbol:"^N225",unit:"円",decimals:2,category:"index"},
-  {key:"topix",label:"TOPIX",symbol:"^TOPX",unit:"pt",decimals:2,category:"index"},
+  {key:"topix",label:"TOPIX",symbol:"998405.T",unit:"pt",decimals:2,category:"index"},
   {key:"dow",label:"NYダウ",symbol:"^DJI",unit:"ドル",decimals:2,category:"index"},
   {key:"sp500",label:"S&P500",symbol:"^GSPC",unit:"pt",decimals:2,category:"index"},
   {key:"nasdaq",label:"NASDAQ総合",symbol:"^IXIC",unit:"pt",decimals:2,category:"index"},
@@ -2971,7 +2971,7 @@ async function mapLimit(items,limit,worker){
 async function updateMarketPricesExternal(){
   const tasks=[
     {kind:"jpstock",name:"日経平均株価",symbol:"^N225"},
-    {kind:"jpstock",name:"TOPIX",symbol:"^TOPX"},
+    {kind:"jpstock",name:"TOPIX",symbol:"998405.T"},
     {kind:"usstock",name:"NYダウ",symbol:"^DJI"},
     {kind:"usstock",name:"S&P500",symbol:"^GSPC"},
     {kind:"usstock",name:"NASDAQ総合",symbol:"^IXIC"},
