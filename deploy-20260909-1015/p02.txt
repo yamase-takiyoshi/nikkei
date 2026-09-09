@@ -1,0 +1,269 @@
+.company-ownership-table th:nth-child(3),.company-ownership-table td:nth-child(3),.company-ownership-table th:nth-child(4),.company-ownership-table td:nth-child(4){white-space:nowrap;text-align:right}
+@media(max-width:900px){.company-ownership-layout{grid-template-columns:1fr}.company-ownership-chart{height:280px}}
+
+
+/* 売上高・経常収益・営業収益のローソク形：前期と当期の金額を比較。実際の高値・安値は作らない。 */
+.company-sales-card{margin:14px 0;padding:16px;scroll-margin-top:150px}
+.company-sales-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.company-sales-heading h3{font-size:18px;margin:0}
+.company-sales-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0}
+.company-sales-controls .btn{min-height:40px;font-size:14px}
+.company-sales-company{font-weight:700;font-size:16px}
+.company-sales-summary{display:flex;align-items:baseline;gap:12px 24px;flex-wrap:wrap;padding:12px 0;font-size:14px}
+.company-sales-summary strong{font-family:var(--mono);font-size:20px}
+.company-sales-legend{display:flex;gap:8px 22px;flex-wrap:wrap;font-size:13px;margin-top:8px}
+.company-sales-legend i{display:inline-block;width:10px;height:14px;margin-right:5px;vertical-align:middle;background:currentColor}
+.company-sales-legend .flat i{height:2px}
+.company-sales-legend .sales-point{color:var(--accent)}
+.company-sales-legend .sales-point i{height:8px;width:8px;border-radius:50%}
+.company-sales-chart{height:370px;margin-top:8px}
+.company-sales-caption{text-align:left;color:var(--muted);font-size:13px;padding:12px 8px}
+.company-sales-card details{margin-top:12px;font-size:14px}
+.company-sales-card .company-detail-status{font-size:13px;line-height:1.7}
+.company-sales-card .chart-empty{padding:18px;text-align:center;background:var(--panel);font-size:14px}
+.company-sales-card .chart-empty:empty{display:none}
+.company-sales-card button:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+@media(max-width:600px){.company-sales-card{padding:12px}.company-sales-chart{height:320px}.company-sales-summary strong{font-size:18px}}
+
+
+/* 日本経済新聞の公開見出し */
+.nikkei-news-controls{gap:10px 18px;font-size:13px}
+.nikkei-news-controls button{font-size:14px;min-height:42px}
+.nikkei-news-card{display:flex;flex-direction:column;justify-content:space-between}
+.nikkei-news-card .news-meta{font-size:13px;gap:8px;flex-wrap:wrap}
+.nikkei-news-card .news-card-head h3{font-size:17px;line-height:1.65;margin:10px 0 4px}
+.nikkei-news-card h3 a{color:var(--text);text-decoration:none}
+.nikkei-news-card h3 a:hover{text-decoration:underline;color:var(--accent)}
+.nikkei-news-card a:focus-visible,.nikkei-news-controls a:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.nikkei-news-link{padding:0 14px 14px;text-align:right;font-size:14px}
+#nikkeiNewsUpdated{color:var(--muted)}
+
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="header-top">
+    <div>
+      <h1>市況・金融・経済ダッシュボード</h1>
+      <div class="subtitle">日本・米国の市場、物価、金利、銀行預金を一画面で確認</div>
+    </div>
+    <div class="badge" id="dataModeBadge">サンプル＋公式確認済み</div>
+  </div>
+  <div class="meta">
+    <div class="meta-card"><div class="meta-label">データ基準日</div><div class="meta-value" id="baseDateLabel">2026-09-04</div></div>
+    <div class="meta-card"><div class="meta-label">東京市場</div><div class="meta-value" id="tokyoDateLabel">2026-09-04</div></div>
+    <div class="meta-card"><div class="meta-label">NY市場</div><div class="meta-value" id="nyDateLabel">2026-09-04</div></div>
+    <div class="meta-card"><div class="meta-label">最終更新（JST）</div><div class="meta-value" id="updatedLabel">2026-09-07 21:30</div></div>
+  </div>
+</header>
+
+<div class="company-scope-global-nav" aria-label="企業業績の表示切替">
+  <div class="candle-tabbar company-scope-tabbar">
+    <span class="candle-period-label">企業業績</span>
+    <button type="button" class="btn small active" data-company-scope-btn="annual">通期</button>
+    <button type="button" class="btn small" data-company-scope-btn="quarterly">四半期</button>
+  </div>
+</div>
+
+<div class="toolbar">
+  <button class="btn primary" id="refreshBtn">Cloudflare経由で更新</button>
+  <span class="badge" id="externalUpdateStatus" aria-live="polite">未実行</span>
+  <label class="date-box">基準日 <input type="date" id="baseDateInput" value="2026-09-04"></label>
+  <button class="btn" data-range="30">30日</button>
+  <button class="btn" data-range="90">3か月</button>
+  <button class="btn" data-range="365">1年</button>
+  <button class="btn" id="printBtn">印刷</button>
+  <button class="btn" id="csvBtn">CSV出力</button>
+  <button class="btn" id="jsonSaveBtn">JSON保存</button>
+  <label class="file-label">JSON読込<input class="hidden" type="file" id="jsonFileInput" accept=".json,application/json"></label>
+  <button class="btn" id="themeBtn">ダークモード</button>
+</div>
+
+<div class="note">
+  市場値はご指定の2026年9月4日サンプルと確認済み公表値を併用しています。
+  <span class="status-sample">「サンプル」</span>は入力値、
+  <span class="status-official">「確認済み」</span>は公表値、
+  <span class="status-missing">「データ未取得」</span>は推測せず空欄扱いです。
+  「外部サイトから更新」を押すと、為替・主要株価指数・商品・日米国債利回り・日銀/FRB政策金利・CPI・選択企業の株価/ローソク足（企業・為替・商品・暗号資産・指数）と日経の記事見出しを外部サイトから取得して再描画します。取得に失敗した項目は直前値を保持します。
+</div>
+
+<section class="section">
+  <div class="section-title"><h2>本日の総合サマリー</h2><div class="sub">上昇▲ / 低下▼ / 横ばい―。金利方向は価値判断を含みません。</div></div>
+  <div class="summary-grid" id="summaryGrid"></div>
+</section>
+
+
+<section class="section" id="nikkeiNewsSection" aria-labelledby="nikkeiNewsTitle">
+  <div class="section-title"><h2 id="nikkeiNewsTitle">日本経済新聞の記事</h2><span class="badge" id="nikkeiNewsCount">取得中</span></div>
+  <div class="news-controls nikkei-news-controls"><button class="btn primary" id="nikkeiNewsRefresh" type="button">日経の記事を更新</button><span id="nikkeiNewsUpdated"></span><a href="https://www.nikkei.com/" target="_blank" rel="noopener noreferrer">日経電子版を開く ↗</a></div>
+  <div class="note hidden" id="nikkeiNewsStatus" role="status" aria-live="polite"></div>
+  <div class="news-grid" id="nikkeiNewsGrid"></div>
+  <div class="note">Googleニュースに掲載された日経の記事見出しです。本文は記事リンクから日経電子版でご覧ください。記事によってはログイン・購読が必要です。</div>
+</section>
+
+<section class="section" id="economicNewsSection">
+  <div class="section-title"><h2>経済ニュース・かみ砕き解説</h2><div class="sub">何が起きた → なぜ重要 → 市場・生活への影響 → 次に見る数字</div></div>
+  <div class="news-summary-box" id="newsSummaryBox"></div>
+  <div class="news-controls">
+    <select id="newsCategoryFilter"><option value="">全カテゴリー</option></select>
+    <span class="badge">重要度 A＝市場への影響が大きい</span>
+    <span class="badge" id="newsUpdatedBadge">ニュース基準日 2026-09-07</span>
+  </div>
+  <div class="news-grid" id="economicNewsGrid"></div>
+  <div class="note">この欄の解説は初期データです。日経の記事見出しは上の専用欄で更新できます。</div>
+</section>
+
+<section class="section">
+  <div class="section-title"><h2>為替・金利</h2><div class="sub">東京市場・日米債券</div></div>
+  <div class="grid-2">
+    <div class="panel">
+      <div class="panel-head"><h3>為替</h3><span class="badge">東京17時重視</span></div>
+      <div class="table-wrap"><table id="fxTable"></table></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h3>日本の金利</h3><span class="badge">bp併記</span></div>
+      <div class="table-wrap"><table id="jpRateTable"></table></div>
+    </div>
+  </div>
+  <div class="panel" style="margin-top:12px">
+    <div class="panel-head"><h3>米国金利</h3><span class="badge">米財務省公表値を優先</span></div>
+    <div class="table-wrap"><table id="usRateTable"></table></div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-title"><h2>株価・商品</h2><div class="sub">終値・清算値</div></div>
+  <div class="grid-3">
+    <div class="panel"><div class="panel-head"><h3>日本株</h3></div><div class="table-wrap"><table id="jpStockTable"></table></div></div>
+    <div class="panel"><div class="panel-head"><h3>米国株</h3></div><div class="table-wrap"><table id="usStockTable"></table></div></div>
+    <div class="panel"><div class="panel-head"><h3>商品市況</h3></div><div class="table-wrap"><table id="commodityTable"></table></div></div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-title"><h2>物価・インフレ・実質金利</h2><div class="sub">全国CPI / フィッシャー近似</div></div>
+  <div class="grid-2">
+    <div class="panel"><div class="panel-head"><h3>消費者物価指数</h3><span class="badge">2025年基準</span></div><div class="table-wrap"><table id="cpiTable"></table></div></div>
+    <div class="panel"><div class="panel-head"><h3>名目金利・実質金利</h3><span class="badge">概算</span></div><div class="table-wrap"><table id="realRateTable"></table></div></div>
+  </div>
+  <div class="note">実質金利は簡易近似「名目金利 − 総合CPI前年同月比」で計算します。CPI前月比は総務省統計局の季節調整値です。「実質インフレ率」という独自統計は作成しません。</div>
+</section>
+
+<section class="section">
+  <div class="section-title"><h2>銀行金利</h2><div class="sub">都市銀行＋岩手県内銀行</div></div>
+  <div class="grid-2">
+    <div class="panel"><div class="panel-head"><h3>都市銀行</h3></div><div class="table-wrap"><table id="cityBankTable"></table></div></div>
+    <div class="panel"><div class="panel-head"><h3>岩手県の銀行</h3></div><div class="table-wrap"><table id="iwateBankTable"></table></div></div>
+  </div>
+  <div class="panel" style="margin-top:12px">
+    <div class="panel-head"><h3>普通預金金利ランキング</h3><span class="badge">100万円・税引前</span></div>
+    <div class="table-wrap"><table id="bankRankingTable"></table></div>
+  </div>
+</section>
+
+
+<section class="section" id="candlestickSection">
+  <div class="section-title"><h2>ローソク足・価格推移</h2><div class="sub">1分足・5分足・10分足・1時間足・日足・週足・月足・年足 / 企業・為替・商品・暗号資産・指数 / OHLC＋出来高＋5本移動平均</div></div>
+  <div class="candle-tabbar">
+    <span class="candle-period-label">分類</span>
+    <button class="btn small active" data-candle-tab="company">企業</button>
+    <button class="btn small" data-candle-tab="fx">為替</button>
+    <button class="btn small" data-candle-tab="commodity">商品</button>
+    <button class="btn small" data-candle-tab="crypto">暗号資産</button>
+    <button class="btn small" data-candle-tab="index">指数</button>
+    <button class="btn small" data-candle-tab="all">全部</button>
+  </div>
+  <div class="candle-controls">
+    <select id="candlestickSymbol"></select>
+    <span class="candle-period-label">足種</span>
+    <button class="btn small" data-candle-interval="1m">1分足</button>
+    <button class="btn small" data-candle-interval="5m">5分足</button>
+    <button class="btn small" data-candle-interval="10m">10分足</button>
+    <button class="btn small" data-candle-interval="60m">1時間足</button>
+    <button class="btn small active" data-candle-interval="1d">日足</button>
+    <button class="btn small" data-candle-interval="1wk">週足</button>
+    <button class="btn small" data-candle-interval="1mo">月足</button>
+    <button class="btn small" data-candle-interval="1y">年足</button>
+    <span class="candle-period-label">表示本数</span>
+    <button class="btn small" data-candle-range="5">5本</button>
+    <button class="btn small" data-candle-range="10">10本</button>
+    <button class="btn small active" data-candle-range="20">20本</button>
+    <button class="btn small" data-candle-range="50">50本</button>
+    <button class="btn small" data-candle-range="100">100本</button>
+    <button class="btn small" id="candleRefreshBtn">この足を更新</button>
+    <span class="badge" id="candleStatusBadge">確認済みデータ</span>
+  </div>
+  <div class="candle-layout">
+    <div class="candle-card">
+      <div class="candle-wrap" id="candlestickWrap">
+        <canvas id="candlestickCanvas"></canvas>
+        <div class="candle-tooltip" id="candlestickTooltip"></div>
+      </div>
+      <div class="candle-legend"><span><i class="candle-dot" style="background:var(--up)"></i>陽線（終値＞始値）</span><span><i class="candle-dot" style="background:var(--down)"></i>陰線（終値＜始値）</span><span>— 5本移動平均</span></div>
+      <div class="candle-source" id="candleSource"></div>
+      <div class="table-wrap" style="margin-top:8px"><table id="latestOHLCtable"></table></div>
+    </div>
+    <div class="candle-card">
+      <h3 style="margin:0 0 9px">ローソク足の読み方</h3>
+      <div class="candle-guide">
+        <div class="guide-item"><strong>胴体（四角）の長さ</strong><span>始値と終値の差です。長いほど、その日の買い・売りの勢いが強かったことを示します。</span></div>
+        <div class="guide-item"><strong>上ヒゲ・下ヒゲ</strong><span>上ヒゲ先端が高値、下ヒゲ先端が安値です。長いヒゲは「そこまで動いたが押し戻された」ことを表します。</span></div>
+        <div class="guide-item"><strong>陽線と陰線</strong><span>この画面では上昇日を赤、下落日を緑で表示します。色だけで良し悪しを判断せず、出来高と前後の流れも見ます。</span></div>
+        <div class="guide-item"><strong>出来高</strong><span>下段の棒です。価格変動と出来高が同時に大きい日は、市場参加者の関心が強かった可能性があります。為替や一部指数では出来高が配信されず「—」表示になることがあります。</span></div>
+        <div class="guide-item"><strong>5本移動平均</strong><span>選択した足種の終値を5本平均した線です。1分足なら約5分、日足なら5営業日、週足なら約5週間、月足なら約5か月、年足なら約5年の方向感を確認できます。</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="companySection">
+  <div class="section-title"><h2>企業情報・四季報風ビュー</h2><div class="sub">公開情報整理用 / 四季報本文の転載ではありません</div></div>
+  <div class="note">財務項目名は企業ごとに自動判定します。決算表の見出しを優先し、「売上高」「売上収益」「営業収益」「経常収益」をそのまま表示します。銀行・保険などは業種ルールも併用するため、企業ごとの手修正は原則不要です。</div>
+  <div class="company-controls">
+    <div class="company-search-wrap" id="companySearchWrap">
+      <input id="companySearch" type="search" placeholder="証券コード・会社名・略称で検索" autocomplete="off" spellcheck="false" aria-autocomplete="list" aria-controls="companySuggestions" aria-expanded="false">
+      <div class="company-suggestions" id="companySuggestions" role="listbox" aria-label="企業検索候補"></div>
+      <div class="company-search-hint">例：9948 / アークス / ARCS / ジョイス / 8267 / イオン / 薬王堂HD　｜　PCは↑↓＋Enter、iPad・スマホは候補をタップ</div>
+    </div>
+    <select id="industryFilter"><option value="">全業種</option></select>
+  </div>
+  <div class="chart-card company-sales-card" id="companySalesCandles">
+    <div class="company-sales-heading"><h3 id="companySalesHeading">売上高推移・ローソク形</h3><span class="badge" id="companySalesScope">通期・実績</span></div>
+    <div class="company-sales-company" id="companySalesCompany"></div>
+    <div class="company-sales-controls" aria-label="売上高の表示期間">
+      <button type="button" class="btn active" data-company-scope-btn="annual">通期</button>
+      <button type="button" class="btn" data-company-scope-btn="quarterly">四半期</button>
+      <span class="company-sales-controls hidden" id="companySalesComparison" role="group" aria-label="ローソク形の比較対象">
+        <span class="candle-period-label">比較</span>
+        <button type="button" class="btn active" data-sales-comparison="previous" aria-pressed="true">前四半期</button>
+        <button type="button" class="btn" data-sales-comparison="yearAgo" aria-pressed="false">前年同期</button>
+      </span>
+      <button type="button" class="btn" id="companySalesUpdate">売上高を更新</button>
+    </div>
+    <div class="company-sales-summary" id="companySalesSummary" aria-live="polite"></div>
+    <div class="company-detail-status" id="companySalesExplanation"></div>
+    <div class="chart-box company-sales-chart"><canvas id="companySalesCandleChart" role="img" aria-label="売上高実績を前期または前年同期と比較するローソク形グラフ" aria-describedby="companySalesExplanation">下の「売上高の数値を確認」に各期の売上高と増減率を掲載しています。</canvas><div class="chart-empty" id="companySalesCandleEmpty"></div></div>
+    <div class="company-sales-legend" aria-label="凡例"><span class="up"><i></i>増収</span><span class="down"><i></i>減収</span><span class="flat"><i></i>同額</span><span class="sales-point"><i></i>比較値なし・当期の金額のみ</span></div>
+    <div class="company-detail-status" id="companySalesSource" style="margin-top:10px" aria-live="polite"></div>
+    <details><summary id="companySalesDetailsSummary">売上高の数値を確認</summary><div class="table-wrap"><table id="companySalesTable"></table></div></details>
+  </div>
+  <div class="company-layout">
+    <div class="panel">
+      <div class="panel-head"><h3>企業一覧・スクリーナー</h3><span class="badge" id="companyCountBadge">企業マスター読込中…</span></div>
+      <div class="note" style="margin:0 12px 8px">ページ分割なしで該当企業をすべて一括表示します。横画面では全列を見渡しやすく、狭い画面では横スクロールできます。</div><div class="table-wrap"><table id="companyTable"></table></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h3>企業詳細</h3><span class="badge">役員情報を含む</span></div>
+      <div class="panel-body company-detail" id="companyDetail"></div>
+    </div>
+  </div>
+  <div class="candle-tabbar company-scope-tabbar is-outer" style="margin-top:12px">
+    <span class="candle-period-label">業績表示</span>
+    <button type="button" class="btn small active" data-company-scope-btn="annual">通期</button>
+    <button type="button" class="btn small" data-company-scope-btn="quarterly">四半期</button>
+  </div>
+  <div class="grid-2" style="margin-top:12px">
+    <div class="chart-card" data-company-scope="annual"><h3 id="companyPerformanceTitle">売上高・利益推移</h3><div class="company-detail-status" id="companyPerformanceNote" style="margin-bottom:8px">通期ベース / 売上高は棒グラフ、営業利益・純利益は折れ線 / 単位：百万円</div><div class="chart-box"><canvas id="companyPerformanceChart"></canvas><div class="chart-empty" id="companyChartEmpty"></div></div></div>
+    <div class="chart-card" data-company-scope="quarterly"><h3 id="companyQuarterlyPerformanceTitle">四半期売上高・利益推移</h3><div class="company-detail-status" id="companyQuarterlyPerformanceNote" style="margin-bottom:8px">四半期ベース / 売上高は棒グラフ、営業利益・純利益は折れ線 / 売上高実数・前年比・営業利益率・純利益率を表示（狭い画面は自動間引き） / 単位：百万円</div><div class="chart-box"><canvas id="companyQuarterlyPerformanceChart"></canvas><div class="chart-empty" id="companyQuarterlyChartEmpty"></div></div></div>
+    <div class="chart-card" data-company-scope="annual"><h3 id="companyMarginTitle">売上高・営業利益率・純利益率</h3><div class="company-detail-status" id="companyMarginNote" style="margin-bottom:8px">通期ベース / 売上高は棒グラフ、利益率は折れ線 / 利益率は%表示</div><div class="chart-box"><canvas id="companyMarginChart"></canvas><div class="chart-empty" id="companyMarginChartEmpty"></div></div></div>
