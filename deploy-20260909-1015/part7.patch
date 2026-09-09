@@ -1,0 +1,75 @@
+-  }).filter(x=>x&&(isNum(x.sales)||isNum(x.operatingProfit)||isNum(x.netIncome))).sort((a,b)=>a.end-b.end);
+-  const incomeRows=annual(choose([/^売上高|^売上収益|^営業収益/,/^最終益|^純利益/,/^修正1株配|^1株配/]));
+-  const performance=incomeRows.map(r=>({period:r.period+(r.forecast?'予':''),forecast:r.forecast,sales:r.get(/^売上高|^売上収益|^営業収益/),operatingProfit:r.get(/^営業益/),ordinaryProfit:r.get(/^経常益/),netIncome:r.get(/^最終益|^純利益/),eps:r.get(/^修正1株益|^1株益/),dividend:r.get(/^修正1株配|^1株配/),announced:r.txt(/^発表日/),accounting:r.txt(/^会計基準/)}));
++    return {...period,basis:'standalone',forecast:/^予/.test(raw),sales:get(/^売上高|^売上収益|^営業収益|^経常収益|^営業収入|^収益/),operatingProfit:get(/^営業益/),ordinaryProfit:get(/^経常益|^経常利益/),netIncome:get(/^最終益|^純利益/),eps:get(/^修正1株益|^1株益/),dividend:get(/^修正1株配|^1株配/),announced:txt(/^発表日/),accounting:txt(/^会計基準/)};
++  }).filter(x=>x&&(isNum(x.sales)||isNum(x.operatingProfit)||isNum(x.ordinaryProfit)||isNum(x.netIncome))).sort((a,b)=>a.end-b.end);
++  const incomeTable=choose([/^売上高|^売上収益|^営業収益|^経常収益|^営業収入|^収益/,/^最終益|^純利益/,/^修正1株配|^1株配/]);
++  const revenueHeader=incomeTable?.headers?.find(h=>/^売上高|^売上収益|^営業収益|^経常収益|^営業収入|^収益/.test(h))||'';
++  const primaryProfitHeader=incomeTable?.headers?.find(h=>/^営業益|^営業利益|^経常益|^経常利益/.test(h))||'';
++  const normalizedPrimaryProfit=normalizeCompanyPrimaryProfitLabel(primaryProfitHeader);
++  const accountingLabels={revenue:normalizeCompanyRevenueLabel(revenueHeader),primaryProfit:normalizedPrimaryProfit?.label||''};
++  const incomeRows=annual(incomeTable);
++  const performance=incomeRows.map(r=>({period:r.period+(r.forecast?'予':''),forecast:r.forecast,sales:r.get(/^売上高|^売上収益|^営業収益|^経常収益|^営業収入|^収益/),operatingProfit:r.get(/^営業益/),ordinaryProfit:r.get(/^経常益|^経常利益/),netIncome:r.get(/^最終益|^純利益/),eps:r.get(/^修正1株益|^1株益/),dividend:r.get(/^修正1株配|^1株配/),announced:r.txt(/^発表日/),accounting:r.txt(/^会計基準/)}));
+   // A quarterly table must contain explicit three-month periods. Annual and YTD tables cannot supply quarter totals.
+-  const quarterCandidates=tables.filter(t=>[/^売上高|^売上収益|^営業収益/,/^営業益|^経常益/,/^最終益|^純利益/].every(re=>t.headers.some(h=>re.test(h)))&&t.rows.some(cells=>companyQuarterPeriod(cells[0])));
++  const quarterCandidates=tables.filter(t=>[/^売上高|^売上収益|^営業収益|^経常収益|^営業収入|^収益/,/^営業益|^営業利益|^経常益|^経常利益/,/^最終益|^純利益/].every(re=>t.headers.some(h=>re.test(h)))&&t.rows.some(cells=>companyQuarterPeriod(cells[0])));
+   // The first-quarter YTD table also spans three months; prefer the consecutive three-month results table.
+   const quarterTable=quarterCandidates.find(t=>t.headers.some(h=>/^売上営業損益率/.test(h)))||quarterCandidates.slice().sort((a,b)=>quarterly(b).length-quarterly(a).length)[0];
+   const quarterlyPerformance=quarterly(quarterTable);
+@@ -3491,7 +3578,7 @@
+   const balance=latestActual(choose([/^1株純資産/,/^自己資本比率/,/^総資産/]));
+   if(!latest&&!cf&&!balance)throw new Error('公開決算表を読み取れませんでした');
+   const money=(r,re)=>{const n=r?.get(re);return isNum(n)?n*1e6:null;};
+-  return {sourceUrl:`https://s.kabutan.jp/stocks/${encodeURIComponent(code)}/finance/`,performance,quarterlyPerformance,latest,previous,forecast,
++  return {sourceUrl:`https://s.kabutan.jp/stocks/${encodeURIComponent(code)}/finance/`,performance,quarterlyPerformance,latest,previous,forecast,accountingLabels,
+     valuation:{trailingEps:latest?.eps??null,forwardEps:forecast?.eps??null,bookValue:balance?.get(/^1株純資産/)??null},
+     profitability:{roe:profitability?.get(/^ROE/)??null,roa:profitability?.get(/^ROA/)??null,operatingMargin:profitability?.get(/^売上営業利益率/)??null,equityRatio:balance?.get(/^自己資本比率/)??null},
+     financials:{revenue:isNum(latest?.sales)?latest.sales*1e6:null,operatingCashflow:money(cf,/^営業CF/),freeCashflow:money(cf,/^フリーCF/),investingCashflow:money(cf,/^投資CF/),financingCashflow:money(cf,/^財務CF/),totalCash:money(cf,/^現金等残高/),totalAssets:money(balance,/^総資産/),totalEquity:money(balance,/^自己資本\(/),debtToEquity:balance?.get(/^有利子負債倍率/)??null},
+@@ -3512,7 +3599,7 @@
+   const yen=v=>isNum(v)?v*1e6:null; // 株探の業績表は百万円単位
+ 
+   // 売上高・株数・時価総額の相互補完
+-  put(financials,'revenue',yen(latest.sales),'売上高');
++  put(financials,'revenue',yen(latest.sales),'収益');
+   put(valuation,'sharesOutstanding',companyRatio(valuation.marketCap,price.current),'発行済株式数');
+   put(valuation,'sharesOutstanding',companyRatio(financials.totalEquity,valuation.bookValue),'発行済株式数');
+   put(valuation,'marketCap',isNum(price.current)&&isNum(valuation.sharesOutstanding)?price.current*valuation.sharesOutstanding:null,'時価総額');
+@@ -3537,7 +3624,7 @@
+   // 現金・売上の1株値、CF。
+   put(financials,'totalCash',isNum(financials.cashPerShare)&&isNum(valuation.sharesOutstanding)?financials.cashPerShare*valuation.sharesOutstanding:null,'現金・現金同等物');
+   put(financials,'cashPerShare',companyRatio(financials.totalCash,valuation.sharesOutstanding),'1株当たり現金');
+-  put(financials,'revenuePerShare',companyRatio(financials.revenue,valuation.sharesOutstanding),'1株売上高');
++  put(financials,'revenuePerShare',companyRatio(financials.revenue,valuation.sharesOutstanding),'1株当たり収益');
+   put(financials,'freeCashflow',isNum(financials.operatingCashflow)&&isNum(financials.investingCashflow)?financials.operatingCashflow+financials.investingCashflow:null,'フリーCF（営業＋投資）');
+ 
+   // 流動資産・流動負債が取れれば流動比率を計算。逆に比率＋片側があればもう片側も補完。
+@@ -3579,7 +3666,7 @@
+   put(profitability,'ebitdaMargin',companyRatio(financials.ebitda,financials.revenue,100),'EBITDA率');
+ 
+   // 直近通期の損益から利益率・収益性を補完。
+-  put(profitability,'profitMargin',companyRatio(yen(latest.netIncome),financials.revenue,100),'売上高利益率');
++  put(profitability,'profitMargin',companyRatio(yen(latest.netIncome),financials.revenue,100),'純利益率');
+   put(profitability,'ordinaryMargin',companyRatio(yen(latest.ordinaryProfit),financials.revenue,100),'経常利益率');
+   put(profitability,'operatingMargin',companyRatio(yen(latest.operatingProfit),financials.revenue,100),'営業利益率');
+   put(profitability,'roa',companyRatio(yen(latest.netIncome),financials.totalAssets,100),'ROA');
+@@ -3599,7 +3686,7 @@
+   // PEG = PER ÷ 利益成長率(%)。成長率が0以下の場合は算出しない。
+   const pegPE=isNum(valuation.forwardPE)?valuation.forwardPE:valuation.trailingPE;
+   put(valuation,'pegRatio',isNum(pegPE)&&isNum(growth.earningsGrowth)&&growth.earningsGrowth>0?pegPE/growth.earningsGrowth:null,'PEG');
+-  put(valuation,'enterpriseToRevenue',companyRatio(valuation.enterpriseValue,financials.revenue),'EV/売上高');
++  put(valuation,'enterpriseToRevenue',companyRatio(valuation.enterpriseValue,financials.revenue),'EV/収益');
+   put(valuation,'enterpriseToEbitda',companyRatio(valuation.enterpriseValue,financials.ebitda),'EV/EBITDA');
+ 
+   // 配当は予想1株配当と現在株価、実績1株配当と実績EPSから算出できる。
+@@ -3668,9 +3755,9 @@
+     chart&&{label:'Yahoo Finance・日足OHLC',url:`https://finance.yahoo.com/quote/${encodeURIComponent(company.code)}.T/history/`,period:price.maAsOf},
+     yahooDetail&&{label:'Yahoo Finance・補完財務指標',url:`https://finance.yahoo.com/quote/${encodeURIComponent(company.code)}.T/`,period:price.asOf||''}
+   ].filter(Boolean);
+-  return {schemaVersion:COMPANY_DATA_VERSION,fetchedAt:new Date().toISOString(),source:sourceRecords.map(s=>s.label).join(' / '),sourceRecords,errors,price,valuation,profitability,growth,dividend,financials,analyst,ownership,corporate:{},officers:[],annualPerformance,quarterlyPerformance,periods:finance?.periods||{},derivedFields,
++  return {schemaVersion:COMPANY_DATA_VERSION,fetchedAt:new Date().toISOString(),source:sourceRecords.map(s=>s.label).join(' / '),sourceRecords,errors,price,valuation,profitability,growth,dividend,financials,analyst,ownership,corporate:{},officers:[],annualPerformance,quarterlyPerformance,periods:finance?.periods||{},accountingLabels:finance?.accountingLabels||yahooDetail?.accountingLabels||{},derivedFields,
+     forecasts:forecast?{sales:forecast.sales,operatingProfit:forecast.operatingProfit,ordinaryProfit:forecast.ordinaryProfit,netIncome:forecast.netIncome}:kabuyoho?.forecasts||{},
+-    calculationNotes:'未取得補完 v6：日本の公開情報（株探・株予報Pro）を優先し、不足する市場・財務指標だけYahoo Financeで補完します。大株主ランキングは株探の大株主ページを優先し、取得できない場合のみYahoo Financeの機関・ファンド保有情報を補助表示します。会社基本情報にはYahoo Financeを使いません。取得元に直接項目がなくても、取得済み数値から一意に算出できるものは自動計算します。流動比率＝流動資産÷流動負債、当座比率は直接値がなければ（流動資産－棚卸資産）÷流動負債の概算、自己資本比率＝自己資本÷総資産、D/E＝有利子負債÷自己資本、ROA＝純利益÷総資産、ROE＝純利益÷自己資本、経常利益率＝経常利益÷売上高、営業利益率＝営業利益÷売上高、純利益率＝純利益÷売上高。EV＝時価総額＋有利子負債－現金、PEG＝PER÷利益成長率(%)、EV/売上高＝EV÷売上高、EV/EBITDA＝EV÷EBITDA、1株当たり現金＝現金÷発行済株式数、1株売上高＝売上高÷発行済株式数、BPS＝自己資本÷発行済株式数、EPS＝純利益÷発行済株式数。会社予想は売上高・各利益がそろえば予想利益率と前期比を自動計算します。元数値が不足する場合だけ「計算材料不足」と表示します。'};
++    calculationNotes:'未取得補完 v7（業種別財務完全対応）：日本の公開情報（株探・株予報Pro）を優先し、不足する市場・財務指標だけYahoo Financeで補完します。大株主ランキングは株探の大株主ページを優先し、取得できない場合のみYahoo Financeの機関・ファンド保有情報を補助表示します。会社基本情報にはYahoo Financeを使いません。取得元に直接項目がなくても、取得済み数値から一意に算出できるものは自動計算します。流動比率＝流動資産÷流動負債、当座比率は直接値がなければ（流動資産－棚卸資産）÷流動負債の概算、自己資本比率＝自己資本÷総資産、D/E＝有利子負債÷自己資本、ROA＝純利益÷総資産、ROE＝純利益÷自己資本、経常利益率＝経常利益÷収益、営業利益率＝営業利益÷収益、純利益率＝純利益÷収益（収益は一般企業の売上高、銀行・保険の経常収益、証券等の営業収益）。EV＝時価総額＋有利子負債－現金、PEG＝PER÷利益成長率(%)、EV/収益＝EV÷収益、EV/EBITDA＝EV÷EBITDA、1株当たり現金＝現金÷発行済株式数、1株当たり収益＝収益÷発行済株式数、BPS＝自己資本÷発行済株式数、EPS＝純利益÷発行済株式数。会社予想は売上高・各利益がそろえば予想利益率と前期比を自動計算します。元数値が不足する場合だけ「計算材料不足」と表示します。'};
+ }
+ 
+ async function fetchCompanyBasicInfoExternal(company,supplement={}){
