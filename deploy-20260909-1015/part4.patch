@@ -3,7 +3,7 @@
 +  const profitBasis=accounting.profitLabelBasis==='source'?'決算表の実表記':accounting.profitLabelBasis==='data'?'取得データ':'業種ルール';
 +  const accountingStatus=`財務表記：${accounting.revenueLabel}／${accounting.primaryProfitLabel}（収益=${accountingBasis}、主要利益=${profitBasis}）`;
 +  const statusText=(c.detailLoading?'企業詳細を取得中…':c.detailError?`詳細取得エラー: ${c.detailError}`:d.fetchedAt?`${d.warnings?.length?'一部取得':'取得完了'} ${new Date(d.fetchedAt).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'})}`:'企業マスター情報')+` ／ ${accountingStatus}`;
-   const website=corp?.website?`<a class="company-detail-link" href="${esc(corp.website)}" target="_blank" rel="noopener">${esc(corp.website)} ↗</a>`:'未取得';
+   const website=corp.website?`<a class="company-detail-link" href="${esc(corp.website)}" target="_blank" rel="noopener">${esc(corp.website)} ↗</a>`:'未取得';
    const address=corp.headquarters||'';
  
 @@ -1966,7 +2028,7 @@
