@@ -1,0 +1,39 @@
+name: Deploy industry-aware finance labels
+
+on:
+  push:
+    paths:
+      - '.github/workflows/deploy-finance-labels.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify source and apply exact patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git hash-object index.html)" = "e2cca952e21272272975b872e2b7aae8810a9552"
+          cat deploy-20260909-1015/part{1..7}.patch > /tmp/deploy.patch
+          echo "ce68308d27257a9fcb98cdd2af8e290f715639557f543ef2208ddaeaf9371512  /tmp/deploy.patch" | sha256sum -c -
+          patch -p1 --batch --forward < /tmp/deploy.patch
+          test "$(git hash-object index.html)" = "3cfd8c537e27e51effc33d7b6a6a03957f5a9dd4"
+
+      - name: Commit deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf deploy-20260909-1015
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html deploy-20260909-1015
+          git commit -m "Deploy industry-aware finance labels"
+          git push
