@@ -1,0 +1,112 @@
+-  const statusText=c.detailLoading?'企業詳細を取得中…':c.detailError?`詳細取得エラー: ${c.detailError}`:d.fetchedAt?`${d.warnings?.length?'一部取得':'取得完了'} ${new Date(d.fetchedAt).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'})}`:'企業マスター情報';
++  const accountingBasis=accounting.labelBasis==='source'?'決算表の実表記':'業種ルール';
++  const profitBasis=accounting.profitLabelBasis==='source'?'決算表の実表記':accounting.profitLabelBasis==='data'?'取得データ':'業種ルール';
++  const accountingStatus=`財務表記：${accounting.revenueLabel}／${accounting.primaryProfitLabel}（収益=${accountingBasis}、主要利益=${profitBasis}）`;
++  const statusText=(c.detailLoading?'企業詳細を取得中…':c.detailError?`詳細取得エラー: ${c.detailError}`:d.fetchedAt?`${d.warnings?.length?'一部取得':'取得完了'} ${new Date(d.fetchedAt).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'})}`:'企業マスター情報')+` ／ ${accountingStatus}`;
+   const website=corp?.website?`<a class="company-detail-link" href="${esc(corp.website)}" target="_blank" rel="noopener">${esc(corp.website)} ↗</a>`:'未取得';
+   const address=corp.headquarters||'';
+ 
+@@ -1966,7 +2028,7 @@
+   const perfRows=(Array.isArray(c.performance)&&c.performance.length?c.performance:(Array.isArray(d.annualPerformance)?d.annualPerformance:[]))
+     .filter(x=>x&&(isNum(x.sales)||isNum(x.operatingProfit)||isNum(x.ordinaryProfit)||isNum(x.netIncome)||isNum(x.eps)||isNum(x.dividend)));
+   const quarterRows=(Array.isArray(d.quarterlyPerformance)?d.quarterlyPerformance:[])
+-    .filter(x=>x&&(isNum(x.sales)||isNum(x.operatingProfit)||isNum(x.netIncome)))
++    .filter(x=>x&&(isNum(x.sales)||isNum(x.operatingProfit)||isNum(x.ordinaryProfit)||isNum(x.netIncome)))
+     .sort((a,b)=>String(a.period||'').localeCompare(String(b.period||'')));
+   const actualRows=perfRows.filter(x=>!x.forecast&&!String(x.period||'').includes('予'));
+   const forecastRows=perfRows.filter(x=>x.forecast||String(x.period||'').includes('予'));
+@@ -1983,10 +2045,14 @@
+   const marginPct=(profit,sales)=>isNum(profit)&&isNum(sales)&&sales!==0?profit/sales*100:null;
+   const quarterMarginRows=quarterRows.map((r,i,arr)=>({
+     ...r,
++    primaryProfit:companyPrimaryProfit(r,accounting),
++    primaryMargin:marginPct(companyPrimaryProfit(r,accounting),r.sales),
+     operatingMargin:marginPct(r.operatingProfit,r.sales),
+     netMargin:marginPct(r.netIncome,r.sales),
+     salesQoq:prevQuarterGrowth(arr,i,'sales'),
+     salesYoy:yoyGrowth(arr,i,'sales'),
++    primaryProfitQoq:prevQuarterGrowth(arr,i,primaryProfitKey),
++    primaryProfitYoy:yoyGrowth(arr,i,primaryProfitKey),
+     operatingProfitQoq:prevQuarterGrowth(arr,i,'operatingProfit'),
+     operatingProfitYoy:yoyGrowth(arr,i,'operatingProfit'),
+     netIncomeQoq:prevQuarterGrowth(arr,i,'netIncome'),
+@@ -1998,6 +2064,9 @@
+   const forecastOperating=isNum(f.operatingProfit)?f.operatingProfit:(isNum(nextForecast.operatingProfit)?nextForecast.operatingProfit:null);
+   const forecastOrdinary=isNum(f.ordinaryProfit)?f.ordinaryProfit:(isNum(nextForecast.ordinaryProfit)?nextForecast.ordinaryProfit:null);
+   const forecastNet=isNum(f.netIncome)?f.netIncome:(isNum(nextForecast.netIncome)?nextForecast.netIncome:null);
++  const forecastPrimary=isNum(f?.[primaryProfitKey])?f[primaryProfitKey]:(isNum(nextForecast?.[primaryProfitKey])?nextForecast[primaryProfitKey]:null);
++  const forecastPrimaryMargin=marginPct(forecastPrimary,forecastSales);
++  const forecastPrimaryGrowth=resultGrowth(forecastPrimary,latestResult?.[primaryProfitKey]);
+   const forecastOperatingMargin=marginPct(forecastOperating,forecastSales);
+   const forecastOrdinaryMargin=marginPct(forecastOrdinary,forecastSales);
+   const forecastNetMargin=marginPct(forecastNet,forecastSales);
+@@ -2008,6 +2077,16 @@
+   const jpxUrl=basic.jpx?.sourceUrl||`https://www2.jpx.co.jp/tseHpFront/StockSearch.do?method=topsearch&topSearchStr=${encodeURIComponent(c.code)}`;
+   const jpxLink=`<a class="company-detail-link" href="${esc(jpxUrl)}" target="_blank" rel="noopener">JPXで確認 ↗</a>`;
+   const wikidataLink=basic.wikidata?.entityUrl?`<a class="company-detail-link" href="${esc(basic.wikidata.entityUrl)}" target="_blank" rel="noopener">Wikidataで確認 ↗</a>`:'未取得';
++
++  if($('companyPerformanceTitle'))$('companyPerformanceTitle').textContent=`${revenueLabel}・利益推移`;
++  if($('companyPerformanceNote'))$('companyPerformanceNote').textContent=`通期ベース / ${revenueLabel}は棒グラフ、${primaryProfitLabel}・純利益は折れ線 / 単位：百万円`;
++  if($('companyQuarterlyPerformanceTitle'))$('companyQuarterlyPerformanceTitle').textContent=`四半期${revenueLabel}・利益推移`;
++  if($('companyQuarterlyPerformanceNote'))$('companyQuarterlyPerformanceNote').textContent=`四半期ベース / ${revenueLabel}は棒グラフ、${primaryProfitLabel}・純利益は折れ線 / ${revenueLabel}実数・前年比・${primaryMarginLabel}・純利益率を表示（狭い画面は自動間引き） / 単位：百万円`;
++  if($('companyMarginTitle'))$('companyMarginTitle').textContent=`${revenueLabel}・${primaryMarginLabel}・純利益率`;
++  if($('companyMarginNote'))$('companyMarginNote').textContent=`通期ベース / ${revenueLabel}は棒グラフ、利益率は折れ線 / 利益率は%表示`;
++  if($('companyQuarterlyMarginTitle'))$('companyQuarterlyMarginTitle').textContent=`四半期${primaryMarginLabel}・純利益率`;
++  if($('companyQuarterlyMarginNote'))$('companyQuarterlyMarginNote').textContent=`四半期ベース / ${revenueLabel}は棒グラフ、利益率は折れ線 / 利益率は%表示`;
++
+ 
+   $('companyDetail').innerHTML=`
+     <div class="company-detail-toolbar">
+@@ -2049,12 +2128,12 @@
+       <div class="company-detail-grid">
+         ${card('直近決算期',latestResult.period||d.periods?.income||'未取得')}
+         ${card('決算発表日',latestResult.announced||'未取得')}
+-        ${card('売上高',resultMoney(latestResult.sales))}
+-        ${card('売上高 前期比',resultPct(resultGrowth(latestResult.sales,prevResult.sales)))}
+-        ${card('営業利益',resultMoney(latestResult.operatingProfit))}
+-        ${card('営業利益 前期比',resultPct(resultGrowth(latestResult.operatingProfit,prevResult.operatingProfit)))}
+-        ${card('経常利益',resultMoney(latestResult.ordinaryProfit))}
+-        ${card('経常利益 前期比',resultPct(resultGrowth(latestResult.ordinaryProfit,prevResult.ordinaryProfit)))}
++        ${card(revenueLabel,resultMoney(latestResult.sales))}
++        ${card(revenueLabel+' 前期比',resultPct(resultGrowth(latestResult.sales,prevResult.sales)))}
++        ${card(primaryProfitLabel,resultMoney(companyPrimaryProfit(latestResult,accounting)))}
++        ${card(primaryProfitLabel+' 前期比',resultPct(resultGrowth(companyPrimaryProfit(latestResult,accounting),companyPrimaryProfit(prevResult,accounting))))}
++        ${primaryProfitKey!=='ordinaryProfit'?card('経常利益',resultMoney(latestResult.ordinaryProfit)):''}
++        ${primaryProfitKey!=='ordinaryProfit'?card('経常利益 前期比',resultPct(resultGrowth(latestResult.ordinaryProfit,prevResult.ordinaryProfit))):''}
+         ${card('純利益',resultMoney(latestResult.netIncome))}
+         ${card('純利益 前期比',resultPct(resultGrowth(latestResult.netIncome,prevResult.netIncome)))}
+         ${card('EPS（直近実績）',fmtN(latestResult.eps??val.trailingEps,2,'円'))}
+@@ -2069,7 +2148,7 @@
+         <table>
+           <thead>
+             <tr>
+-              <th>決算期</th><th>区分</th><th>売上高</th><th>営業利益</th><th>経常利益</th><th>純利益</th><th>EPS</th><th>1株配当</th><th>発表日</th>
++              <th>決算期</th><th>区分</th><th>${esc(revenueLabel)}</th><th>${esc(primaryProfitLabel)}</th>${primaryProfitKey!=='ordinaryProfit'?'<th>経常利益</th>':''}<th>純利益</th><th>EPS</th><th>1株配当</th><th>発表日</th>
+             </tr>
+           </thead>
+           <tbody>
+@@ -2077,8 +2156,8 @@
+               <td>${esc(r.period||'未取得')}</td>
+               <td>${r.forecast||String(r.period||'').includes('予')?'予想':'実績'}</td>
+               <td>${esc(resultMoney(r.sales))}</td>
+-              <td>${esc(resultMoney(r.operatingProfit))}</td>
+-              <td>${esc(resultMoney(r.ordinaryProfit))}</td>
++              <td>${esc(resultMoney(companyPrimaryProfit(r,accounting)))}</td>
++              ${primaryProfitKey!=='ordinaryProfit'?`<td>${esc(resultMoney(r.ordinaryProfit))}</td>`:''}
+               <td>${esc(resultMoney(r.netIncome))}</td>
+               <td>${esc(fmtN(r.eps,2,'円'))}</td>
+               <td>${esc(fmtN(r.dividend,2,'円'))}</td>
+@@ -2090,13 +2169,13 @@
+ 
+       ${actualRows.length?`
+       <div class="company-detail-section" data-company-scope="annual" style="padding-top:10px">
+-        <h4>売上高推移</h4>
+-        <div class="company-detail-status">直近の通期売上高の推移です。単位は百万円です。</div>
++        <h4>${esc(revenueLabel)}推移</h4>
++        <div class="company-detail-status">直近の通期${esc(revenueLabel)}の推移です。単位は百万円です。</div>
+         <div class="table-wrap" style="margin-top:8px">
+           <table>
+             <thead>
+               <tr>
+-                <th>決算期</th><th>区分</th><th>売上高</th><th>前期比</th>
++                <th>決算期</th><th>区分</th><th>${esc(revenueLabel)}</th><th>前期比</th>
