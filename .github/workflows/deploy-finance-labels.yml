@@ -37,3 +37,5 @@ jobs:
           git add index.html deploy-20260909-1015
           git commit -m "Deploy industry-aware finance labels"
           git push
+
+# Rerun after exact patch-part verification.
