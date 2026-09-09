@@ -1,0 +1,124 @@
+     options:{...defaults,animation:false,layout:{padding:{top:44}},interaction:{mode:'index',intersect:false},
+       plugins:{...defaults.plugins,legend:{display:false},tooltip:{filter:item=>item.datasetIndex===(rows[item.dataIndex].body?0:1),callbacks:{
+         title:items=>items.length?`${rows[items[0].dataIndex].period}（実績）`:'',
+-        label:item=>{const r=rows[item.dataIndex];return [`当期売上高：${companyFmtMoney(r.sales)}`,`${refLabel}売上高：${companyFmtMoney(r.referenceSales)}`,
++        label:item=>{const r=rows[item.dataIndex];return [`当期${revenueLabel}：${companyFmtMoney(r.sales)}`,`${refLabel}${revenueLabel}：${companyFmtMoney(r.referenceSales)}`,
+           `${refLabel}比：${isNum(r.changeRate)?(r.changeRate>0?'+':'')+fmt(r.changeRate,1)+'%':'比較不可'}`,
+           ...(quarterly&&comparison!=='yearAgo'?[`前年同期比：${isNum(r.yearAgoRate)?(r.yearAgoRate>0?'+':'')+fmt(r.yearAgoRate,1)+'%':'比較不可'}`]:[])];}
+       }}},
+       scales:{x:{...defaults.scales.x,offset:true,ticks:{...defaults.scales.x.ticks,maxRotation:45,minRotation:0,autoSkip:true}},
+-        y:{...defaults.scales.y,beginAtZero:false,grace:'12%',title:{display:true,text:'売上高（百万円）'},ticks:{...defaults.scales.y.ticks,callback:value=>Number(value).toLocaleString('ja-JP')}}}
++        y:{...defaults.scales.y,beginAtZero:false,grace:'12%',title:{display:true,text:`${revenueLabel}（百万円）`},ticks:{...defaults.scales.y.ticks,callback:value=>Number(value).toLocaleString('ja-JP')}}}
+     }
+   });
+ }
+@@ -1818,17 +1874,20 @@
+   renderCompanyFilters();
+   const list=filteredCompanies();
+   $("companyCountBadge").textContent=`${list.length}社・全件表示`;
+-  makeTable("companyTable",["コード","会社名","業種","株価","PER","PBR","ROE","配当利回り","売上予想","営業益予想","詳細"],
+-    list.map(c=>[
+-      esc(c.code),`${esc(c.name)}<br><span class="${statusClass(c.status)}">${statusLabel(c.status)}</span>`,esc(c.industry||"未取得"),
+-      isNum(c.metrics?.sharePrice)?`${fmt(c.metrics.sharePrice,0)}円`:"データ未取得",
+-      isNum(c.metrics?.per)?`${fmt(c.metrics.per,2)}倍`:"データ未取得",
+-      isNum(c.metrics?.pbr)?`${fmt(c.metrics.pbr,2)}倍`:"データ未取得",
+-      isNum(c.metrics?.roe)?`${fmt(c.metrics.roe,2)}%`:"データ未取得",
+-      isNum(c.metrics?.dividendYield)?`${fmt(c.metrics.dividendYield,2)}%`:"データ未取得",
+-      companyFmtMoney(c.forecasts?.sales),companyFmtMoney(c.forecasts?.operatingProfit),
+-      `<button class="btn small company-row-select" data-company-code="${esc(c.code)}">表示</button>`
+-    ])
++  makeTable("companyTable",["コード","会社名","業種","株価","PER","PBR","ROE","配当利回り","売上/収益予想","主要利益予想","詳細"],
++    list.map(c=>{
++      const accounting=getCompanyAccountingProfile(c,c.fullDetail?.corporate||{});
++      return [
++        esc(c.code),`${esc(c.name)}<br><span class="${statusClass(c.status)}">${statusLabel(c.status)}</span>`,esc(c.industry||"未取得"),
++        isNum(c.metrics?.sharePrice)?`${fmt(c.metrics.sharePrice,0)}円`:"データ未取得",
++        isNum(c.metrics?.per)?`${fmt(c.metrics.per,2)}倍`:"データ未取得",
++        isNum(c.metrics?.pbr)?`${fmt(c.metrics.pbr,2)}倍`:"データ未取得",
++        isNum(c.metrics?.roe)?`${fmt(c.metrics.roe,2)}%`:"データ未取得",
++        isNum(c.metrics?.dividendYield)?`${fmt(c.metrics.dividendYield,2)}%`:"データ未取得",
++        companyFmtMoney(c.forecasts?.sales),companyFmtMoney(c.forecasts?.[accounting.primaryProfitKey]),
++        `<button class="btn small company-row-select" data-company-code="${esc(c.code)}">表示</button>`
++      ];
++    })
+   );
+   document.querySelectorAll("[data-company-code]").forEach(b=>b.addEventListener("click",()=>{
+     selectedCompanyCode=b.dataset.companyCode;
+@@ -1850,6 +1909,7 @@
+     const t=String(s||'').replace(/\s+/g,' ').trim();
+     if(t && !parts.some(x=>x===t))parts.push(t);
+   };
++  const accounting=getCompanyAccountingProfile(c,corp||{});
+ 
+   const base=corp?.description||c?.profile||'';
+   push(base);
+@@ -1873,24 +1933,19 @@
+   const perf=(Array.isArray(c?.performance)&&c.performance.length?c.performance:(Array.isArray(d?.annualPerformance)?d.annualPerformance:[]));
+   const actual=perf.filter(x=>x&&!x.forecast&&!String(x.period||'').includes('予')&&(isNum(x.sales)||isNum(x.operatingProfit)||isNum(x.ordinaryProfit)||isNum(x.netIncome))).at(-1);
+   const forecast=perf.filter(x=>x&&(x.forecast||String(x.period||'').includes('予'))).at(-1);
+-  if(actual){
++  const addPerformance=(row,prefix)=>{
++    if(!row)return;
+     const p=[];
+-    if(actual.period)p.push(`${actual.period}の通期実績`);
+-    if(isNum(actual.sales))p.push(`売上高${Math.round(actual.sales).toLocaleString('ja-JP')}百万円`);
+-    if(isNum(actual.operatingProfit))p.push(`営業利益${Math.round(actual.operatingProfit).toLocaleString('ja-JP')}百万円`);
+-    if(isNum(actual.ordinaryProfit))p.push(`経常利益${Math.round(actual.ordinaryProfit).toLocaleString('ja-JP')}百万円`);
+-    if(isNum(actual.netIncome))p.push(`純利益${Math.round(actual.netIncome).toLocaleString('ja-JP')}百万円`);
++    if(row.period)p.push(`${row.period}の${prefix}`);
++    if(isNum(row.sales))p.push(`${accounting.revenueLabel}${Math.round(row.sales).toLocaleString('ja-JP')}百万円`);
++    const primary=companyPrimaryProfit(row,accounting);
++    if(isNum(primary))p.push(`${accounting.primaryProfitLabel}${Math.round(primary).toLocaleString('ja-JP')}百万円`);
++    if(accounting.primaryProfitKey!=='ordinaryProfit'&&isNum(row.ordinaryProfit))p.push(`経常利益${Math.round(row.ordinaryProfit).toLocaleString('ja-JP')}百万円`);
++    if(isNum(row.netIncome))p.push(`純利益${Math.round(row.netIncome).toLocaleString('ja-JP')}百万円`);
+     if(p.length)push(`${p.join('、')}。`);
+-  }
+-  if(forecast){
+-    const p=[];
+-    if(forecast.period)p.push(`${forecast.period}の会社予想`);
+-    if(isNum(forecast.sales))p.push(`売上高${Math.round(forecast.sales).toLocaleString('ja-JP')}百万円`);
+-    if(isNum(forecast.operatingProfit))p.push(`営業利益${Math.round(forecast.operatingProfit).toLocaleString('ja-JP')}百万円`);
+-    if(isNum(forecast.ordinaryProfit))p.push(`経常利益${Math.round(forecast.ordinaryProfit).toLocaleString('ja-JP')}百万円`);
+-    if(isNum(forecast.netIncome))p.push(`純利益${Math.round(forecast.netIncome).toLocaleString('ja-JP')}百万円`);
+-    if(p.length)push(`${p.join('、')}。`);
+-  }
++  };
++  addPerformance(actual,'通期実績');
++  addPerformance(forecast,'会社予想');
+ 
+   const div=d?.dividend||{};
+   const divParts=[];
+@@ -1925,6 +1980,7 @@
+ 
+   const m=c.metrics||{}, f=c.forecasts||{}, d=c.fullDetail||{};
+   const price=d.price||{}, val=d.valuation||{}, prof=d.profitability||{}, growth=d.growth||{}, fin=d.financials||{}, corp=d.corporate||{}, basic=d.basicInfo||{}, analyst=d.analyst||{}, dividend=d.dividend||{};
++  const accounting=getCompanyAccountingProfile(c,corp,d),revenueLabel=accounting.revenueLabel,primaryProfitLabel=accounting.primaryProfitLabel,primaryProfitKey=accounting.primaryProfitKey,primaryMarginLabel=accounting.primaryMarginLabel;
+   const ownership=d.ownership||{};
+   const ownershipRows=(Array.isArray(ownership.holders)?ownership.holders:[]).filter(x=>x&&x.name&&(isNum(x.percent)||isNum(x.shares))).slice(0,10);
+   const ownershipTotal=ownershipRows.reduce((sum,x)=>sum+(isNum(x.percent)?x.percent:0),0);
+@@ -1940,14 +1996,17 @@
+   const derivedAliases={
+     'PER（実績・直近通期）':['PER（実績）'],
+     '配当性向（直近通期）':['配当性向'],
+-    '純利益率':['売上高利益率'],
++    '純利益率':['売上高利益率','収益純利益率'],
++    [accounting.revenueGrowthLabel]:['売上成長率','収益成長率'],
++    [accounting.enterpriseToRevenueLabel]:['EV/売上高','EV/収益'],
++    [accounting.revenuePerShareLabel]:['1株売上高','1株当たり収益'],
+     'ネット有利子負債':['ネット有利子負債'],
+     '運転資本':['運転資本']
+   };
+   const calculable=new Set([
+-    '時価総額','企業価値 EV','PER（実績・直近通期）','PER（予想）','PBR','PEG','EV/売上高','EV/EBITDA','EPS（実績・修正済）','BPS',
+-    'ROE','ROA','純利益率','経常利益率','営業利益率','粗利益率','EBITDA率','売上成長率','利益成長率',
+-    '粗利益','EBITDA','フリーCF（営業＋投資）','現金・現金同等物','有利子負債等','ネット有利子負債','1株当たり現金','流動比率','当座比率','D/Eレシオ','自己資本比率','1株売上高','総資産','自己資本','運転資本',
++    '時価総額','企業価値 EV','PER（実績・直近通期）','PER（予想）','PBR','PEG',accounting.enterpriseToRevenueLabel,'EV/EBITDA','EPS（実績・修正済）','BPS',
++    'ROE','ROA','純利益率','経常利益率','営業利益率','粗利益率','EBITDA率',accounting.revenueGrowthLabel,'利益成長率',
++    '粗利益','EBITDA','フリーCF（営業＋投資）','現金・現金同等物','有利子負債等','ネット有利子負債','1株当たり現金','流動比率','当座比率','D/Eレシオ','自己資本比率',accounting.revenuePerShareLabel,'総資産','自己資本','運転資本',
+     '配当利回り','配当性向（直近通期）'
+   ]);
+   const card=(k,v)=>{
+@@ -1958,7 +2017,10 @@
+     return `<div class="company-detail-card"><div class="k">${esc(k)}${calculated?'<span class="calc-mark">計算</span>':''}</div><div class="v ${unavailable?'status-missing':''}">${esc(missing)}</div></div>`;
+   };
+   const kvRows=(rows)=>`<div class="company-detail-kv">${rows.map(([k,v])=>`<div class="k">${esc(k)}</div><div class="v">${v}</div>`).join('')}</div>`;
