@@ -1,0 +1,137 @@
+               </tr>
+             </thead>
+             <tbody>
+@@ -2123,18 +2202,19 @@
+ 
+       ${actualRows.length?`
+       <div class="company-detail-section" data-company-scope="annual" style="padding-top:10px">
+-        <h4>営業利益推移</h4>
+-        <div class="company-detail-status">直近の通期営業利益の推移です。単位は百万円です。</div>
++        <h4>${esc(primaryProfitLabel)}推移</h4>
++        <div class="company-detail-status">直近の通期${esc(primaryProfitLabel)}の推移です。単位は百万円です。</div>
+         <div class="table-wrap" style="margin-top:8px">
+           <table>
+-            <thead><tr><th>決算期</th><th>区分</th><th>営業利益</th><th>前期比</th></tr></thead>
++            <thead><tr><th>決算期</th><th>区分</th><th>${esc(primaryProfitLabel)}</th><th>前期比</th></tr></thead>
+             <tbody>
+               ${actualRows.slice(-4).map((r,i,arr)=>{
+                 const prev=arr[i-1];
+-                const g=isNum(r.operatingProfit)&&isNum(prev?.operatingProfit)&&prev.operatingProfit!==0?(r.operatingProfit-prev.operatingProfit)/Math.abs(prev.operatingProfit)*100:null;
+-                return `<tr><td>${esc(r.period||'未取得')}</td><td>実績</td><td>${esc(resultMoney(r.operatingProfit))}</td><td>${companyPctHtml(g)}</td></tr>`;
++                const cur=companyPrimaryProfit(r,accounting),old=companyPrimaryProfit(prev,accounting);
++                const g=isNum(cur)&&isNum(old)&&old!==0?(cur-old)/Math.abs(old)*100:null;
++                return `<tr><td>${esc(r.period||'未取得')}</td><td>実績</td><td>${esc(resultMoney(cur))}</td><td>${companyPctHtml(g)}</td></tr>`;
+               }).join('')}
+-              ${nextForecast.period?`<tr><td>${esc(nextForecast.period)}</td><td>予想</td><td>${esc(resultMoney(nextForecast.operatingProfit))}</td><td>${companyPctHtml(resultGrowth(nextForecast.operatingProfit,latestResult.operatingProfit))}</td></tr>`:''}
++              ${nextForecast.period?`<tr><td>${esc(nextForecast.period)}</td><td>予想</td><td>${esc(resultMoney(companyPrimaryProfit(nextForecast,accounting)))}</td><td>${companyPctHtml(resultGrowth(companyPrimaryProfit(nextForecast,accounting),companyPrimaryProfit(latestResult,accounting)))}</td></tr>`:''}
+             </tbody>
+           </table>
+         </div>
+@@ -2161,11 +2241,11 @@
+ 
+       ${quarterRows.length?`
+       <div class="company-detail-section" data-company-scope="quarterly" style="padding-top:10px">
+-        <h4>四半期売上高推移</h4>
+-        <div class="company-detail-status">直近の四半期売上高です。前四半期比と前年同期比を併記します。</div>
++        <h4>四半期${esc(revenueLabel)}推移</h4>
++        <div class="company-detail-status">直近の四半期${esc(revenueLabel)}です。前四半期比と前年同期比を併記します。</div>
+         <div class="table-wrap" style="margin-top:8px">
+           <table>
+-            <thead><tr><th>四半期</th><th>売上高</th><th>前四半期比</th><th>前年同期比</th></tr></thead>
++            <thead><tr><th>四半期</th><th>${esc(revenueLabel)}</th><th>前四半期比</th><th>前年同期比</th></tr></thead>
+             <tbody>
+               ${quarterMarginRows.slice(-8).map(r=>`<tr><td>${esc(r.period||'未取得')}</td><td>${esc(resultMoney(r.sales))}</td><td>${companyPctHtml(r.salesQoq)}</td><td>${companyPctHtml(r.salesYoy)}</td></tr>`).join('')}
+             </tbody>
+@@ -2175,13 +2255,13 @@
+ 
+       ${quarterRows.length?`
+       <div class="company-detail-section" data-company-scope="quarterly" style="padding-top:10px">
+-        <h4>四半期営業利益推移</h4>
+-        <div class="company-detail-status">直近の四半期営業利益です。前四半期比と前年同期比を併記します。</div>
++        <h4>四半期${esc(primaryProfitLabel)}推移</h4>
++        <div class="company-detail-status">直近の四半期${esc(primaryProfitLabel)}です。前四半期比と前年同期比を併記します。</div>
+         <div class="table-wrap" style="margin-top:8px">
+           <table>
+-            <thead><tr><th>四半期</th><th>営業利益</th><th>前四半期比</th><th>前年同期比</th></tr></thead>
++            <thead><tr><th>四半期</th><th>${esc(primaryProfitLabel)}</th><th>前四半期比</th><th>前年同期比</th></tr></thead>
+             <tbody>
+-              ${quarterMarginRows.slice(-8).map(r=>`<tr><td>${esc(r.period||'未取得')}</td><td>${esc(resultMoney(r.operatingProfit))}</td><td>${companyPctHtml(r.operatingProfitQoq)}</td><td>${companyPctHtml(r.operatingProfitYoy)}</td></tr>`).join('')}
++              ${quarterMarginRows.slice(-8).map(r=>`<tr><td>${esc(r.period||'未取得')}</td><td>${esc(resultMoney(r.primaryProfit))}</td><td>${companyPctHtml(r.primaryProfitQoq)}</td><td>${companyPctHtml(r.primaryProfitYoy)}</td></tr>`).join('')}
+             </tbody>
+           </table>
+         </div>
+@@ -2203,16 +2283,16 @@
+ 
+       ${quarterRows.length?`
+       <div class="company-detail-section" data-company-scope="quarterly" style="padding-top:10px">
+-        <h4>四半期営業利益率推移</h4>
+-        <div class="company-detail-status">四半期売上高に対する営業利益率です。前年同期比は率そのものの増減率です。</div>
++        <h4>四半期${esc(primaryMarginLabel)}推移</h4>
++        <div class="company-detail-status">四半期${esc(revenueLabel)}に対する${esc(primaryMarginLabel)}です。前年同期比は率そのものの増減率です。</div>
+         <div class="table-wrap" style="margin-top:8px">
+           <table>
+-            <thead><tr><th>四半期</th><th>営業利益率</th><th>前四半期比</th><th>前年同期比</th></tr></thead>
++            <thead><tr><th>四半期</th><th>${esc(primaryMarginLabel)}</th><th>前四半期比</th><th>前年同期比</th></tr></thead>
+             <tbody>
+               ${quarterMarginRows.slice(-8).map((r,i,arr)=>{
+-                const qoq=prevQuarterGrowth(arr,i,'operatingMargin');
+-                const yoy=yoyGrowth(arr,i,'operatingMargin');
+-                return `<tr><td>${esc(r.period||'未取得')}</td><td>${esc(resultPct(r.operatingMargin))}</td><td>${companyPctHtml(qoq)}</td><td>${companyPctHtml(yoy)}</td></tr>`;
++                const qoq=prevQuarterGrowth(arr,i,'primaryMargin');
++                const yoy=yoyGrowth(arr,i,'primaryMargin');
++                return `<tr><td>${esc(r.period||'未取得')}</td><td>${esc(resultPct(r.primaryMargin))}</td><td>${companyPctHtml(qoq)}</td><td>${companyPctHtml(yoy)}</td></tr>`;
+               }).join('')}
+             </tbody>
+           </table>
+@@ -2222,7 +2302,7 @@
+       ${quarterRows.length?`
+       <div class="company-detail-section" data-company-scope="quarterly" style="padding-top:10px">
+         <h4>四半期純利益率推移</h4>
+-        <div class="company-detail-status">四半期売上高に対する純利益率です。前年同期比は率そのものの増減率です。</div>
++        <div class="company-detail-status">四半期${esc(revenueLabel)}に対する純利益率です。前年同期比は率そのものの増減率です。</div>
+         <div class="table-wrap" style="margin-top:8px">
+           <table>
+             <thead><tr><th>四半期</th><th>純利益率</th><th>前四半期比</th><th>前年同期比</th></tr></thead>
+@@ -2265,7 +2345,7 @@
+         ${card('PER（予想）',fmtN(val.forwardPE,2,'倍'))}
+         ${card('PBR',fmtN(m.pbr??val.priceToBook,2,'倍'))}
+         ${card('PEG',fmtN(val.pegRatio,2,'倍'))}
+-        ${card('EV/売上高',fmtN(val.enterpriseToRevenue,2,'倍'))}
++        ${card(accounting.enterpriseToRevenueLabel,fmtN(val.enterpriseToRevenue,2,'倍'))}
+         ${card('EV/EBITDA',fmtN(val.enterpriseToEbitda,2,'倍'))}
+         ${card('EPS（実績・修正済）',fmtN(m.eps??val.trailingEps,2,'円'))}
+         ${card('EPS（予想・修正済）',fmtN(val.forwardEps,2,'円'))}
+@@ -2280,11 +2360,11 @@
+         ${card('ROE',fmtPctN(m.roe??prof.roe,2))}
+         ${card('ROA',fmtPctN(prof.roa,2))}
+         ${card('純利益率',fmtPctN(prof.profitMargin,2))}
+-        ${card('経常利益率',fmtPctN(prof.ordinaryMargin,2))}
+-        ${card('営業利益率',fmtPctN(prof.operatingMargin,2))}
++        ${card(primaryMarginLabel,fmtPctN(companyPrimaryMarginValue(prof,accounting),2))}
++        ${primaryProfitKey!=='ordinaryProfit'?card('経常利益率',fmtPctN(prof.ordinaryMargin,2)):''}
+         ${card('粗利益率',fmtPctN(prof.grossMargin,2))}
+         ${card('EBITDA率',fmtPctN(prof.ebitdaMargin,2))}
+-        ${card('売上成長率',fmtPctN(growth.revenueGrowth,2))}
++        ${card(accounting.revenueGrowthLabel,fmtPctN(growth.revenueGrowth,2))}
+         ${card('利益成長率',fmtPctN(growth.earningsGrowth,2))}
+       </div>
+     </div>
+@@ -2328,7 +2408,7 @@
+     <div class="company-detail-section">
+       <h4>財務規模・安全性・キャッシュフロー</h4>
+       <div class="company-detail-grid">
+-        ${card('売上高',fmtOku(fin.revenue))}
++        ${card(revenueLabel,fmtOku(fin.revenue))}
+         ${card('粗利益',fmtOku(fin.grossProfit))}
+         ${card('EBITDA',fmtOku(fin.ebitda))}
+         ${card('営業CF',fmtOku(fin.operatingCashflow))}
+@@ -2345,7 +2425,7 @@
+         ${card('当座比率',fmtN(fin.quickRatio,2,'倍'))}
+         ${card('D/Eレシオ',fmtN(fin.debtToEquity,2,''))}
+         ${card('自己資本比率',fmtPctN(prof.equityRatio??fin.equityRatio,2))}
+-        ${card('1株売上高',fmtN(fin.revenuePerShare,2,'円'))}
++        ${card(accounting.revenuePerShareLabel,fmtN(fin.revenuePerShare,2,'円'))}
+         ${card('総資産',fmtOku(fin.totalAssets))}
+         ${card('自己資本',fmtOku(fin.totalEquity))}
+       </div>
+@@ -2354,14 +2434,16 @@
