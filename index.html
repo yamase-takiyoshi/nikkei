@@ -4,7 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
+<meta name="description" content="日本・米国の市場、物価、金利、銀行預金、企業業績を一画面で確認する市況・金融・経済ダッシュボード。">
+<meta name="format-detection" content="telephone=no,email=no,address=no">
+<meta name="theme-color" content="#164b7a" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f141a" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="市況DB">
 <title>市況・金融・経済ダッシュボード</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23164b7a'/%3E%3Cg fill='none' stroke='%23fff' stroke-width='8' stroke-linecap='round'%3E%3Cpath d='M20 68 L40 48 L56 60 L82 30'/%3E%3C/g%3E%3Cpath d='M74 30 h10 v10' fill='none' stroke='%23fff' stroke-width='8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <style>
 :root{
@@ -59,7 +68,7 @@ h1{font-size:clamp(24px,4vw,38px);margin:0 0 8px;letter-spacing:.02em}
 .meta-card{background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);border-radius:10px;padding:10px 12px}
 .meta-label{font-size:11px;opacity:.78}
 .meta-value{font-family:var(--mono);font-weight:700;font-size:13px;margin-top:3px}
-.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0;align-items:center}
 .btn,.file-label{
   border:1px solid var(--line);background:var(--panel);color:var(--text);
   border-radius:9px;padding:9px 12px;box-shadow:var(--shadow);font-weight:650
@@ -151,7 +160,7 @@ footer{color:var(--muted);font-size:11px;padding:24px 4px 12px}
 .candle-layout{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(300px,.45fr);gap:12px}
 .candle-card{background:var(--panel);border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow);padding:12px;overflow:hidden}
 .candle-wrap{height:430px;position:relative;width:100%}
-#candlestickCanvas{display:block;width:100%;height:100%;touch-action:none}
+#candlestickCanvas{display:block;width:100%;height:100%;touch-action:pan-y}
 .candle-tooltip{position:absolute;z-index:4;pointer-events:none;display:none;min-width:190px;background:rgba(15,20,26,.94);color:#fff;border-radius:8px;padding:8px 9px;font:11px/1.5 var(--mono);box-shadow:0 6px 20px rgba(0,0,0,.25)}
 .candle-legend{display:flex;flex-wrap:wrap;gap:10px;font-size:11px;color:var(--muted);margin:7px 0 0}
 .candle-dot{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
@@ -238,7 +247,12 @@ footer{color:var(--muted);font-size:11px;padding:24px 4px 12px}
 .company-scope-tabbar .btn,.company-scope-tabbar .candle-period-label{flex:0 0 auto;scroll-snap-align:start}
 .company-scope-tabbar.is-sticky{position:sticky;top:8px;z-index:18;background:var(--panel);padding:8px 8px 10px;border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow)}
 .company-scope-tabbar.is-outer{display:none}
-.company-scope-global-nav{position:sticky;top:0;z-index:30;margin:8px 0 10px;background:var(--panel);border:1px solid var(--line);border-radius:11px;box-shadow:var(--shadow);overflow:hidden}
+/* 企業業績スコープ切替：既定は静的配置（全セクションに被らない）。企業セクション表示中のみ画面上部に固定する */
+.company-scope-global-nav{position:static;z-index:30;margin:8px 0 10px;background:var(--panel);border:1px solid var(--line);border-radius:11px;box-shadow:var(--shadow);overflow:hidden}
+.company-scope-global-nav.is-pinned{position:fixed;left:0;right:0;top:0;margin:0;border-radius:0;border-left:0;border-right:0;border-top:0;padding-top:env(safe-area-inset-top,0);box-shadow:0 6px 18px rgba(15,23,42,.16);transform:translateY(-120%);transition:transform .22s ease}
+.company-scope-global-nav.is-pinned.is-visible{transform:translateY(0)}
+.company-scope-global-nav.is-pinned .company-scope-tabbar{max-width:1680px;margin:0 auto}
+@media(prefers-reduced-motion:reduce){.company-scope-global-nav.is-pinned{transition:none}}
 .company-scope-global-nav .company-scope-tabbar{margin:0;padding:7px 9px}
 .company-scope-global-nav .candle-period-label{font-size:11px;color:var(--muted);font-weight:800}
 .company-detail-section{border-top:1px solid var(--line);padding-top:12px;margin-top:2px}
@@ -299,6 +313,107 @@ footer{color:var(--muted);font-size:11px;padding:24px 4px 12px}
 .nikkei-news-card a:focus-visible,.nikkei-news-controls a:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
 .nikkei-news-link{padding:0 14px 14px;text-align:right;font-size:14px}
 #nikkeiNewsUpdated{color:var(--muted)}
+
+/* ============================================================
+   製品版リファイン層 — レスポンシブ / iPad・タッチ最適化 / A11y
+   既存スタイルの後段に追記。挙動を壊さず上書き・補強する。
+   ============================================================ */
+
+/* --- セーフエリア（ノッチ・ホームインジケータ）対応 --- */
+.app{
+  padding-left:max(14px,env(safe-area-inset-left));
+  padding-right:max(14px,env(safe-area-inset-right));
+  padding-bottom:max(14px,env(safe-area-inset-bottom));
+}
+@media(max-width:760px){
+  .app{padding-left:max(8px,env(safe-area-inset-left));padding-right:max(8px,env(safe-area-inset-right))}
+}
+
+/* --- タッチ操作の基本最適化 --- */
+button,.btn,.file-label,select,input,a,summary,[role="button"],.company-suggestion{
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+}
+body{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+html{overscroll-behavior-y:none}
+img,canvas,svg{max-width:100%}
+
+/* --- キーボードフォーカスリングの統一（可視化） --- */
+a:focus-visible,button:focus-visible,.btn:focus-visible,.file-label:focus-within,
+select:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-visible,
+th:focus-visible,[tabindex]:focus-visible,.company-suggestion:focus-visible{
+  outline:3px solid var(--accent);outline-offset:2px;border-radius:9px;
+}
+
+/* --- タッチ端末では最小44pxの当たり判定を確保（Apple HIG準拠） --- */
+@media(pointer:coarse){
+  .btn,.file-label{min-height:44px;display:inline-flex;align-items:center;justify-content:center;padding:10px 14px}
+  .btn.small{min-height:40px;padding:8px 13px;font-size:13px}
+  .candle-controls .btn.small,.candle-tabbar .btn.small{min-height:42px}
+  .date-box{min-height:44px;padding:6px 11px}
+  .news-controls select,.candle-controls select,.company-controls select,
+  .company-controls input,#candlestickSymbol,#newsCategoryFilter,#industryFilter{min-height:44px}
+  th,td{padding:11px 11px}
+  #companyTable th,#companyTable td{padding:9px 8px}
+  .company-suggestion{padding:12px 11px}
+  details summary{padding:6px 0;min-height:34px;display:flex;align-items:center}
+  .news-related .badge,.company-tags .badge{padding:5px 10px}
+}
+
+/* --- テーブル横スクロールの視覚的アフォーダンス（端に影） --- */
+.table-wrap{
+  background:
+    radial-gradient(farthest-side at 0 50%, rgba(15,23,42,.14), rgba(15,23,42,0)) 0 0,
+    radial-gradient(farthest-side at 100% 50%, rgba(15,23,42,.14), rgba(15,23,42,0)) 100% 0;
+  background-repeat:no-repeat;
+  background-size:16px 100%,16px 100%;
+  background-attachment:scroll,scroll;
+  border-radius:8px;
+}
+html[data-theme="dark"] .table-wrap{
+  background:
+    radial-gradient(farthest-side at 0 50%, rgba(0,0,0,.5), rgba(0,0,0,0)) 0 0,
+    radial-gradient(farthest-side at 100% 50%, rgba(0,0,0,.5), rgba(0,0,0,0)) 100% 0;
+  background-repeat:no-repeat;background-size:16px 100%,16px 100%;
+}
+/* スクロールバーを控えめに（対応ブラウザのみ） */
+.table-wrap,.company-suggestions,.company-scope-tabbar{scrollbar-width:thin}
+.table-wrap::-webkit-scrollbar{height:8px}
+.table-wrap::-webkit-scrollbar-thumb{background:var(--line);border-radius:8px}
+
+/* --- iPad縦（768〜900px前後）でサマリーを2〜3列に最適化 --- */
+@media(min-width:761px) and (max-width:900px){
+  .summary-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .news-summary-box{grid-template-columns:repeat(2,1fr)}
+}
+/* --- iPad横（1025〜1194px）：主要指標を4列で見やすく --- */
+@media(min-width:1025px) and (max-width:1200px){
+  .summary-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+
+/* --- ヘッダーのバッジ配置と可読性を微調整 --- */
+#dataModeBadge{align-self:flex-start;white-space:normal;line-height:1.4}
+
+/* --- モバイルでツールバーを横スクロール可能な帯にせず、整然と折り返す --- */
+@media(max-width:520px){
+  .toolbar{gap:8px}
+  .toolbar .btn,.toolbar .file-label{flex:1 1 auto}
+  .toolbar .btn.primary{flex-basis:100%}
+  .date-box{flex:1 1 100%}
+  .date-box input{flex:1 1 auto;width:auto}
+}
+
+/* --- 動きの抑制設定を尊重 --- */
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
+}
+
+/* --- 印刷時に固定バーを解除 --- */
+@media print{
+  .company-scope-global-nav.is-pinned{position:static!important;transform:none!important;box-shadow:none}
+  .table-wrap{background:none}
+}
 
 </style>
 </head>
@@ -2919,7 +3034,9 @@ function drawCandlestick(data,bars){
     tip.innerHTML=`<strong>${esc(b.date)}</strong><br>始 ${canvasValue(b.open)}　高 ${canvasValue(b.high)}<br>安 ${canvasValue(b.low)}　終 ${canvasValue(b.close)}<br>${diff>=0?"上昇":"下落"} ${canvasValue(Math.abs(diff))}${data.unit||""}<br>出来高 ${isNum(b.volume)?b.volume.toLocaleString("ja-JP"):"—"}`;
     tip.style.display="block"; tip.style.left=Math.min(w-205,Math.max(6,x+10))+"px"; tip.style.top="12px";
   };
+  canvas.onpointerdown=canvas.onpointermove;
   canvas.onpointerleave=()=>tip.style.display="none";
+  canvas.onpointercancel=()=>tip.style.display="none";
 }
 
 function renderPolicy(){
@@ -4634,6 +4751,31 @@ async function autoUpdateExternal(){
   ensureTopixCandlestickFallback();
 }
 
+function updateThemeColorMeta(){
+  const root=document.documentElement;
+  const dark = root.dataset.theme==="dark"
+    || (!root.dataset.theme && window.matchMedia && window.matchMedia("(prefers-color-scheme:dark)").matches);
+  const color = dark ? "#0f141a" : "#164b7a";
+  document.querySelectorAll('meta[name="theme-color"]').forEach(m=>{m.removeAttribute("media");m.setAttribute("content",color);});
+}
+
+// 企業業績スコープ切替バーを「企業セクション表示中だけ」画面上部に固定表示する（他セクションには被らない）
+function setupProductEnhancements(){
+  updateThemeColorMeta();
+  try{
+    const nav=document.querySelector(".company-scope-global-nav");
+    const sec=$("companySection");
+    if(nav && sec && "IntersectionObserver" in window){
+      const io=new IntersectionObserver(entries=>{
+        const on=entries[0] && entries[0].isIntersecting;
+        if(on){nav.classList.add("is-pinned");requestAnimationFrame(()=>nav.classList.add("is-visible"));}
+        else{nav.classList.remove("is-visible");setTimeout(()=>{if(!nav.classList.contains("is-visible"))nav.classList.remove("is-pinned");},260);}
+      },{threshold:0,rootMargin:"0px 0px -35% 0px"});
+      io.observe(sec);
+    }
+  }catch(e){/* 固定表示は任意機能：失敗しても静的配置で問題なく動作 */}
+}
+
 function setupEvents(){
   $("refreshBtn").addEventListener("click",autoUpdateExternal);
   $("baseDateInput").addEventListener("change",e=>{dashboardState.marketData.meta.baseDate=e.target.value;renderAll();});
@@ -4669,6 +4811,8 @@ function setupEvents(){
     const dark=root.dataset.theme==="dark";
     root.dataset.theme=dark?"light":"dark";
     $("themeBtn").textContent=dark?"ダークモード":"ライトモード";
+    $("themeBtn").setAttribute("aria-pressed",String(!dark));
+    updateThemeColorMeta();
     renderCharts();
     renderCompanyDetail();
     renderCandlestick();
@@ -4685,6 +4829,7 @@ ensureTopixCandlestickFallback();
 saveExternalCache();
 migrateCompanyDetailCache();
 setupEvents();
+setupProductEnhancements();
 renderAll();
 updateNikkeiNewsExternal().catch(()=>{});
 </script>
